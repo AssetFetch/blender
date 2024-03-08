@@ -45,29 +45,28 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 		# Contact initialization endpoint
 		url = bpy.context.window_manager.af_initialize_provider_url
 		query = http_handler.AF_HttpQuery(uri=url,method=http_handler.AF_HttpMethod.GET)
-		raw_response : http_handler.AF_HttpResponse = query.execute()
-		response = raw_response.parsed_json()
+		response : http_handler.AF_HttpResponse = query.execute()
 
 		#bpy.context.window_manager.af_initialize_provider_text = "OK"
-		if(response['data']['text']['title']):
-			bpy.context.window_manager.af_initialize_provider_text = response['data']['text']['title']
+		if "text" in response.parsed['data']:
+			bpy.context.window_manager.af_initialize_provider_title = response.parsed['data']['text']['title']
 		else:
-			bpy.context.window_manager.af_initialize_provider_text = "Connected. (No title provided)."
+			bpy.context.window_manager.af_initialize_provider_title = "Connected. (No title provided)."
 
 		# Get the headers
-		if "provider_configuration" in response['data']:
+		if "provider_configuration" in response.parsed['data']:
 			bpy.context.window_manager.af_initialize_provider_headers.clear()
-			for header_info in response['data']['headers']:
+			for header_info in response.parsed['data']['headers']:
 				current_header = bpy.context.window_manager.af_initialize_provider_headers.add()
 				current_header.name = header_info['name']
 				current_header.value = header_info['default']
 
 		# Update the asset_list_url and related parameters
-		if response['asset_list_query']:
-			bpy.context.window_manager.af_asset_list_url = response['asset_list_query']['uri']
-			bpy.context.window_manager.af_asset_list_method = response['asset_list_query']['method']
+		if "asset_list_query" in response.parsed['data']:
+			bpy.context.window_manager.af_asset_list_url = response.parsed['data']['asset_list_query']['uri']
+			bpy.context.window_manager.af_asset_list_method = response.parsed['data']['asset_list_query']['method']
 			bpy.context.window_manager.af_asset_list_parameters.clear()
-			for parameter_info in response['asset_list_query']['parameters']:
+			for parameter_info in response.parsed['data']['asset_list_query']['parameters']:
 				current_parameter = bpy.context.window_manager.af_asset_list_parameters.add()
 				current_parameter.name = parameter_info['name']
 				current_parameter.type = parameter_info['type']
@@ -104,16 +103,14 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 		method = http_handler.AF_HttpMethod[bpy.context.window_manager.af_asset_list_method]
 
 		query = http_handler.AF_HttpQuery(uri=url,method=method,parameters=parameters)
-		raw_response : http_handler.AF_HttpResponse = query.execute()
-		response = raw_response.parsed_json()
-		#print(response)
+		response : http_handler.AF_HttpResponse = query.execute()
 		
 		# Liste leeren
 		# neue Listenelemente für Assets einfügen
 			# Implementations query
 		
 		bpy.context.window_manager.af_asset_list_entries.clear()
-		for asset in response['assets']:
+		for asset in response.parsed['assets']:
 			asset_entry = bpy.context.window_manager.af_asset_list_entries.add()
 			asset_entry.name = asset['id']
 			asset_entry.text_title = asset['data']['text']['title']

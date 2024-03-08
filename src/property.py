@@ -1,6 +1,11 @@
 import bpy
 from .http_handler import AF_HttpMethod
 
+http_method_property = [
+			('get','GET','HTTP GET'),
+			('post','POST','HTTP POST')
+		]
+
 def register():
 
 	# Import classes
@@ -11,13 +16,14 @@ def register():
 
 	# Initialization
 	bpy.types.WindowManager.af_initialize_provider_url = bpy.props.StringProperty(default="http://localhost:8000")
-	bpy.types.WindowManager.af_initialize_provider_text = bpy.props.StringProperty()
+	bpy.types.WindowManager.af_initialize_provider_title = bpy.props.StringProperty()
+	bpy.types.WindowManager.af_initialize_provider_description = bpy.props.StringProperty()
 	bpy.types.WindowManager.af_initialize_provider_headers = bpy.props.CollectionProperty(type=AF_PR_Http_Header)
 
 	# Asset List
 	bpy.types.WindowManager.af_asset_list_url = bpy.props.StringProperty()
 
-	bpy.types.WindowManager.af_asset_list_method = bpy.props.EnumProperty(items=AF_HttpMethod.property_group_items())
+	bpy.types.WindowManager.af_asset_list_method = bpy.props.EnumProperty(items=http_method_property)
 
 	bpy.types.WindowManager.af_asset_list_parameters = bpy.props.CollectionProperty(type=AF_PR_Http_Parameter)
 	bpy.types.WindowManager.af_asset_list_entries = bpy.props.CollectionProperty(type=AF_PR_Asset_Entry)
@@ -48,21 +54,21 @@ def unregister():
 class AF_PR_Implementation(bpy.types.PropertyGroup):
 	#name -> id
 
-	components_json: bpy.props.StringProperty()
-	pass
+	components_json: bpy.props.StringProperty
+
 
 class AF_PR_Http_Header(bpy.types.PropertyGroup):
 	#header_name: bpy.props.StringProperty(name="header_name",default="")
-	value: bpy.props.StringProperty()
+	value: bpy.props.StringProperty
 
 class AF_PR_Http_Parameter(bpy.types.PropertyGroup):
-	value: bpy.props.StringProperty()
-	type: bpy.props.StringProperty()
+	value: bpy.props.StringProperty
+	type: bpy.props.StringProperty
 
 class AF_PR_Asset_Entry(bpy.types.PropertyGroup):
 	#name
-	text_title: bpy.props.StringProperty()
-	text_description: bpy.props.StringProperty()
+	text_title: bpy.props.StringProperty
+	text_description: bpy.props.StringProperty
 	implementations_query_parameters: bpy.props.CollectionProperty(type=AF_PR_Http_Parameter)
-	implementations_query_uri: bpy.props.StringProperty()
-	implementations_query_method: bpy.props.EnumProperty(items=AF_HttpMethod.property_group_items())
+	implementations_query_uri: bpy.props.StringProperty
+	implementations_query_method: bpy.props.EnumProperty(items=http_method_property)

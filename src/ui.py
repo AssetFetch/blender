@@ -28,7 +28,7 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		# Add a button to get the vendor info
 		layout.operator("af.initialize_provider", text="Connect")
 		
-		layout.label(text=bpy.context.window_manager.af_initialize_provider_text)
+		layout.label(text=bpy.context.window_manager.af_initialize_provider_title)
 
 		for provider_header in bpy.context.window_manager.af_initialize_provider_headers.values():
 			layout.prop(provider_header,"value",text=provider_header["name"])
