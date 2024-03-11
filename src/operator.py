@@ -5,7 +5,7 @@ import bpy,math
 import bpy_extras.image_utils
 from typing import Dict,List
 from . import http_handler
-from . import implementations
+from . import implementations,util
 import urllib
 
 ASSETFETCH_HOME = os.path.expanduser('~')+"/AssetFetch/"
@@ -42,40 +42,48 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 
 	def execute(self,context):
 
-		# Contact initialization endpoint
-		url = bpy.context.window_manager.af_initialize_provider_url
+		# Contact initialization endpoint and tet the response
+		url = bpy.context.window_manager.af.current_init_url
 		query = http_handler.AF_HttpQuery(uri=url,method=http_handler.AF_HttpMethod.GET)
 		response : http_handler.AF_HttpResponse = query.execute()
 
-		#bpy.context.window_manager.af_initialize_provider_text = "OK"
+		# Get the provider text (title and description)
 		if "text" in response.parsed['data']:
-			bpy.context.window_manager.af_initialize_provider_title = response.parsed['data']['text']['title']
-		else:
-			bpy.context.window_manager.af_initialize_provider_title = "Connected. (No title provided)."
+			util.dict_to_attr(response['data']['text'],['title','description'],bpy.context.window_manager.af.current_provider_configuration.text)
 
-		# Get the headers
+		# Provider configuration
 		if "provider_configuration" in response.parsed['data']:
-			bpy.context.window_manager.af_initialize_provider_headers.clear()
-			for header_info in response.parsed['data']['headers']:
-				current_header = bpy.context.window_manager.af_initialize_provider_headers.add()
-				current_header.name = header_info['name']
+
+			# Headers
+			bpy.context.window_manager.af.current_provider_initialization.headers.clear()
+			for header_info in response.parsed['data']['provider_configuration']['headers']:
+				current_header = bpy.context.window_manager.af.current_provider_initialization.headers.add()
+				util.dict_to_attr(header_info,['name','default','is_required','is_sensitive','prefix','suffix','title','encoding'],current_header)
 				current_header.value = header_info['default']
+
+			# Status endpoint
+			
 
 		# Update the asset_list_url and related parameters
 		if "asset_list_query" in response.parsed['data']:
-			bpy.context.window_manager.af_asset_list_url = response.parsed['data']['asset_list_query']['uri']
-			bpy.context.window_manager.af_asset_list_method = response.parsed['data']['asset_list_query']['method']
-			bpy.context.window_manager.af_asset_list_parameters.clear()
+			
+			# Set URI and HTTP method
+			util.dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],bpy.context.window_manager.af.asset_list_query)
+
+			# Set Parameters
+			bpy.context.window_manager.af.asset_list_query.parameters.clear()
 			for parameter_info in response.parsed['data']['asset_list_query']['parameters']:
-				current_parameter = bpy.context.window_manager.af_asset_list_parameters.add()
-				current_parameter.name = parameter_info['name']
-				current_parameter.type = parameter_info['type']
-				if parameter_info['default']:
-					current_parameter.value = parameter_info['default']
-				else:
-					current_parameter.value = ""
+				current_parameter = bpy.context.window_manager.af.asset_list_query.parameters.add()
+				util.dict_to_attr(parameter_info,['type','name','title','default','mandatory','delimiter'],current_parameter)
+				
+				if "choices" in parameter_info:
+					for choice in parameter_info['choices']:
+						new_choice = current_parameter.choices.add()
+						new_choice = choice
 		else:
 			raise Exception("No Asset List Query!")
+		
+		if ""
 		
 		return {'FINISHED'}
 
