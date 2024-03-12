@@ -124,6 +124,19 @@ class AF_PR_DB_Provider_Configuration:
 class AF_PR_DB_Provider_Reconfiguration:
 	headers: bpy.props.CollectionProperty(type=bpy.props.StringProperty)
 
+class AF_PR_DB_File_Fetch_From_Archive:
+	archive_component_id: bpy.props.StringProperty
+	component_path: bpy.props.StringProperty
+
+class AF_PR_Web_Reference:
+	title: bpy.props.StringProperty
+	uri: bpy.props.StringProperty
+	icon_uri: bpy.props.StringProperty
+
+# class AF_PR_DB_Web_References does not exist, it is handled as a CollectionProperty of individual Web References
+	
+
+
 # Core elements
 
 class AF_PR_Provider_Initialization:
