@@ -10,10 +10,16 @@ import urllib
 
 ASSETFETCH_HOME = os.path.expanduser('~')+"/AssetFetch/"
 
-def sha1sum(filename):
-    with open(filename, 'rb', buffering=0) as f:
-        return hashlib.file_digest(f, 'sha1').hexdigest()
+# Utility functions
 
+def dict_to_attr(source:Dict[str,str],keys:List[str],destination:any):
+	"""Assigns all the provided keys from source as attributes to the destination object."""
+	for key in keys:
+		if key in source:
+			setattr(destination,key,source[key])
+
+# Registration and unregistration functions
+	
 def register():
 	bpy.utils.register_class(AF_OP_Initialize_Provider)
 	bpy.utils.register_class(AF_OP_Update_Asset_List)
@@ -25,6 +31,8 @@ def unregister():
 	bpy.utils.unregister_class(AF_OP_Initialize_Provider)
 	bpy.utils.unregister_class(AF_OP_Update_Implementations_List)
 	bpy.utils.unregister_class(AF_OP_Execute_Import_Plan)
+
+# Operator definitions
 
 class AF_OP_Initialize_Provider(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
@@ -49,7 +57,7 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 
 		# Get the provider text (title and description)
 		if "text" in response.parsed['data']:
-			util.dict_to_attr(response['data']['text'],['title','description'],bpy.context.window_manager.af.current_provider_configuration.text)
+			dict_to_attr(response['data']['text'],['title','description'],bpy.context.window_manager.af.current_provider_configuration.text)
 
 		# Provider configuration
 		if "provider_configuration" in response.parsed['data']:
@@ -58,23 +66,30 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 			bpy.context.window_manager.af.current_provider_initialization.headers.clear()
 			for header_info in response.parsed['data']['provider_configuration']['headers']:
 				current_header = bpy.context.window_manager.af.current_provider_initialization.headers.add()
-				util.dict_to_attr(header_info,['name','default','is_required','is_sensitive','prefix','suffix','title','encoding'],current_header)
+				dict_to_attr(header_info,['name','default','is_required','is_sensitive','prefix','suffix','title','encoding'],current_header)
 				current_header.value = header_info['default']
 
 			# Status endpoint
-			
+			# TODO, create a special function that also takes care of sub-values in dict?
+			bpy.context.window_manager.af.connection_status_query.uri = response.parsed['data']['provider_configuration']['connection_status_query']['uri']
+			bpy.context.window_manager.af.connection_status_query.method = response.parsed['data']['provider_configuration']['connection_status_query']['method']
+			for payload_key in response.parsed['data']['provider_configuration']['connection_status_query']['payload']:
+				new_payload = bpy.context.window_manager.af.connection_status_query.payload.add()
+				new_payload.name = payload_key
+				new_payload.value = response.parsed['data']['provider_configuration']['connection_status_query']['payload'][payload_key]
+					
 
 		# Update the asset_list_url and related parameters
 		if "asset_list_query" in response.parsed['data']:
 			
 			# Set URI and HTTP method
-			util.dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],bpy.context.window_manager.af.asset_list_query)
+			dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],bpy.context.window_manager.af.asset_list_query)
 
 			# Set Parameters
 			bpy.context.window_manager.af.asset_list_query.parameters.clear()
 			for parameter_info in response.parsed['data']['asset_list_query']['parameters']:
 				current_parameter = bpy.context.window_manager.af.asset_list_query.parameters.add()
-				util.dict_to_attr(parameter_info,['type','name','title','default','mandatory','delimiter'],current_parameter)
+				dict_to_attr(parameter_info,['type','name','title','default','mandatory','delimiter'],current_parameter)
 				
 				if "choices" in parameter_info:
 					for choice in parameter_info['choices']:
@@ -82,8 +97,6 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 						new_choice = choice
 		else:
 			raise Exception("No Asset List Query!")
-		
-		if ""
 		
 		return {'FINISHED'}
 
