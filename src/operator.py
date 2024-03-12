@@ -5,7 +5,7 @@ import bpy,math
 import bpy_extras.image_utils
 from typing import Dict,List
 from . import http_handler
-from . import implementations,util
+from . import implementations
 import urllib
 
 ASSETFETCH_HOME = os.path.expanduser('~')+"/AssetFetch/"
