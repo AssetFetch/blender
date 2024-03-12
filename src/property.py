@@ -9,53 +9,22 @@ http_method_enum = [
 
 def register():
 
-	# Import classes
-	bpy.utils.register_class(AF_PR_Generic_String)
-	bpy.utils.register_class(AF_PR_Fixed_Query)
-	bpy.utils.register_class(AF_PR_Parameter)
-	bpy.utils.register_class(AF_PR_Variable_Query)
-
-	bpy.utils.register_class(AF_PR_DB_Text)
-	bpy.utils.register_class(AF_PR_DB_User)
-	bpy.utils.register_class(AF_PR_DB_File_Info)
-
-	bpy.utils.register_class(AF_PR_Header)
-	bpy.utils.register_class(AF_PR_Provider_Initialization)
-	bpy.utils.register_class(AF_PR_Asset)	
-	bpy.utils.register_class(AF_PR_Asset_List)	
-	bpy.utils.register_class(AF_PR_Component)	
-	bpy.utils.register_class(AF_PR_Implementation)	
-	bpy.utils.register_class(AF_PR_Implementation_List)	
-	bpy.utils.register_class(AF_PR_AssetFetch)	
-
+	for cl in registration_targets:
+		bpy.utils.register_class(cl)	
 
 	bpy.types.WindowManager.af = bpy.props.PointerProperty(type=AF_PR_AssetFetch)
 
 def unregister():
 
-	bpy.utils.unregister_class(AF_PR_Generic_String)
-	bpy.utils.unregister_class(AF_PR_Fixed_Query)
-	bpy.utils.unregister_class(AF_PR_Parameter)
-	bpy.utils.unregister_class(AF_PR_Variable_Query)
-	
-	bpy.utils.unregister_class(AF_PR_DB_Text)
-	bpy.utils.unregister_class(AF_PR_DB_User)
-	bpy.utils.unregister_class(AF_PR_DB_File_Info)
-
-	bpy.utils.unregister_class(AF_PR_Header)
-	bpy.utils.unregister_class(AF_PR_Provider_Initialization)
-	bpy.utils.unregister_class(AF_PR_Asset)	
-	bpy.utils.unregister_class(AF_PR_Asset_List)	
-	bpy.utils.unregister_class(AF_PR_Component)	
-	bpy.utils.unregister_class(AF_PR_Implementation)	
-	bpy.utils.unregister_class(AF_PR_Implementation_List)	
-	bpy.utils.unregister_class(AF_PR_AssetFetch)
-
-
 	del bpy.types.WindowManager.af
 
+	for cl in reversed(registration_targets):
+		bpy.utils.unregister_class(cl)
+
 # Templates
+		
 class AF_PR_Generic_String(bpy.types.PropertyGroup):
+	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
 	value: bpy.props.StringProperty()
 
 class AF_PR_Fixed_Query(bpy.types.PropertyGroup):
@@ -86,42 +55,40 @@ class AF_PR_Variable_Query(bpy.types.PropertyGroup):
 
 class AF_PR_Header(bpy.types.PropertyGroup):
 	# name is already taken care of by blender's name field
-	default: bpy.props.StringProperty
-	is_required: bpy.props.BoolProperty
-	is_sensitive: bpy.props.BoolProperty
-	prefix: bpy.props.StringProperty
-	suffix: bpy.props.StringProperty
-	title: bpy.props.StringProperty
+	default: bpy.props.StringProperty()
+	is_required: bpy.props.BoolProperty()
+	is_sensitive: bpy.props.BoolProperty()
+	prefix: bpy.props.StringProperty()
+	suffix: bpy.props.StringProperty()
+	title: bpy.props.StringProperty()
 	encoding: bpy.props.EnumProperty(items=[
 		("plain","plain","plain"),
 		("base64","base64","base64")
 	])
 
+	# The actual value entered by the user
+	value: bpy.props.StringProperty()
+
 # Datablocks
 
 class AF_PR_DB_Text(bpy.types.PropertyGroup):
-	title: bpy.props.StringProperty
-	description: bpy.props.StringProperty
+	title: bpy.props.StringProperty()
+	description: bpy.props.StringProperty()
 
 class AF_PR_DB_User(bpy.types.PropertyGroup):
-	display_name: bpy.props.StringProperty
-	display_tier: bpy.props.StringProperty
-	display_icon_uri: bpy.props.StringProperty
+	display_name: bpy.props.StringProperty()
+	display_tier: bpy.props.StringProperty()
+	display_icon_uri: bpy.props.StringProperty()
 
 class AF_PR_DB_File_Info(bpy.types.PropertyGroup):
-	local_path: bpy.props.StringProperty
-	length: bpy.props.IntProperty
-	extension: bpy.props.StringProperty
+	local_path: bpy.props.StringProperty()
+	length: bpy.props.IntProperty()
+	extension: bpy.props.StringProperty()
 	behavior: bpy.props.EnumProperty(items = [
 		('file_active','file_active','file_active'),
 		('file_passive','file_passive','file_passive'),
 		('archive','archive','archive')
 	])
-
-
-
-	# The actual value entered by the user
-	value: bpy.props.StringProperty
 
 class AF_PR_DB_Provider_Configuration(bpy.types.PropertyGroup):
 	headers: bpy.props.CollectionProperty(type=AF_PR_Header)
@@ -148,12 +115,14 @@ class AF_PR_Web_Reference(bpy.types.PropertyGroup):
 
 class AF_PR_Provider_Initialization(bpy.types.PropertyGroup):
 	text: bpy.props.PointerProperty(type=AF_PR_DB_Text)
-	user: bpy.props.PointerProperty(type=AF_PR_DB_User)
 	# I would have loved to create a class that inherits from the template instead of using it directly.
 	# However, inherited properties are not considered, so I have to use the template directly here.
 	asset_list_query: bpy.props.PointerProperty(type=AF_PR_Variable_Query)
-	headers: bpy.props.CollectionProperty(type=AF_PR_Header)
+	provider_configuration: bpy.props.PointerProperty(type=AF_PR_DB_Provider_Configuration)
 
+class AF_PR_Connection_Status(bpy.types.PropertyGroup):
+	user: bpy.props.PointerProperty(type=AF_PR_DB_User)
+	balance: bpy.props.StringProperty(default="placeholder")
 
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
@@ -176,11 +145,34 @@ class AF_PR_Implementation_List(bpy.types.PropertyGroup):
 # Final AssetFetch property
 
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
-	last_response_http_code: bpy.props.IntProperty
-	last_response_meta_message: bpy.props.StringProperty
-	current_init_url: bpy.props.StringProperty
+	last_response_http_code: bpy.props.IntProperty()
+	last_response_meta_message: bpy.props.StringProperty()
+	current_init_url: bpy.props.StringProperty()
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_Provider_Initialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_Asset_List)
 	current_asset: bpy.props.PointerProperty(type=AF_PR_Asset)
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_Implementation_List)
 	current_implementation: bpy.props.PointerProperty(type=AF_PR_Implementation)
+
+
+registration_targets = [
+	AF_PR_Generic_String,
+	AF_PR_Fixed_Query,
+	AF_PR_Parameter,
+	AF_PR_Variable_Query,
+	AF_PR_Header,
+
+	AF_PR_DB_Text,
+	AF_PR_DB_User,
+	AF_PR_DB_File_Info,
+	AF_PR_DB_Provider_Configuration,
+	AF_PR_DB_Provider_Reconfiguration,
+	
+	AF_PR_Provider_Initialization,
+	AF_PR_Asset,
+	AF_PR_Asset_List,
+	AF_PR_Component,
+	AF_PR_Implementation,
+	AF_PR_Implementation_List,
+	AF_PR_AssetFetch
+]

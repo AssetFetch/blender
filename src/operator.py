@@ -21,16 +21,12 @@ def dict_to_attr(source:Dict[str,str],keys:List[str],destination:any):
 # Registration and unregistration functions
 	
 def register():
-	bpy.utils.register_class(AF_OP_Initialize_Provider)
-	bpy.utils.register_class(AF_OP_Update_Asset_List)
-	bpy.utils.register_class(AF_OP_Update_Implementations_List)
-	bpy.utils.register_class(AF_OP_Execute_Import_Plan)
+	for cl in registration_targets:
+		bpy.utils.register_class(cl)
 
 def unregister():
-	bpy.utils.unregister_class(AF_OP_Update_Asset_List)
-	bpy.utils.unregister_class(AF_OP_Initialize_Provider)
-	bpy.utils.unregister_class(AF_OP_Update_Implementations_List)
-	bpy.utils.unregister_class(AF_OP_Execute_Import_Plan)
+	for cl in reversed(registration_targets):
+		bpy.utils.unregister_class(cl)
 
 # Operator definitions
 
@@ -50,51 +46,49 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 
 	def execute(self,context):
 
-		# Contact initialization endpoint and tet the response
+		# Contact initialization endpoint and get the response
 		url = bpy.context.window_manager.af.current_init_url
 		query = http_handler.AF_HttpQuery(uri=url,method=http_handler.AF_HttpMethod.GET)
 		response : http_handler.AF_HttpResponse = query.execute()
 
 		# Get the provider text (title and description)
 		if "text" in response.parsed['data']:
-			dict_to_attr(response['data']['text'],['title','description'],bpy.context.window_manager.af.current_provider_configuration.text)
+			dict_to_attr(response.parsed['data']['text'],['title','description'],bpy.context.window_manager.af.current_provider_initialization.text)
 
 		# Provider configuration
+		bpy.context.window_manager.af.current_provider_initialization.provider_configuration.headers.clear()
 		if "provider_configuration" in response.parsed['data']:
 
 			# Headers
-			bpy.context.window_manager.af.current_provider_initialization.headers.clear()
 			for header_info in response.parsed['data']['provider_configuration']['headers']:
-				current_header = bpy.context.window_manager.af.current_provider_initialization.headers.add()
+				current_header = bpy.context.window_manager.af.current_provider_initialization.provider_configuration.headers.add()
 				dict_to_attr(header_info,['name','default','is_required','is_sensitive','prefix','suffix','title','encoding'],current_header)
-				current_header.value = header_info['default']
+				if "default" in header_info:
+					current_header.value = header_info['default']
 
 			# Status endpoint
-			# TODO, create a special function that also takes care of sub-values in dict?
-			bpy.context.window_manager.af.connection_status_query.uri = response.parsed['data']['provider_configuration']['connection_status_query']['uri']
-			bpy.context.window_manager.af.connection_status_query.method = response.parsed['data']['provider_configuration']['connection_status_query']['method']
+			dict_to_attr(response.parsed['data']['provider_configuration']['connection_status_query'],['uri','method'],bpy.context.window_manager.af.current_provider_initialization.provider_configuration.connection_status_query)
 			for payload_key in response.parsed['data']['provider_configuration']['connection_status_query']['payload']:
-				new_payload = bpy.context.window_manager.af.connection_status_query.payload.add()
+				new_payload = bpy.context.window_manager.af.current_provider_initialization.connection_status_query.payload.add()
 				new_payload.name = payload_key
 				new_payload.value = response.parsed['data']['provider_configuration']['connection_status_query']['payload'][payload_key]
-					
 
-		# Update the asset_list_url and related parameters
+		# asset_list_query
 		if "asset_list_query" in response.parsed['data']:
 			
 			# Set URI and HTTP method
-			dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],bpy.context.window_manager.af.asset_list_query)
+			dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],bpy.context.window_manager.af.current_provider_initialization.asset_list_query)
 
 			# Set Parameters
-			bpy.context.window_manager.af.asset_list_query.parameters.clear()
+			bpy.context.window_manager.af.current_provider_initialization.asset_list_query.parameters.clear()
 			for parameter_info in response.parsed['data']['asset_list_query']['parameters']:
-				current_parameter = bpy.context.window_manager.af.asset_list_query.parameters.add()
+				current_parameter = bpy.context.window_manager.af.current_provider_initialization.asset_list_query.parameters.add()
 				dict_to_attr(parameter_info,['type','name','title','default','mandatory','delimiter'],current_parameter)
 				
 				if "choices" in parameter_info:
 					for choice in parameter_info['choices']:
 						new_choice = current_parameter.choices.add()
-						new_choice = choice
+						new_choice.value = choice
 		else:
 			raise Exception("No Asset List Query!")
 		
@@ -307,3 +301,10 @@ class AF_OP_Execute_Import_Plan(bpy.types.Operator):
 
 
 		return {'FINISHED'}
+	
+registration_targets = [
+	AF_OP_Initialize_Provider,
+	AF_OP_Update_Asset_List,
+	AF_OP_Update_Implementations_List,
+	AF_OP_Execute_Import_Plan
+]

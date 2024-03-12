@@ -1,15 +1,12 @@
 import bpy
 
 def register():
-	bpy.utils.register_class(AF_PT_ProviderPanel)
-	bpy.utils.register_class(AF_PT_AssetPanel)
-	bpy.utils.register_class(AF_PT_ImplementationsPanel)
+	for cl in registration_targets:
+		bpy.utils.register_class(cl)
 	
-
 def unregister():
-	bpy.utils.unregister_class(AF_PT_ImplementationsPanel)
-	bpy.utils.unregister_class(AF_PT_AssetPanel)
-	bpy.utils.unregister_class(AF_PT_ProviderPanel)
+	for cl in reversed(registration_targets):
+		bpy.utils.unregister_class(cl)
 	
 
 class AF_PT_ProviderPanel(bpy.types.Panel):
@@ -23,15 +20,16 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		layout = self.layout
 
 		# Add a text box to enter the URL
-		layout.prop(context.window_manager, "af_initialize_provider_url", text="Provider URL")
+		layout.prop(context.window_manager.af, "current_init_url", text="Provider URL")
 
 		# Add a button to get the vendor info
 		layout.operator("af.initialize_provider", text="Connect")
 		
-		layout.label(text=bpy.context.window_manager.af_initialize_provider_title)
+		layout.label(text=bpy.context.window_manager.af.current_provider_initialization.text.title)
+		layout.label(text=bpy.context.window_manager.af.current_provider_initialization.text.description)
 
-		for provider_header in bpy.context.window_manager.af_initialize_provider_headers.values():
-			layout.prop(provider_header,"value",text=provider_header["name"])
+		for provider_header in bpy.context.window_manager.af.current_provider_initialization.provider_configuration.headers.values():
+			layout.prop(provider_header,"value",text=provider_header.title)
 
 
 class AF_PT_AssetPanel(bpy.types.Panel):
@@ -42,6 +40,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 	bl_category = 'AssetFetch'
 
 	def draw(self, context):
+		return
 		layout = self.layout
 
 		# Query properties
@@ -67,6 +66,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_category = 'AssetFetch'
 
 	def draw(self, context):
+		return
 		layout = self.layout
 
 		if len(bpy.context.window_manager.af_asset_list_entries) > 0 and bpy.context.window_manager.af_asset_list_entries_index >= 0:
@@ -86,3 +86,9 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			import_plan_box.label(text="Import Plan will show up here...")
 			# Import button
 			layout.operator("af.execute_import_plan",text="Perform import")
+
+registration_targets = [
+	AF_PT_ProviderPanel,
+	AF_PT_AssetPanel,
+	AF_PT_ImplementationsPanel
+]
