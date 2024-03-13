@@ -1,11 +1,7 @@
 import bpy
-from .http_handler import AF_HttpMethod
 import sys,inspect
-
-http_method_enum = [
-			('get','GET','HTTP GET'),
-			('post','POST','HTTP POST')
-		]
+from enum import Enum
+from . import http
 
 def register():
 
@@ -22,13 +18,19 @@ def unregister():
 		bpy.utils.unregister_class(cl)
 
 # Templates
+
+http_method_enum = [
+			('get','GET','HTTP GET'),
+			('post','POST','HTTP POST')
+		]		
+
 		
 class AF_PR_Generic_String(bpy.types.PropertyGroup):
 	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
 	value: bpy.props.StringProperty()
 
 class AF_PR_Fixed_Query(bpy.types.PropertyGroup):
-	uri: bpy.props.StringProperty
+	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	payload: bpy.props.CollectionProperty(type=AF_PR_Generic_String)
 
@@ -119,10 +121,17 @@ class AF_PR_Provider_Initialization(bpy.types.PropertyGroup):
 	# However, inherited properties are not considered, so I have to use the template directly here.
 	asset_list_query: bpy.props.PointerProperty(type=AF_PR_Variable_Query)
 	provider_configuration: bpy.props.PointerProperty(type=AF_PR_DB_Provider_Configuration)
+	user: bpy.props.PointerProperty(type=AF_PR_DB_User)
 
 class AF_PR_Connection_Status(bpy.types.PropertyGroup):
 	user: bpy.props.PointerProperty(type=AF_PR_DB_User)
 	balance: bpy.props.StringProperty(default="placeholder")
+	state:bpy.props.EnumProperty(default="pending",items=[
+		("pending","Pending","No connection attempt has been made yet"),
+		("awaiting_input","Awaiting Input","Configuration values are required in order to connect"),
+		("connected","Connected","The connection has been established"),
+		("connection_error","Connection Error","An error occured while connecting to the provider")
+	])
 
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
@@ -147,14 +156,13 @@ class AF_PR_Implementation_List(bpy.types.PropertyGroup):
 # Final AssetFetch property
 
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
-	last_response_http_code: bpy.props.IntProperty()
-	last_response_meta_message: bpy.props.StringProperty()
-	current_init_url: bpy.props.StringProperty()
+	current_init_url: bpy.props.StringProperty(description="Init")
+	current_connection_state: bpy.props.PointerProperty(type=AF_PR_Connection_Status)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_Provider_Initialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_Asset_List)
-	current_asset: bpy.props.PointerProperty(type=AF_PR_Asset)
+	current_asset_id: bpy.props.StringProperty()
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_Implementation_List)
-	current_implementation: bpy.props.PointerProperty(type=AF_PR_Implementation)
+	current_implementation_id: bpy.props.StringProperty()
 
 
 registration_targets = [
@@ -171,6 +179,7 @@ registration_targets = [
 	AF_PR_DB_Provider_Reconfiguration,
 	
 	AF_PR_Provider_Initialization,
+	AF_PR_Connection_Status,
 	AF_PR_Asset,
 	AF_PR_Asset_List,
 	AF_PR_Component,

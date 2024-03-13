@@ -1,6 +1,6 @@
 import bpy
 from typing import List,Dict
-from .http_handler import *
+from .http import *
 
 class ImplementationValidationResult():
 	ok : bool = True

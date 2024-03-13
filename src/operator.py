@@ -4,7 +4,7 @@ import os
 import bpy,math
 import bpy_extras.image_utils
 from typing import Dict,List
-from . import http_handler
+from . import http
 from . import implementations
 import urllib
 
@@ -35,7 +35,7 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 	
 	bl_idname = "af.initialize_provider"
 	bl_label = "Initialize Provider"
-	bl_options = {"REGISTER","UNDO"}
+	bl_options = {"REGISTER"}
 
 	#url: StringProperty(name="URL")
 
@@ -45,44 +45,57 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 		#layout.prop(self,'radius')
 
 	def execute(self,context):
+		af = bpy.context.window_manager.af
+
+		# Reset existing connection_state
+		af.current_connection_state.state ="pending"
+		af.current_connection_state['user'].clear()
 
 		# Contact initialization endpoint and get the response
-		url = bpy.context.window_manager.af.current_init_url
-		query = http_handler.AF_HttpQuery(uri=url,method=http_handler.AF_HttpMethod.GET)
-		response : http_handler.AF_HttpResponse = query.execute()
+		query = http.AF_HttpQuery(uri=af.current_init_url,method="get")
+		response : http.AF_HttpResponse = query.execute()
 
 		# Get the provider text (title and description)
 		if "text" in response.parsed['data']:
-			dict_to_attr(response.parsed['data']['text'],['title','description'],bpy.context.window_manager.af.current_provider_initialization.text)
+			dict_to_attr(response.parsed['data']['text'],['title','description'],af.current_provider_initialization.text)
 
 		# Provider configuration
-		bpy.context.window_manager.af.current_provider_initialization.provider_configuration.headers.clear()
+		af.current_provider_initialization.provider_configuration.headers.clear()
 		if "provider_configuration" in response.parsed['data']:
 
+			provider_config = response.parsed['data']['provider_configuration']
+
 			# Headers
-			for header_info in response.parsed['data']['provider_configuration']['headers']:
-				current_header = bpy.context.window_manager.af.current_provider_initialization.provider_configuration.headers.add()
-				dict_to_attr(header_info,['name','default','is_required','is_sensitive','prefix','suffix','title','encoding'],current_header)
-				if "default" in header_info:
-					current_header.value = header_info['default']
+			if len(provider_config['headers']) > 0:
+				af.current_connection_state.state = "awaiting_input"
+				for header_info in provider_config['headers']:
+					current_header = af.current_provider_initialization.provider_configuration.headers.add()
+					dict_to_attr(header_info,['name','default','is_required','is_sensitive','prefix','suffix','title','encoding'],current_header)
+					if "default" in header_info:
+						current_header.value = header_info['default']
+			else:
+				af.current_connection_state.state = "connected"
 
 			# Status endpoint
-			dict_to_attr(response.parsed['data']['provider_configuration']['connection_status_query'],['uri','method'],bpy.context.window_manager.af.current_provider_initialization.provider_configuration.connection_status_query)
-			for payload_key in response.parsed['data']['provider_configuration']['connection_status_query']['payload']:
-				new_payload = bpy.context.window_manager.af.current_provider_initialization.connection_status_query.payload.add()
+			dict_to_attr(provider_config['connection_status_query'],['uri','method'],af.current_provider_initialization.provider_configuration.connection_status_query)
+			for payload_key in provider_config['connection_status_query']['payload']:
+				new_payload = af.current_provider_initialization.connection_status_query.payload.add()
 				new_payload.name = payload_key
-				new_payload.value = response.parsed['data']['provider_configuration']['connection_status_query']['payload'][payload_key]
+				new_payload.value = provider_config['connection_status_query']['payload'][payload_key]
+		else:
+			# No configuration required...
+			af.current_connection_state.state = "connected"
 
 		# asset_list_query
 		if "asset_list_query" in response.parsed['data']:
 			
 			# Set URI and HTTP method
-			dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],bpy.context.window_manager.af.current_provider_initialization.asset_list_query)
+			dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],af.current_provider_initialization.asset_list_query)
 
 			# Set Parameters
-			bpy.context.window_manager.af.current_provider_initialization.asset_list_query.parameters.clear()
+			af.current_provider_initialization.asset_list_query.parameters.clear()
 			for parameter_info in response.parsed['data']['asset_list_query']['parameters']:
-				current_parameter = bpy.context.window_manager.af.current_provider_initialization.asset_list_query.parameters.add()
+				current_parameter = af.current_provider_initialization.asset_list_query.parameters.add()
 				dict_to_attr(parameter_info,['type','name','title','default','mandatory','delimiter'],current_parameter)
 				
 				if "choices" in parameter_info:
@@ -93,6 +106,41 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 			raise Exception("No Asset List Query!")
 		
 		return {'FINISHED'}
+	
+class AF_OP_Connection_Status(bpy.types.Operator):
+	"""Performs a status query to the provider, if applicable."""
+
+	bl_idname = "af.connection_status"
+	bl_label = "Get Connection Status"
+	bl_options = {"REGISTER"}
+
+	def execute(self,context):
+		af = bpy.context.window_manager.af
+
+		# Reset existing user data
+		af.current_connection_state['user'].clear()
+
+		# Contact initialization endpoint and get the response
+		query = http.AF_HttpQuery(uri=af.current_provider_initialization.provider_configuration.connection_status_query.uri,method=af.current_provider_initialization.provider_configuration.connection_status_query.method)
+		response : http.AF_HttpResponse = query.execute()
+
+		# Test if connection is ok
+		if response.is_ok():
+			af.current_connection_state.state = "connected"
+
+			# Set user data if available
+			if "user" in response.parsed['data']:
+				user_data = response.parsed['data']['user']
+				dict_to_attr(user_data,['display_name','display_tier','display_icon_uri'],af.current_connection_state.user)
+
+		else:
+			af.current_connection_state.state = "connection_error"
+
+		
+
+		return {'FINISHED'}
+
+
 
 class AF_OP_Update_Asset_List(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
@@ -112,21 +160,21 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 
 		# Contact initialization endpoint
 		parameters : Dict[str,str] = {}
-		for par in bpy.context.window_manager.af.current_asset_list.asset_list_query.parameters:
+		for par in af.current_asset_list.asset_list_query.parameters:
 			parameters[par.name] = par.value
-		query = http_handler.AF_HttpQuery(
-			uri=bpy.context.window_manager.af.current_provider_initialization.asset_list_query.uri,
-			method=http_handler.AF_HttpMethod[bpy.context.window_manager.af.current_provider_initialization.asset_list_query.uri,
+		query = http.AF_HttpQuery(
+			uri=af.current_provider_initialization.asset_list_query.uri,
+			method=http.AF_HttpMethod[af.current_provider_initialization.asset_list_query.method],
 			parameters=parameters)
-		response : http_handler.AF_HttpResponse = query.execute()
+		response : http.AF_HttpResponse = query.execute()
 		
 		# Liste leeren
 		# neue Listenelemente für Assets einfügen
 			# Implementations query
 		
-		bpy.context.window_manager.af.current_asset_list.assets.clear()
+		af.current_asset_list.assets.clear()
 		for asset in response.parsed['assets']:
-			asset_entry = bpy.context.window_manager.af.current_asset_list.assets.add()
+			asset_entry = af.current_asset_list.assets.add()
 			asset_entry.name = asset['id']
 
 			# Text
@@ -167,24 +215,24 @@ class AF_OP_Update_Implementations_List(bpy.types.Operator):
 	def execute(self,context):
 
 		# Contact implementations endpoint
-		url = bpy.context.window_manager.af_asset_list_entries.values()[bpy.context.window_manager.af_asset_list_entries_index].implementations_query_uri
+		url = af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_uri
 		parameters : Dict[str,str] = {}
-		for par in bpy.context.window_manager.af_asset_list_entries.values()[bpy.context.window_manager.af_asset_list_entries_index].implementations_query_parameters.values():
+		for par in af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_parameters.values():
 			parameters[par.name] = par.value
-		method = http_handler.AF_HttpMethod[bpy.context.window_manager.af_asset_list_entries.values()[bpy.context.window_manager.af_asset_list_entries_index].implementations_query_method]
+		method = http.AF_HttpMethod[af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_method]
 
-		query = http_handler.AF_HttpQuery(uri=url,method=method,parameters=parameters)
-		raw_response : http_handler.AF_HttpResponse = query.execute()
+		query = http.AF_HttpQuery(uri=url,method=method,parameters=parameters)
+		raw_response : http.AF_HttpResponse = query.execute()
 		response = raw_response.parsed_json()
 		
 		# Find valid implementations
-		bpy.context.window_manager.af_asset_implementations_options.clear()
+		af_asset_implementations_options.clear()
 		for impl in response:
 			impl_validation = implementations.validate_implementation(impl)
 			print(impl_validation)
 			
 			if impl_validation.ok:
-				current_impl = bpy.context.window_manager.af_asset_implementations_options.add()
+				current_impl = af_asset_implementations_options.add()
 				current_impl.name = impl['id']
 				current_impl.components_json = json.dumps(impl['components'])
 
@@ -237,10 +285,10 @@ class AF_OP_Execute_Import_Plan(bpy.types.Operator):
 		#imported_components : Dict[str,any] = {}
 		#downloaded_components: Dict[str,str] = {}
 
-		impl = bpy.context.window_manager.af_asset_implementations_options[bpy.context.window_manager.af_asset_implementations_options_index]
+		impl = af_asset_implementations_options[af_asset_implementations_options_index]
 		comps = json.loads(impl.components_json)
 
-		asset_id = bpy.context.window_manager.af_asset_list_entries.values()[bpy.context.window_manager.af_asset_list_entries_index].name
+		asset_id = af_asset_list_entries.values()[af_asset_list_entries_index].name
 
 		# Download
 		for comp in comps:
@@ -309,5 +357,6 @@ registration_targets = [
 	AF_OP_Initialize_Provider,
 	AF_OP_Update_Asset_List,
 	AF_OP_Update_Implementations_List,
-	AF_OP_Execute_Import_Plan
+	AF_OP_Execute_Import_Plan,
+	AF_OP_Connection_Status
 ]

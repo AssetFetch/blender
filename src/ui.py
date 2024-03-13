@@ -18,18 +18,46 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 
 	def draw(self, context):
 		layout = self.layout
+		af = bpy.context.window_manager.af
 
 		# Add a text box to enter the URL
-		layout.prop(context.window_manager.af, "current_init_url", text="Provider URL")
+		layout.prop(context.window_manager.af, "current_init_url", text="Provider URL",icon="URL")
 
 		# Add a button to get the vendor info
-		layout.operator("af.initialize_provider", text="Connect")
+		layout.operator("af.initialize_provider", text="Initialize")
 		
-		layout.label(text=bpy.context.window_manager.af.current_provider_initialization.text.title)
-		layout.label(text=bpy.context.window_manager.af.current_provider_initialization.text.description)
+		# Title
+		if af.current_provider_initialization.text.title != "":
+			layout.label(text=af.current_provider_initialization.text.title,icon="PLUGIN")
+		else:
+			layout.label(text="(No title configured)",icon="PLUGIN")
+		
+		layout.label(text=af.current_provider_initialization.text.description)
+		
+		layout.separator()
 
-		for provider_header in bpy.context.window_manager.af.current_provider_initialization.provider_configuration.headers.values():
-			layout.prop(provider_header,"value",text=provider_header.title)
+		# Headers
+		if len(af.current_provider_initialization.provider_configuration.headers.values() ) > 0:
+			
+			for provider_header in af.current_provider_initialization.provider_configuration.headers.values():
+				layout.prop(provider_header,"value",text=provider_header.title)
+			layout.operator("af.connection_status",text="Connect")
+
+		connection_state_icons={
+			"pending":"SEQUENCE_COLOR_09",
+			"awaiting_input":"SEQUENCE_COLOR_03",
+			"connection_error":"SEQUENCE_COLOR_01",
+			"connected":"SEQUENCE_COLOR_04"
+		}
+
+		layout.label(text=af.current_connection_state.bl_rna.properties['state'].enum_items[af.current_connection_state.state].description,icon=connection_state_icons[af.current_connection_state.state])
+		
+		# Display user data
+		if(af.current_connection_state.user.display_name != ""):
+			layout.label(text=af.current_connection_state.user.display_name,icon="USER")
+		if(af.current_connection_state.user.display_tier != ""):
+			layout.label(text=af.current_connection_state.user.display_tier,icon="WORKSPACE")
+
 
 
 class AF_PT_AssetPanel(bpy.types.Panel):
@@ -44,7 +72,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		layout = self.layout
 
 		# Query properties
-		for asset_list_parameter in bpy.context.window_manager.af_asset_list_parameters.values():
+		for asset_list_parameter in af_asset_list_parameters.values():
 			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["name"])
 
 		# Send button
@@ -69,10 +97,10 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		return
 		layout = self.layout
 
-		if len(bpy.context.window_manager.af_asset_list_entries) > 0 and bpy.context.window_manager.af_asset_list_entries_index >= 0:
+		if len(af_asset_list_entries) > 0 and af_asset_list_entries_index >= 0:
 			# Query properties (if present)
 			
-			for asset_implementations_parameter in bpy.context.window_manager.af_asset_list_entries.values()[bpy.context.window_manager.af_asset_list_entries_index].implementations_query_parameters:
+			for asset_implementations_parameter in af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_parameters:
 				layout.prop(asset_implementations_parameter,"value",text=asset_implementations_parameter["name"])
 
 			# Send button
