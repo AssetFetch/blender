@@ -127,10 +127,12 @@ class AF_PR_Connection_Status(bpy.types.PropertyGroup):
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	text: bpy.props.PointerProperty(type=AF_PR_DB_Text)
+	implementations_query: bpy.props.PointerProperty(type=AF_PR_Fixed_Query)
 	#...
 
 class AF_PR_Asset_List(bpy.types.PropertyGroup):
 	assets: bpy.props.CollectionProperty(type=AF_PR_Asset)
+	# Datablocks...
 
 class AF_PR_Component(bpy.types.PropertyGroup):
 	file_info:bpy.props.PointerProperty(type=AF_PR_DB_File_Info)

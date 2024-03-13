@@ -111,39 +111,42 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 	def execute(self,context):
 
 		# Contact initialization endpoint
-		url = bpy.context.window_manager.af_asset_list_url
 		parameters : Dict[str,str] = {}
-		for par in bpy.context.window_manager.af_asset_list_parameters:
+		for par in bpy.context.window_manager.af.current_asset_list.asset_list_query.parameters:
 			parameters[par.name] = par.value
-		method = http_handler.AF_HttpMethod[bpy.context.window_manager.af_asset_list_method]
-
-		query = http_handler.AF_HttpQuery(uri=url,method=method,parameters=parameters)
+		query = http_handler.AF_HttpQuery(
+			uri=bpy.context.window_manager.af.current_provider_initialization.asset_list_query.uri,
+			method=http_handler.AF_HttpMethod[bpy.context.window_manager.af.current_provider_initialization.asset_list_query.uri,
+			parameters=parameters)
 		response : http_handler.AF_HttpResponse = query.execute()
 		
 		# Liste leeren
 		# neue Listenelemente für Assets einfügen
 			# Implementations query
 		
-		bpy.context.window_manager.af_asset_list_entries.clear()
+		bpy.context.window_manager.af.current_asset_list.assets.clear()
 		for asset in response.parsed['assets']:
-			asset_entry = bpy.context.window_manager.af_asset_list_entries.add()
+			asset_entry = bpy.context.window_manager.af.current_asset_list.assets.add()
 			asset_entry.name = asset['id']
-			asset_entry.text_title = asset['data']['text']['title']
-			asset_entry.implementations_query_method = asset['implementations_query']['method']
-			asset_entry.implementations_query_uri = asset['implementations_query']['uri']
 
+			# Text
+			if "text" in asset['data']:
+				asset_entry.text.title = asset['data']['text']['title']
+				asset_entry.text.description = asset['data']['text']['title']
 			
-			if asset['implementations_query']['parameters']:
-				asset_entry.implementations_query_parameters.clear()
-				for parameter_info in asset['implementations_query']['parameters']:
-					current_parameter = asset_entry.implementations_query_parameters.add()
+			# Implementations Query
+			asset_entry.implementation_list_query.parameters.clear()
+			if "implementation_list_query" in asset['data']:
+				dict_to_attr(asset['data']['implementation_list_query'],['uri','method'],asset_entry.implementation_list_query)
+
+				for parameter_info in asset['implementation_list_query']['parameters']:
+					current_parameter = asset_entry.implementation_list_query.parameters.add()
 					current_parameter.name = parameter_info['name']
 					current_parameter.type = parameter_info['type']
-					if parameter_info['default']:
+					if "default" in parameter_info:
 						current_parameter.value = parameter_info['default']
 					else:
 						current_parameter.value = ""
-		
 		
 		return {'FINISHED'}
 
