@@ -48,9 +48,12 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 		af = bpy.context.window_manager.af
 
 		# Reset existing connection_state
-		af.current_connection_state.state ="pending"
-		af.current_connection_state['user'].clear()
-		af.current_connection_state['unlock_balance'].clear()
+		af['current_provider_initialization'].clear()
+		af['current_connection_state'].clear()
+		af['current_asset_list'].clear()
+		af['current_asset_list_index'] = 0
+		af['current_implementation_list'].clear()
+		af['current_implementation_list_index'] = 0
 
 		# Contact initialization endpoint and get the response
 		query = http.AF_HttpQuery(uri=af.current_init_url,method="get")
@@ -163,21 +166,19 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 		#layout.prop(self,'radius')
 
 	def execute(self,context):
+		af = bpy.context.window_manager.af
 
 		# Contact initialization endpoint
 		parameters : Dict[str,str] = {}
-		for par in af.current_asset_list.asset_list_query.parameters:
+		for par in af.current_provider_initialization.asset_list_query.parameters:
 			parameters[par.name] = par.value
 		query = http.AF_HttpQuery(
 			uri=af.current_provider_initialization.asset_list_query.uri,
-			method=http.AF_HttpMethod[af.current_provider_initialization.asset_list_query.method],
+			method=af.current_provider_initialization.asset_list_query.method,
 			parameters=parameters)
 		response : http.AF_HttpResponse = query.execute()
 		
-		# Liste leeren
-		# neue Listenelemente für Assets einfügen
-			# Implementations query
-		
+		# Save assets in blender properties
 		af.current_asset_list.assets.clear()
 		for asset in response.parsed['assets']:
 			asset_entry = af.current_asset_list.assets.add()
@@ -193,7 +194,7 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 			if "implementation_list_query" in asset['data']:
 				dict_to_attr(asset['data']['implementation_list_query'],['uri','method'],asset_entry.implementation_list_query)
 
-				for parameter_info in asset['implementation_list_query']['parameters']:
+				for parameter_info in asset['data']['implementation_list_query']['parameters']:
 					current_parameter = asset_entry.implementation_list_query.parameters.add()
 					current_parameter.name = parameter_info['name']
 					current_parameter.type = parameter_info['type']

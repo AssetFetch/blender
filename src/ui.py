@@ -70,11 +70,11 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 	bl_category = 'AssetFetch'
 
 	def draw(self, context):
-		return
 		layout = self.layout
+		af = bpy.context.window_manager.af
 
 		# Query properties
-		for asset_list_parameter in af_asset_list_parameters.values():
+		for asset_list_parameter in af.current_provider_initialization.asset_list_query.parameters.values():
 			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["name"])
 
 		# Send button
@@ -85,7 +85,16 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 			# Title
 			# (selectable)
 		
-		layout.template_list("UI_UL_list", "name", bpy.context.window_manager, "af_asset_list_entries", bpy.context.window_manager, "af_asset_list_entries_index")
+		# Temporary icon test code:
+		#icons_dict = bpy.utils.previews.new()
+		#icons_dict.load("CAT_1","E:/Git/assetfetch-blender/tmp_icons/CAT_1.jpeg",'IMAGE')
+		#layout.label(text="ASDF",icon_value=icons_dict['CAT_1'].icon_id)
+
+		layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=bpy.context.window_manager.af.current_asset_list, propname="assets", active_dataptr=bpy.context.window_manager.af, active_propname="current_asset_list_index")
+		
+		
+		
+
 
 
 class AF_PT_ImplementationsPanel(bpy.types.Panel):

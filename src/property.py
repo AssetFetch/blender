@@ -51,7 +51,7 @@ class AF_PR_Parameter(bpy.types.PropertyGroup):
 	delimiter: bpy.props.StringProperty
 
 class AF_PR_Variable_Query(bpy.types.PropertyGroup):
-	uri: bpy.props.StringProperty
+	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	parameters: bpy.props.CollectionProperty(type=AF_PR_Parameter)
 
@@ -142,7 +142,7 @@ class AF_PR_Connection_Status(bpy.types.PropertyGroup):
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	text: bpy.props.PointerProperty(type=AF_PR_DB_Text)
-	implementations_query: bpy.props.PointerProperty(type=AF_PR_Fixed_Query)
+	implementation_list_query: bpy.props.PointerProperty(type=AF_PR_Variable_Query)
 	#...
 
 class AF_PR_Asset_List(bpy.types.PropertyGroup):
@@ -166,9 +166,9 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_Connection_Status)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_Provider_Initialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_Asset_List)
-	current_asset_id: bpy.props.StringProperty()
+	current_asset_list_index: bpy.props.IntProperty()
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_Implementation_List)
-	current_implementation_id: bpy.props.StringProperty()
+	current_implementation_list_index: bpy.props.IntProperty()
 
 
 registration_targets = [
