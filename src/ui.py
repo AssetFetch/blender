@@ -57,6 +57,8 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 			layout.label(text=af.current_connection_state.user.display_name,icon="USER")
 		if(af.current_connection_state.user.display_tier != ""):
 			layout.label(text=af.current_connection_state.user.display_tier,icon="WORKSPACE")
+		if(af.current_connection_state.unlock_balance.is_set):
+			layout.label(text=f"{af.current_connection_state.unlock_balance.balance} {af.current_connection_state.unlock_balance.balance_unit}",icon="RADIOBUT_ON")
 
 
 

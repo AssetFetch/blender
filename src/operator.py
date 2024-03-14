@@ -50,6 +50,7 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 		# Reset existing connection_state
 		af.current_connection_state.state ="pending"
 		af.current_connection_state['user'].clear()
+		af.current_connection_state['unlock_balance'].clear()
 
 		# Contact initialization endpoint and get the response
 		query = http.AF_HttpQuery(uri=af.current_init_url,method="get")
@@ -117,9 +118,6 @@ class AF_OP_Connection_Status(bpy.types.Operator):
 	def execute(self,context):
 		af = bpy.context.window_manager.af
 
-		# Reset existing user data
-		af.current_connection_state['user'].clear()
-
 		# Contact initialization endpoint and get the response
 		query = http.AF_HttpQuery(uri=af.current_provider_initialization.provider_configuration.connection_status_query.uri,method=af.current_provider_initialization.provider_configuration.connection_status_query.method)
 		response : http.AF_HttpResponse = query.execute()
@@ -130,8 +128,16 @@ class AF_OP_Connection_Status(bpy.types.Operator):
 
 			# Set user data if available
 			if "user" in response.parsed['data']:
-				user_data = response.parsed['data']['user']
-				dict_to_attr(user_data,['display_name','display_tier','display_icon_uri'],af.current_connection_state.user)
+				dict_to_attr(response.parsed['data']['user'],['display_name','display_tier','display_icon_uri'],af.current_connection_state.user)
+			else:
+				af.current_connection_state['user'].clear()
+
+			# Set unlock balance if available
+			if "unlock_balance" in response.parsed['data']:
+				dict_to_attr(response.parsed['data']['unlock_balance'],['balance','balance_unit','balance_refill_url'],af.current_connection_state.unlock_balance)
+				af.current_connection_state.unlock_balance.is_set = True
+			else:
+				af.current_connection_state['unlock_balance'].clear()
 
 		else:
 			af.current_connection_state.state = "connection_error"

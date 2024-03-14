@@ -95,8 +95,14 @@ class AF_PR_DB_File_Info(bpy.types.PropertyGroup):
 class AF_PR_DB_Provider_Configuration(bpy.types.PropertyGroup):
 	headers: bpy.props.CollectionProperty(type=AF_PR_Header)
 	connection_status_query: bpy.props.PointerProperty(type=AF_PR_Fixed_Query)
-	header_acquisition_uri: bpy.props.StringProperty
-	header_acquisition_uri_title: bpy.props.StringProperty
+	header_acquisition_uri: bpy.props.StringProperty()
+	header_acquisition_uri_title: bpy.props.StringProperty()
+
+class AF_PR_DB_Unlock_Balance(bpy.types.PropertyGroup):
+	is_set: bpy.props.BoolProperty(default=False)
+	balance: bpy.props.FloatProperty()
+	balance_unit: bpy.props.StringProperty()
+	balance_refill_uri: bpy.props.StringProperty()
 
 class AF_PR_DB_Provider_Reconfiguration(bpy.types.PropertyGroup):
 	headers: bpy.props.CollectionProperty(type=AF_PR_Generic_String)
@@ -125,7 +131,7 @@ class AF_PR_Provider_Initialization(bpy.types.PropertyGroup):
 
 class AF_PR_Connection_Status(bpy.types.PropertyGroup):
 	user: bpy.props.PointerProperty(type=AF_PR_DB_User)
-	balance: bpy.props.StringProperty(default="placeholder")
+	unlock_balance: bpy.props.PointerProperty(type=AF_PR_DB_Unlock_Balance)
 	state:bpy.props.EnumProperty(default="pending",items=[
 		("pending","Pending","No connection attempt has been made yet"),
 		("awaiting_input","Awaiting Input","Configuration values are required in order to connect"),
@@ -177,6 +183,7 @@ registration_targets = [
 	AF_PR_DB_File_Info,
 	AF_PR_DB_Provider_Configuration,
 	AF_PR_DB_Provider_Reconfiguration,
+	AF_PR_DB_Unlock_Balance,
 	
 	AF_PR_Provider_Initialization,
 	AF_PR_Connection_Status,
