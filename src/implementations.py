@@ -8,7 +8,6 @@ class ImplementationValidationResult():
 
 	def __str__(self) -> str:
 		return json.dumps({"ok":self.ok,"comments":self.comments})
-		pass
 
 
 def validate_implementation(implementation) -> ImplementationValidationResult:
@@ -17,14 +16,14 @@ def validate_implementation(implementation) -> ImplementationValidationResult:
 	for comp in components:
 
 		# resolve_file
-		if not comp['data']['resolve_file']:
+		if not comp['data']['file_fetch.download']:
 			result.ok = False
-			result.comments.append(f"{comp['id']} is missing a 'resolve_file' datablock.")
+			result.comments.append(f"{comp['id']} is missing a 'file_fetch.download' datablock. (Other methods are not yet supported)")
 			continue
 		
-		if comp['data']['resolve_file']['extension'] not in ('.obj','.jpg'):
+		if comp['data']['file_info']['extension'] not in ('.obj','.jpg'):
 			result.ok = False
-			result.comments.append(f"{comp['id']} is using the extension '{comp['data']['resolve_file']['extension']}' which is unsupported.")
+			result.comments.append(f"{comp['id']} is using the extension '{comp['data']['resolve_file']['extension']}' which is currently unsupported.")
 
 	return result
 

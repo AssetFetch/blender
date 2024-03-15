@@ -24,6 +24,7 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		info_box = layout.box()
 
 		info_box.label(text="AssetFetch for Blender v0.1.0-alpha.",icon="SETTINGS")
+		info_box.label(text=f"Downloading into: {af.download_directory}")
 		info_box.label(text="Currently lacking numerous features, use with caution & patience!")
 
 		# Add a text box to enter the URL
@@ -96,9 +97,14 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		#icons_dict.load("CAT_1","E:/Git/assetfetch-blender/tmp_icons/CAT_1.jpeg",'IMAGE')
 		#layout.label(text="ASDF",icon_value=icons_dict['CAT_1'].icon_id)
 
-		layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=bpy.context.window_manager.af.current_asset_list, propname="assets", active_dataptr=bpy.context.window_manager.af, active_propname="current_asset_list_index")
+		layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index")
 		
-		
+		layout.separator()
+
+		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
+		layout.label(text=current_asset.text.title)
+		layout.separator()
+		layout.operator("af.update_implementations_list",text="Get implementations")
 		
 
 

@@ -1,3 +1,4 @@
+import os
 import bpy
 import sys,inspect
 from enum import Enum
@@ -111,6 +112,7 @@ class AF_PR_DB_File_Fetch_From_Archive(bpy.types.PropertyGroup):
 	archive_component_id: bpy.props.StringProperty
 	component_path: bpy.props.StringProperty
 
+# This is not the actual datablock, just one list item within it
 class AF_PR_Web_Reference(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty
 	uri: bpy.props.StringProperty
@@ -151,13 +153,16 @@ class AF_PR_Asset_List(bpy.types.PropertyGroup):
 
 class AF_PR_Component(bpy.types.PropertyGroup):
 	file_info:bpy.props.PointerProperty(type=AF_PR_DB_File_Info)
+	file_fetch_download:bpy.props.PointerProperty(type=AF_PR_Fixed_Query)
+	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_DB_File_Fetch_From_Archive)
+
 
 class AF_PR_Implementation(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	components: bpy.props.CollectionProperty(type=AF_PR_Component)
 
 class AF_PR_Implementation_List(bpy.types.PropertyGroup):
-	implementation: bpy.props.CollectionProperty(type=AF_PR_Implementation)
+	implementations: bpy.props.CollectionProperty(type=AF_PR_Implementation)
 
 # Final AssetFetch property
 
@@ -169,6 +174,7 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_asset_list_index: bpy.props.IntProperty()
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_Implementation_List)
 	current_implementation_list_index: bpy.props.IntProperty()
+	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))
 
 
 registration_targets = [
@@ -184,6 +190,7 @@ registration_targets = [
 	AF_PR_DB_Provider_Configuration,
 	AF_PR_DB_Provider_Reconfiguration,
 	AF_PR_DB_Unlock_Balance,
+	AF_PR_DB_File_Fetch_From_Archive,
 	
 	AF_PR_Provider_Initialization,
 	AF_PR_Connection_Status,

@@ -8,8 +8,6 @@ from . import http
 from . import implementations
 import urllib
 
-ASSETFETCH_HOME = os.path.expanduser('~')+"/AssetFetch/"
-
 # Utility functions
 
 def dict_to_attr(source:Dict[str,str],keys:List[str],destination:any):
@@ -220,28 +218,36 @@ class AF_OP_Update_Implementations_List(bpy.types.Operator):
 		#layout.prop(self,'radius')
 
 	def execute(self,context):
+		af = bpy.context.window_manager.af
+		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Contact implementations endpoint
-		url = af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_uri
 		parameters : Dict[str,str] = {}
-		for par in af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_parameters.values():
+		for par in current_asset.implementation_list_query.parameters.values():
 			parameters[par.name] = par.value
-		method = http.AF_HttpMethod[af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_method]
 
-		query = http.AF_HttpQuery(uri=url,method=method,parameters=parameters)
-		raw_response : http.AF_HttpResponse = query.execute()
-		response = raw_response.parsed_json()
+		query = http.AF_HttpQuery(uri=current_asset.implementation_list_query.uri,method=current_asset.implementation_list_query.method,parameters=parameters)
+		response : http.AF_HttpResponse = query.execute()
 		
 		# Find valid implementations
-		af_asset_implementations_options.clear()
-		for impl in response:
+		af['current_implementation_list'].clear()
+		for impl in response.parsed['implementations']:
 			impl_validation = implementations.validate_implementation(impl)
 			print(impl_validation)
 			
 			if impl_validation.ok:
-				current_impl = af_asset_implementations_options.add()
+				current_impl = af.current_implementation_list.implementations.add()
 				current_impl.name = impl['id']
-				current_impl.components_json = json.dumps(impl['components'])
+				for comp in impl['components']:
+					current_comp = current_impl.components.add()
+					
+					dict_to_attr(comp['data']['file_info'],['local_path','length','extension','behavior'],current_comp.file_info)
+					if "file_fetch.download" in comp['data']:
+						dict_to_attr(comp['data']['file_fetch.download'],['uri','method'],current_comp.file_fetch_download)
+						# TODO handle parameters
+					if "file_fetch.from_archive" in comp['data']:
+						dict_to_attr(comp['data']['file_fetch.from_archive'],['archive_component_id','component_path'],current_comp.file_fetch_from_archive)
+					
 
 			
 		return {'FINISHED'}
