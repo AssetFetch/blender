@@ -1,5 +1,4 @@
-import json
-import requests
+import json,requests,tempfile
 from enum import Enum
 from typing import List,Dict
 import bpy
@@ -19,7 +18,10 @@ class AF_HttpQuery:
 	"""Represents a query that the client sends to the provider"""
 	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None):
 		self.uri = uri
-		self.method = method
+		if(method in ['get','post']):
+			self.method = method
+		else:
+			raise Exception("Unsupported HTTP method detected.")
 		self.parameters = parameters
 
 	def execute(self) -> AF_HttpResponse:
@@ -39,5 +41,22 @@ class AF_HttpQuery:
 		# Create and return AF_HttpResponse
 		return AF_HttpResponse(content=response.text, response_code=response.status_code)
 	
-def initialize():
-	pass
+	def execute_as_temporary_file(self) -> tempfile.NamedTemporaryFile:
+		if self.method == 'get':
+			response = requests.get(self.uri, params=self.parameters)
+		elif self.method == 'post':
+			response = requests.post(self.uri, data=self.parameters)
+		else:
+			raise ValueError("Unsupported HTTP method.")
+
+		# Raise an exception for bad responses
+		response.raise_for_status()
+
+		# Create a temporary file to store the downloaded content
+		temp_file = tempfile.NamedTemporaryFile(delete=True)
+
+		# Write the downloaded content into the temporary file
+		temp_file.write(response.content)
+		temp_file.seek(0)  # Reset file pointer to the beginning
+
+		return temp_file
