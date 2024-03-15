@@ -20,6 +20,12 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		layout = self.layout
 		af = bpy.context.window_manager.af
 
+		# Info Box
+		info_box = layout.box()
+
+		info_box.label(text="AssetFetch for Blender v0.1.0-alpha.",icon="SETTINGS")
+		info_box.label(text="Currently lacking numerous features, use with caution & patience!")
+
 		# Add a text box to enter the URL
 		layout.prop(context.window_manager.af, "current_init_url", text="Provider URL",icon="URL")
 
