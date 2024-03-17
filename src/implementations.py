@@ -2,7 +2,7 @@ import os
 import bpy
 from typing import List,Dict
 from .http import *
-from .property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation
+from .property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_Import_Step
 
 def validate_implementation(implementation:AF_PR_Implementation) -> None:
 
@@ -41,11 +41,11 @@ def build_import_plan(implementation:AF_PR_Implementation) -> None:
 	if implementation_id == "":
 		raise Exception("No implementation ID to create implementation directory.")
 	
-	implementation_directory = os.path.join(af.download_directory,provider_id)
-	implementation_directory = os.path.join(implementation_directory,asset_id)
-	implementation_directory = os.path.join(implementation_directory,implementation_id)
+	implementation.local_directory = os.path.join(af.download_directory,provider_id)
+	implementation.local_directory = os.path.join(implementation.local_directory,asset_id)
+	implementation.local_directory = os.path.join(implementation.local_directory,implementation_id)
 
-	implementation.import_steps.add().set_action("directory_create").set_config_value("directory",implementation_directory)
+	implementation.import_steps.add().set_action("directory_create").set_config_value("directory",implementation.local_directory)
 
 	# Step 2: Find the relevant unlocking queries
 	required_unlocking_query_ids : set = {}
@@ -67,8 +67,29 @@ def build_import_plan(implementation:AF_PR_Implementation) -> None:
 	for comp in implementation.components:
 		if comp.file_info.behavior == "file_active":
 			if comp.file_info.extension == ".obj":
-				implementation.import_steps.add().set_action("import_obj").set_config_value("component_id",comp.name)
+				implementation.import_steps.add().set_action("import_obj_from_local_path").set_config_value("component_id",comp.name)
 
 
 def execute_import_plan(implementation:AF_PR_Implementation) -> None:
-	pass
+	af = bpy.context.window_manager.af
+	
+	for step in implementation.import_steps:
+
+		if step.action == "directory_create":
+			os.mkdir(step.config.directory)
+		
+		if step.action == "fetch_download":
+
+			component : AF_PR_Component = implementation.components[step.config.component_id]
+
+			# Prepare query
+			uri = component.file_fetch_download.uri
+			method = component.file_fetch_download.method
+			payload = component.file_fetch_download.payload
+			query = AF_HttpQuery(uri=uri,method=method,parameters=payload)
+
+			# Determine target path
+			if component.file_info.behavior in ['file_passive','file_active']:
+				# Download directly into local dir
+				destination = os.path.join(implementation.local_directory,component.file_info.local_path)
+

@@ -164,12 +164,12 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 
 class AF_PR_Import_Step(bpy.types.PropertyGroup):
 	action: bpy.props.EnumProperty(items=[
-		("directory_create","Create Directory","Create a directory for the asset."),
+		("directory_create","Create Directory","Create a directory."),
 		("unlock","Unlock Resource",""),
 		("fetch_download","Download File","Download a file."),
 		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."),
 		("fetch_from_archive","Load File From Archive","Load a file from an archive."),
-		("import_obj","import_obj","Import OBJ File"),
+		("import_obj_from_local_path","import_obj","Import OBJ File"),
 		("material_create","Create Material","Creates a new Material."),
 		("material_add_map","Add Map","Add Map to Material"),
 		("material_assign","Assign Material","Assigns a material to an object"),
@@ -189,7 +189,7 @@ class AF_PR_Import_Step(bpy.types.PropertyGroup):
 		return self
 	
 	def __str__(self) -> str:
-		out = self.bl_rna.properties['action'].enum_items[self.action].description
+		out = self.bl_rna.properties['action'].enum_items[self.action].name
 		for c in self.config:
 			out += f" ({c.name}: {c.value})"
 		return out

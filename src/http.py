@@ -34,7 +34,7 @@ class AF_HttpQuery:
 		if self.method == "get":
 			response = requests.get(self.uri, params=self.parameters,headers=headers)
 		elif self.method == "post":
-			response = requests.post(self.uri, data=self.parameters)
+			response = requests.post(self.uri, data=self.parameters,headers=headers)
 		else:
 			raise ValueError(f"Unsupported HTTP method: {self.method}")
 
@@ -42,10 +42,17 @@ class AF_HttpQuery:
 		return AF_HttpResponse(content=response.text, response_code=response.status_code)
 	
 	def execute_as_temporary_file(self) -> tempfile.NamedTemporaryFile:
+		"""This method is only used for small media files, such as thumbnails."""
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+
+		headers = {}
+		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
+			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
+
 		if self.method == 'get':
-			response = requests.get(self.uri, params=self.parameters)
+			response = requests.get(self.uri, params=self.parameters,headers=headers)
 		elif self.method == 'post':
-			response = requests.post(self.uri, data=self.parameters)
+			response = requests.post(self.uri, data=self.parameters,headers=headers)
 		else:
 			raise ValueError("Unsupported HTTP method.")
 
@@ -60,3 +67,32 @@ class AF_HttpQuery:
 		temp_file.seek(0)  # Reset file pointer to the beginning
 
 		return temp_file
+	
+	def execute_as_file(self, destination_path: str) -> None:
+
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+
+		headers = {}
+		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
+			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
+
+		try:
+			file_handle = open(destination_path,'wb')
+
+			if self.method == "get":
+				stream_handle = requests.get(url=self.uri,data=self.parameters,headers=headers,stream=True)
+			elif self.method == "post":
+				stream_handle = requests.post(url=self.uri,data=self.parameters,headers=headers,stream=True)
+			else:
+				raise ValueError("Unsupported HTTP method.")
+		
+			stream_handle.raise_for_status()
+
+			for chunk in stream_handle.iter_content(4096):
+						if chunk:
+							file_handle.write(chunk)
+			
+		finally:
+			stream_handle.close()
+			file_handle.close()
+		
