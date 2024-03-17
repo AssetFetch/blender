@@ -1,4 +1,5 @@
 import bpy
+from .property import AF_PR_AssetFetch, AF_PR_Implementation
 
 def register():
 	for cl in registration_targets:
@@ -18,14 +19,14 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 
 	def draw(self, context):
 		layout = self.layout
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Info Box
 		info_box = layout.box()
 
 		info_box.label(text="AssetFetch for Blender v0.1.0-alpha.",icon="SETTINGS")
-		info_box.label(text=f"Downloading into: {af.download_directory}")
-		info_box.label(text="Currently lacking numerous features, use with caution & patience!")
+		info_box.label(text=f"Download directory: {af.download_directory}")
+		info_box.label(text="Unstable & lacking numerous features, use with caution & patience!")
 
 		# Add a text box to enter the URL
 		layout.prop(context.window_manager.af, "current_init_url", text="Provider URL",icon="URL")
@@ -78,7 +79,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 
 	def draw(self, context):
 		layout = self.layout
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Query properties
 		for asset_list_parameter in af.current_provider_initialization.asset_list_query.parameters.values():
@@ -99,12 +100,13 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 
 		layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index")
 		
-		layout.separator()
-
-		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
-		layout.label(text=current_asset.text.title)
-		layout.separator()
-		layout.operator("af.update_implementations_list",text="Get implementations")
+		
+		if len(af.current_asset_list.assets) > 0:
+			layout.separator()
+			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
+			layout.label(text=current_asset.text.title,icon="PACKAGE")
+			layout.separator()
+			layout.operator("af.update_implementations_list",text="Get implementations")
 		
 
 
@@ -117,26 +119,27 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_category = 'AssetFetch'
 
 	def draw(self, context):
-		return
 		layout = self.layout
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
-		if len(af_asset_list_entries) > 0 and af_asset_list_entries_index >= 0:
-			# Query properties (if present)
-			
-			for asset_implementations_parameter in af_asset_list_entries.values()[af_asset_list_entries_index].implementations_query_parameters:
-				layout.prop(asset_implementations_parameter,"value",text=asset_implementations_parameter["name"])
-
-			# Send button
-			layout.operator("af.update_implementations_list",text="Get File List")
-
-			# Selection of implementations (if applicable)
-			layout.template_list("UI_UL_list", "name", bpy.context.window_manager, "af_asset_implementations_options", bpy.context.window_manager, "af_asset_implementations_options_index")
+		# Selection of implementations (if applicable)
+		layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")
+		
+		if len(af.current_implementation_list.implementations) > 0:
+			current_impl : AF_PR_Implementation = af.current_implementation_list.implementations[af.current_implementation_list_index]
 
 			# Import plan
-			import_plan_box = layout.box()
-			import_plan_box.label(text="Import Plan will show up here...")
-			# Import button
-			layout.operator("af.execute_import_plan",text="Perform import")
+			if current_impl.is_valid:
+				layout.label(text="Implementation is readable. Ready to import.",icon="SEQUENCE_COLOR_04")
+
+				steps_box = layout.box()
+				for step in current_impl.import_steps:
+					steps_box.label(text=str(step),icon="DOT")
+				# Import button
+				layout.operator("af.execute_import_plan",text="Perform import")
+			else:
+				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
+				layout.label(text=current_impl.validation_message)
 
 registration_targets = [
 	AF_PT_ProviderPanel,

@@ -118,12 +118,17 @@ class AF_PR_Web_Reference(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty
 	icon_uri: bpy.props.StringProperty
 
+class AF_PR_DB_Unlock_Link(bpy.types.PropertyGroup):
+	unlock_query_id: bpy.props.StringProperty()
+	unlocked_datablocks_query: bpy.props.PointerProperty(type=AF_PR_Fixed_Query)
+
 # class AF_PR_DB_Web_References does not exist, it is handled as a CollectionProperty of individual Web References
 
 
 # Core elements
 
 class AF_PR_Provider_Initialization(bpy.types.PropertyGroup):
+	# The built-in 'name' property takes care of the provider id
 	text: bpy.props.PointerProperty(type=AF_PR_DB_Text)
 	# I would have loved to create a class that inherits from the template instead of using it directly.
 	# However, inherited properties are not considered, so I have to use the template directly here.
@@ -155,11 +160,47 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	file_info:bpy.props.PointerProperty(type=AF_PR_DB_File_Info)
 	file_fetch_download:bpy.props.PointerProperty(type=AF_PR_Fixed_Query)
 	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_DB_File_Fetch_From_Archive)
+	unlock_link: bpy.props.PointerProperty(type=AF_PR_DB_Unlock_Link)
 
+class AF_PR_Import_Step(bpy.types.PropertyGroup):
+	action: bpy.props.EnumProperty(items=[
+		("directory_create","Create Directory","Create a directory for the asset."),
+		("unlock","Unlock Resource",""),
+		("fetch_download","Download File","Download a file."),
+		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."),
+		("fetch_from_archive","Load File From Archive","Load a file from an archive."),
+		("import_obj","import_obj","Import OBJ File"),
+		("material_create","Create Material","Creates a new Material."),
+		("material_add_map","Add Map","Add Map to Material"),
+		("material_assign","Assign Material","Assigns a material to an object"),
+		("world_create","Create World","Creates a new world/environment."),
+		("world_set","Set World Map","Set the environment map for a world.")
+	])
+	config:bpy.props.CollectionProperty(type=AF_PR_Generic_String)
+
+	def set_action(self,action:str):
+		self.action = action
+		return self
+
+	def set_config_value(self,key:str,value:str):
+		new_conf = self.config.add()
+		new_conf.name = key
+		new_conf.value = value
+		return self
+	
+	def __str__(self) -> str:
+		out = self.bl_rna.properties['action'].enum_items[self.action].description
+		for c in self.config:
+			out += f" ({c.name}: {c.value})"
+		return out
 
 class AF_PR_Implementation(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	components: bpy.props.CollectionProperty(type=AF_PR_Component)
+	is_valid: bpy.props.BoolProperty()
+	validation_message: bpy.props.StringProperty()
+	import_steps: bpy.props.CollectionProperty(type=AF_PR_Import_Step)
+	local_directory: bpy.props.StringProperty()
 
 class AF_PR_Implementation_List(bpy.types.PropertyGroup):
 	implementations: bpy.props.CollectionProperty(type=AF_PR_Implementation)
@@ -191,12 +232,14 @@ registration_targets = [
 	AF_PR_DB_Provider_Reconfiguration,
 	AF_PR_DB_Unlock_Balance,
 	AF_PR_DB_File_Fetch_From_Archive,
+	AF_PR_DB_Unlock_Link,
 	
 	AF_PR_Provider_Initialization,
 	AF_PR_Connection_Status,
 	AF_PR_Asset,
 	AF_PR_Asset_List,
 	AF_PR_Component,
+	AF_PR_Import_Step,
 	AF_PR_Implementation,
 	AF_PR_Implementation_List,
 	AF_PR_AssetFetch

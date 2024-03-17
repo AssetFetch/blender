@@ -1,70 +1,74 @@
+import os
 import bpy
 from typing import List,Dict
 from .http import *
+from .property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation
 
-class ImplementationValidationResult():
-	ok : bool = True
-	comments: List[str] = []
+def validate_implementation(implementation:AF_PR_Implementation) -> None:
 
-	def __str__(self) -> str:
-		return json.dumps({"ok":self.ok,"comments":self.comments})
+	implementation.is_valid = True
 
-
-def validate_implementation(implementation) -> ImplementationValidationResult:
-	components = implementation['components']
-	result = ImplementationValidationResult()
-	for comp in components:
-
-		# resolve_file
-		if not comp['data']['file_fetch.download']:
-			result.ok = False
-			result.comments.append(f"{comp['id']} is missing a 'file_fetch.download' datablock. (Other methods are not yet supported)")
-			continue
-		
-		if comp['data']['file_info']['extension'] not in ('.obj','.jpg'):
-			result.ok = False
-			result.comments.append(f"{comp['id']} is using the extension '{comp['data']['resolve_file']['extension']}' which is currently unsupported.")
-
-	return result
-
-
-class AF_Import_Plan_Task:
-	def execute():
-		pass
-
-class AF_Import_Plan_Task_Download(AF_Import_Plan_Task):
-	query : AF_HttpQuery
-	local_path : str
-	def execute():
-		pass
-
-class AF_Import_Plan_Task_Import_Obj(AF_Import_Plan_Task):
-	local_path: str
-	upaxis: str
-
-	def execute():
-		pass
-
-class AF_Import_Plan_Task_Import_Image(AF_Import_Plan_Task):
-	local_path: str
-	material: str
+	validation_messages = []
 	
-	def execute():
-		pass
+	for comp in implementation.components:
+		
+		if not comp.file_fetch_download:
+			implementation.is_valid = False
+			validation_messages.append("{comp['id']} is missing a 'file_fetch.download' datablock. (Other methods are not yet supported)")
+		
+		if comp.file_info.extension not in ('.obj','.jpg'):
+			implementation.is_valid = False
+			validation_messages.append(f"{comp['id']} is using the extension '{comp.data['resolve_file']['extension']}' which is currently unsupported.")
 
-class AF_Import_Plan_Task_Create_Material(AF_Import_Plan_Task):
-	name: str
+	if len(validation_messages) > 0:
+		implementation.validation_message = "\n".join(validation_messages)
+	else:
+		implementation.validation_message = "No complications detected."
 
-	def execute():
-		pass
+def build_import_plan(implementation:AF_PR_Implementation) -> None:
 
-class AF_Import_Plan_Task_Assign_Material(AF_Import_Plan_Task):
-	material: any
-	target_object: any
+	af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
-	def execute():
-		pass
+	provider_id = af.current_provider_initialization.name
+	asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
+	implementation_id = af.current_implementation_list.implementations[af.current_implementation_list_index].name
 
-class AF_Import_Plan:
-	tasks: List[AF_Import_Plan_Task] = []
-	created_objects: List[any]
+	# Step 1: Find the implementation directory
+	if provider_id == "":
+		raise Exception("No provider ID to create implementation directory.")
+	if asset_id == "":
+		raise Exception("No asset ID to create implementation directory.")
+	if implementation_id == "":
+		raise Exception("No implementation ID to create implementation directory.")
+	
+	implementation_directory = os.path.join(af.download_directory,provider_id)
+	implementation_directory = os.path.join(implementation_directory,asset_id)
+	implementation_directory = os.path.join(implementation_directory,implementation_id)
+
+	implementation.import_steps.add().set_action("directory_create").set_config_value("directory",implementation_directory)
+
+	# Step 2: Find the relevant unlocking queries
+	required_unlocking_query_ids : set = {}
+
+	for comp in implementation.components:
+		if comp.unlock_link.unlock_query_id != "":
+			required_unlocking_query_ids.add(comp.unlock_link.unlock_query_id)
+	
+	for q in required_unlocking_query_ids:
+		implementation.import_steps.add().set_action("unlock").set_config_value("query_id",q)
+
+	# Step 3: Plan how to acquire and arrange all files in the asset directory
+	# Currently ignoring archives
+	for comp in implementation.components:
+		if comp.file_fetch_download.uri != "":
+			implementation.import_steps.add().set_action("fetch_download").set_config_value("component_id",comp.name)
+
+	# Step 4: Plan how to actually import
+	for comp in implementation.components:
+		if comp.file_info.behavior == "file_active":
+			if comp.file_info.extension == ".obj":
+				implementation.import_steps.add().set_action("import_obj").set_config_value("component_id",comp.name)
+
+
+def execute_import_plan(implementation:AF_PR_Implementation) -> None:
+	pass

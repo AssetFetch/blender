@@ -43,7 +43,7 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 		#layout.prop(self,'radius')
 
 	def execute(self,context):
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Reset existing connection_state
 		af['current_provider_initialization'].clear()
@@ -56,6 +56,12 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 		# Contact initialization endpoint and get the response
 		query = http.AF_HttpQuery(uri=af.current_init_url,method="get")
 		response : http.AF_HttpResponse = query.execute()
+
+		# Set the provider id
+		if "id" in response.parsed:
+			af.current_provider_initialization.name = response.parsed['id']
+		else:
+			raise Exception("No provider ID.")
 
 		# Get the provider text (title and description)
 		if "text" in response.parsed['data']:
@@ -117,7 +123,7 @@ class AF_OP_Connection_Status(bpy.types.Operator):
 	bl_options = {"REGISTER"}
 
 	def execute(self,context):
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Contact initialization endpoint and get the response
 		query = http.AF_HttpQuery(uri=af.current_provider_initialization.provider_configuration.connection_status_query.uri,method=af.current_provider_initialization.provider_configuration.connection_status_query.method)
@@ -164,7 +170,7 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 		#layout.prop(self,'radius')
 
 	def execute(self,context):
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Contact initialization endpoint
 		parameters : Dict[str,str] = {}
@@ -218,7 +224,7 @@ class AF_OP_Update_Implementations_List(bpy.types.Operator):
 		#layout.prop(self,'radius')
 
 	def execute(self,context):
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Contact implementations endpoint
@@ -231,25 +237,28 @@ class AF_OP_Update_Implementations_List(bpy.types.Operator):
 		
 		# Find valid implementations
 		af['current_implementation_list'].clear()
-		for impl in response.parsed['implementations']:
-			impl_validation = implementations.validate_implementation(impl)
-			print(impl_validation)
+		for incoming_impl in response.parsed['implementations']:
 			
-			if impl_validation.ok:
-				current_impl = af.current_implementation_list.implementations.add()
-				current_impl.name = impl['id']
-				for comp in impl['components']:
-					current_comp = current_impl.components.add()
-					
-					dict_to_attr(comp['data']['file_info'],['local_path','length','extension','behavior'],current_comp.file_info)
-					if "file_fetch.download" in comp['data']:
-						dict_to_attr(comp['data']['file_fetch.download'],['uri','method'],current_comp.file_fetch_download)
-						# TODO handle parameters
-					if "file_fetch.from_archive" in comp['data']:
-						dict_to_attr(comp['data']['file_fetch.from_archive'],['archive_component_id','component_path'],current_comp.file_fetch_from_archive)
-					
+			current_impl = af.current_implementation_list.implementations.add()
+			current_impl.name = incoming_impl['id']
+			
+			for comp in incoming_impl['components']:
+				current_comp = current_impl.components.add()
 
-			
+				current_comp.name = comp['id']
+				
+				if "file_info" in comp['data']:
+					dict_to_attr(comp['data']['file_info'],['local_path','length','extension','behavior'],current_comp.file_info)
+				if "file_fetch.download" in comp['data']:
+					dict_to_attr(comp['data']['file_fetch.download'],['uri','method'],current_comp.file_fetch_download)
+					# TODO handle parameters
+				if "file_fetch.from_archive" in comp['data']:
+					dict_to_attr(comp['data']['file_fetch.from_archive'],['archive_component_id','component_path'],current_comp.file_fetch_from_archive)
+				
+			implementations.validate_implementation(current_impl)
+			if(current_impl.is_valid):
+				implementations.build_import_plan(current_impl)
+
 		return {'FINISHED'}
 	
 class AF_OP_Execute_Import_Plan(bpy.types.Operator):
@@ -261,8 +270,8 @@ class AF_OP_Execute_Import_Plan(bpy.types.Operator):
 
 	#url: StringProperty(name="URL")
 
-	def draw(self,context):
-		pass
+	#def draw(self,context):
+	#	pass
 		#layout = self.layout
 		#layout.prop(self,'radius')
 	

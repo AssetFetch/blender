@@ -25,7 +25,7 @@ class AF_HttpQuery:
 		self.parameters = parameters
 
 	def execute(self) -> AF_HttpResponse:
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		headers = {}
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
