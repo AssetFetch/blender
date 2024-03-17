@@ -3,6 +3,8 @@ from enum import Enum
 from typing import List,Dict
 import bpy
 
+from .property import AF_PR_AssetFetch, AF_PR_FixedQuery, AF_PR_VariableQuery
+
 class AF_HttpResponse:
 	"""Represents a response received from a provider."""
 	def __init__(self,content:str,response_code:int):
@@ -15,6 +17,20 @@ class AF_HttpResponse:
 		return self.response_code == 200
 
 class AF_HttpQuery:
+
+	@classmethod
+	def from_variable_query(cls, query : AF_PR_VariableQuery):
+		parameters = {}
+		for par in query.parameters:
+			if par.mandatory and not par.value:
+				raise Exception(f"Parameter {par.name} is mandatory but empty.")
+			parameters[par.name] = par.value
+		return cls(uri=query.uri,method=query.method,parameters=parameters)
+	
+	@classmethod
+	def from_fixed_query(cls,query : AF_PR_FixedQuery):
+		return cls(uri=query.uri,method=query.method,parameters=query.payload)
+
 	"""Represents a query that the client sends to the provider"""
 	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None):
 		self.uri = uri

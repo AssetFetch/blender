@@ -4,6 +4,8 @@ import os
 import bpy,math
 import bpy_extras.image_utils
 from typing import Dict,List
+
+from src.property import AF_PR_AssetFetch
 from . import http
 from . import implementations
 import urllib
@@ -28,7 +30,7 @@ def unregister():
 
 # Operator definitions
 
-class AF_OP_Initialize_Provider(bpy.types.Operator):
+class AF_OP_InitializeProvider(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
 	
 	bl_idname = "af.initialize_provider"
@@ -115,7 +117,7 @@ class AF_OP_Initialize_Provider(bpy.types.Operator):
 		
 		return {'FINISHED'}
 	
-class AF_OP_Connection_Status(bpy.types.Operator):
+class AF_OP_ConnectionStatus(bpy.types.Operator):
 	"""Performs a status query to the provider, if applicable."""
 
 	bl_idname = "af.connection_status"
@@ -126,8 +128,7 @@ class AF_OP_Connection_Status(bpy.types.Operator):
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Contact initialization endpoint and get the response
-		query = http.AF_HttpQuery(uri=af.current_provider_initialization.provider_configuration.connection_status_query.uri,method=af.current_provider_initialization.provider_configuration.connection_status_query.method)
-		response : http.AF_HttpResponse = query.execute()
+		response : http.AF_HttpResponse = http.AF_HttpQuery.from_fixed_query(af.current_provider_initialization.provider_configuration.connection_status_query).execute()
 
 		# Test if connection is ok
 		if response.is_ok():
@@ -155,14 +156,12 @@ class AF_OP_Connection_Status(bpy.types.Operator):
 
 
 
-class AF_OP_Update_Asset_List(bpy.types.Operator):
+class AF_OP_UpdateAssetList(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
 	
 	bl_idname = "af.update_asset_list"
 	bl_label = "Update Asset List"
 	bl_options = {"REGISTER","UNDO"}
-
-	#url: StringProperty(name="URL")
 
 	def draw(self,context):
 		pass
@@ -173,14 +172,7 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Contact initialization endpoint
-		parameters : Dict[str,str] = {}
-		for par in af.current_provider_initialization.asset_list_query.parameters:
-			parameters[par.name] = par.value
-		query = http.AF_HttpQuery(
-			uri=af.current_provider_initialization.asset_list_query.uri,
-			method=af.current_provider_initialization.asset_list_query.method,
-			parameters=parameters)
-		response : http.AF_HttpResponse = query.execute()
+		response = http.AF_HttpQuery.from_variable_query(af.current_provider_initialization.asset_list_query).execute()
 		
 		# Save assets in blender properties
 		af.current_asset_list.assets.clear()
@@ -209,7 +201,7 @@ class AF_OP_Update_Asset_List(bpy.types.Operator):
 		
 		return {'FINISHED'}
 
-class AF_OP_Update_Implementations_List(bpy.types.Operator):
+class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
 	
 	bl_idname = "af.update_implementations_list"
@@ -228,12 +220,7 @@ class AF_OP_Update_Implementations_List(bpy.types.Operator):
 		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Contact implementations endpoint
-		parameters : Dict[str,str] = {}
-		for par in current_asset.implementation_list_query.parameters.values():
-			parameters[par.name] = par.value
-
-		query = http.AF_HttpQuery(uri=current_asset.implementation_list_query.uri,method=current_asset.implementation_list_query.method,parameters=parameters)
-		response : http.AF_HttpResponse = query.execute()
+		response = http.AF_HttpQuery.from_variable_query(current_asset.implementation_list_query).execute()
 		
 		# Find valid implementations
 		af['current_implementation_list'].clear()
@@ -261,7 +248,7 @@ class AF_OP_Update_Implementations_List(bpy.types.Operator):
 
 		return {'FINISHED'}
 	
-class AF_OP_Execute_Import_Plan(bpy.types.Operator):
+class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
 	
 	bl_idname = "af.execute_import_plan"
@@ -376,9 +363,9 @@ class AF_OP_Execute_Import_Plan(bpy.types.Operator):
 		return {'FINISHED'}
 	
 registration_targets = [
-	AF_OP_Initialize_Provider,
-	AF_OP_Update_Asset_List,
-	AF_OP_Update_Implementations_List,
-	AF_OP_Execute_Import_Plan,
-	AF_OP_Connection_Status
+	AF_OP_InitializeProvider,
+	AF_OP_UpdateAssetList,
+	AF_OP_UpdateImplementationsList,
+	AF_OP_ExecuteImportPlan,
+	AF_OP_ConnectionStatus
 ]

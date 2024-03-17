@@ -2,7 +2,7 @@ import os
 import bpy
 from typing import List,Dict
 from .http import *
-from .property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_Import_Step
+from .property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_ImportStep
 
 def validate_implementation(implementation:AF_PR_Implementation) -> None:
 
@@ -14,11 +14,11 @@ def validate_implementation(implementation:AF_PR_Implementation) -> None:
 		
 		if not comp.file_fetch_download:
 			implementation.is_valid = False
-			validation_messages.append("{comp['id']} is missing a 'file_fetch.download' datablock. (Other methods are not yet supported)")
+			validation_messages.append(f"{comp.name} is missing a 'file_fetch.download' datablock. (Other methods are not yet supported)")
 		
 		if comp.file_info.extension not in ('.obj','.jpg'):
 			implementation.is_valid = False
-			validation_messages.append(f"{comp['id']} is using the extension '{comp.data['resolve_file']['extension']}' which is currently unsupported.")
+			validation_messages.append(f"{comp.name} is using the extension '{comp.file_info.extension}' which is currently unsupported.")
 
 	if len(validation_messages) > 0:
 		implementation.validation_message = "\n".join(validation_messages)
