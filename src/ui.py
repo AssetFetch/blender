@@ -105,8 +105,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 			layout.separator()
 			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 			layout.label(text=current_asset.text.title,icon="PACKAGE")
-			layout.separator()
-			layout.operator("af.update_implementations_list",text="Get implementations")
+			
 		
 
 
@@ -121,6 +120,13 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	def draw(self, context):
 		layout = self.layout
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
+
+		# Query properties
+		for impl_list_parameter in current_asset.implementation_list_query.parameters.values():
+			layout.prop(impl_list_parameter,"value",text=impl_list_parameter["name"])
+
+		layout.operator("af.update_implementations_list",text="Get implementations")
 
 		# Selection of implementations (if applicable)
 		layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")

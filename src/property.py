@@ -45,11 +45,13 @@ class AF_PR_Parameter(bpy.types.PropertyGroup):
 								  ("multiselect","multiselect","multiselect")
 							  ])
 	# No name field, taken care of by blender's name property already
-	title: bpy.props.StringProperty
-	default: bpy.props.StringProperty
-	mandatory: bpy.props.BoolProperty
+	title: bpy.props.StringProperty()
+	default: bpy.props.StringProperty()
+	mandatory: bpy.props.BoolProperty()
 	choices: bpy.props.CollectionProperty(type=AF_PR_Generic_String)
-	delimiter: bpy.props.StringProperty
+	delimiter: bpy.props.StringProperty()
+
+	value: bpy.props.StringProperty()
 
 class AF_PR_Variable_Query(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty()
