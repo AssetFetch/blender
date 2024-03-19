@@ -32,28 +32,69 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup):
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	payload: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
-class AF_PR_Parameter(bpy.types.PropertyGroup):
-	type: bpy.props.EnumProperty(items=
-							  [
-								  ("text","text","text"),
-								  ("boolean","boolean","boolean"),
-								  ("fixed","fixed","fixed"),
-								  ("select","select","select"),
-								  ("multiselect","multiselect","multiselect")
-							  ])
-	# No name field, taken care of by blender's name property already
+class AF_PR_TextParameter(bpy.types.PropertyGroup):
+	title: bpy.props.StringProperty()
+	mandatory: bpy.props.BoolProperty()
+	default: bpy.props.StringProperty()
+	value: bpy.props.StringProperty()
+
+class AF_PR_IntegerParameter(bpy.types.PropertyGroup):
+	title: bpy.props.StringProperty()
+	mandatory: bpy.props.BoolProperty()
+	default: bpy.props.StringProperty()
+	value: bpy.props.IntProperty()
+
+class AF_PR_FloatParameter(bpy.types.PropertyGroup):
+	title: bpy.props.StringProperty()
+	mandatory: bpy.props.BoolProperty()
+	default: bpy.props.StringProperty()
+	value: bpy.props.FloatProperty()
+
+class AF_PR_BoolParameter(bpy.types.PropertyGroup):
+	title: bpy.props.StringProperty()
+	default: bpy.props.BoolProperty()
+	mandatory: bpy.props.BoolProperty()
+	value: bpy.props.BoolProperty()
+
+class AF_PR_FixedParameter(bpy.types.PropertyGroup):
+	title: bpy.props.StringProperty()
+	value: bpy.props.StringProperty()
+
+def select_property_enum_items(property,context):
+	out = []
+	for c in property.choices:
+		out.append(
+			(c.value,c.value,c.value)
+		)
+	return out
+
+class AF_PR_SelectParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	choices: bpy.props.CollectionProperty(type=AF_PR_GenericString)
-	delimiter: bpy.props.StringProperty()
+	value: bpy.props.EnumProperty(items=select_property_enum_items)
 
-	value: bpy.props.StringProperty()
+class AF_PR_MultiSelectItem(bpy.types.PropertyGroup):
+	choice: bpy.props.StringProperty()
+	active: bpy.props.BoolProperty()
+
+class AF_PR_MultiSelectParameter(bpy.types.PropertyGroup):
+	title: bpy.props.StringProperty()
+	default: bpy.props.StringProperty()
+	delimiter: bpy.props.StringProperty()
+	values: bpy.props.CollectionPropert(type=AF_PR_MultiSelectItem)
+	mandatory: bpy.props.BoolProperty()
 
 class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
-	parameters: bpy.props.CollectionProperty(type=AF_PR_Parameter)
+	parameters_text: bpy.props.CollectionProperty(type=AF_PR_TextParameter)
+	parameters_float: bpy.props.CollectionProperty(type=AF_PR_FloatParameter)
+	parameters_int: bpy.props.CollectionProperty(type=AF_PR_IntegerParameter)
+	parameters_fixed: bpy.props.CollectionProperty(type=AF_PR_FixedParameter)
+	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
+	parameters_multiselect: bpy.props.CollectionProperty(type=AF_PR_MultiSelectParameter)
 
 class AF_PR_Header(bpy.types.PropertyGroup):
 	# name is already taken care of by blender's name field
@@ -217,7 +258,12 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 registration_targets = [
 	AF_PR_GenericString,
 	AF_PR_FixedQuery,
-	AF_PR_Parameter,
+	AF_PR_TextParameter,
+	AF_PR_FloatParameter,
+	AF_PR_IntegerParameter,
+	AF_PR_FixedParameter,
+	AF_PR_SelectParameter,
+	AF_PR_MultiSelectParameter,
 	AF_PR_VariableQuery,
 	AF_PR_Header,
 
