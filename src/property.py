@@ -1,6 +1,8 @@
 import os
 import bpy
 
+from src.http import AF_HttpQuery
+
 def register():
 
 	for cl in registration_targets:
@@ -31,6 +33,9 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	payload: bpy.props.CollectionProperty(type=AF_PR_GenericString)
+
+	def to_http_query(self) -> AF_HttpQuery:
+		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=self.payload)
 
 class AF_PR_TextParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
@@ -83,18 +88,105 @@ class AF_PR_MultiSelectParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.StringProperty()
 	delimiter: bpy.props.StringProperty()
-	values: bpy.props.CollectionPropert(type=AF_PR_MultiSelectItem)
+	values: bpy.props.CollectionProperty(type=AF_PR_MultiSelectItem)
 	mandatory: bpy.props.BoolProperty()
 
 class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	parameters_text: bpy.props.CollectionProperty(type=AF_PR_TextParameter)
+	parameters_boolean: bpy.props.CollectionProperty(type=AF_PR_BoolParameter)
 	parameters_float: bpy.props.CollectionProperty(type=AF_PR_FloatParameter)
 	parameters_int: bpy.props.CollectionProperty(type=AF_PR_IntegerParameter)
 	parameters_fixed: bpy.props.CollectionProperty(type=AF_PR_FixedParameter)
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
 	parameters_multiselect: bpy.props.CollectionProperty(type=AF_PR_MultiSelectParameter)
+
+
+	def from_dict(self,variable_query):
+
+		self.uri = ""
+
+		self.parameters_text.clear()
+		self.parameters_boolean.clear()
+		self.parameters_float.clear()
+		self.parameters_int.clear()
+		self.parameters_fixed.clear()
+		self.parameters_select.clear()
+		self.parameters_multiselect.clear()
+
+		self.uri = variable_query['uri']
+		self.method = variable_query['method']
+
+		for p in variable_query['parameters']:
+
+			# Text parameters
+			if p['type'] in ["text","boolean","integer","float"]:
+				new_parameter = self.parameters_text.add()
+				new_parameter.title = p['title']
+				new_parameter.name = p['name']
+				if p['default']:
+					new_parameter.value = p['default']
+				if p['mandatory']:
+					new_parameter.mandatory = p['mandatory']
+
+			if p['type'] == "select":
+				new_parameter = self.parameters_select.add()
+				new_parameter.title = p['title']
+				new_parameter.name = p['name']
+				if p['mandatory']:
+					new_parameter.mandatory = p['mandatory']
+				for c in p['choices']:
+					new_choice = new_parameter.choices.add()
+					new_choice.value = c
+
+		return self
+
+	def to_http_query(self) -> AF_HttpQuery:
+		parameters = {}
+
+		# Text parameters
+		for par in self.parameters_text:
+			if par.mandatory and par.value is None:
+				raise Exception(f"Parameter {par.name} is mandatory but empty.")
+			parameters[par.name] = str(par.value)
+
+		# Float parameters
+		for par in self.parameters_float:
+			if par.mandatory and par.value is None:
+				raise Exception(f"Parameter {par.name} is mandatory but empty.")
+			parameters[par.name] = str(par.value)
+
+		# Integer parameters
+		for par in self.parameters_float:
+			if par.mandatory and par.value is None:
+				raise Exception(f"Parameter {par.name} is mandatory but empty.")
+			parameters[par.name] = str(par.value)
+
+		# Fixed Parameters
+		for par in self.parameters_float:
+			if par.mandatory and par.value is None:
+				raise Exception(f"Parameter {par.name} is mandatory but empty.")
+			parameters[par.name] = str(par.value)
+
+		# Select Parameters
+		for par in self.parameters_select:
+			parameters[par.name] = str(par.value)
+
+		# Ignoring multi-select for now
+
+		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=parameters)
+	
+	def draw_ui(self,layout) -> None:
+		
+		# Text parameters
+		for asset_list_parameter in self.parameters_text:
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["name"])
+		
+		# Select parameters
+		for asset_list_parameter in self.parameters_select:
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["name"])
+
 
 class AF_PR_Header(bpy.types.PropertyGroup):
 	# name is already taken care of by blender's name field
@@ -206,7 +298,7 @@ class AF_PR_ImportStep(bpy.types.PropertyGroup):
 		("fetch_download","Download File","Download a file."),
 		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."),
 		("fetch_from_archive","Load File From Archive","Load a file from an archive."),
-		("import_obj_from_local_path","import_obj","Import OBJ File"),
+		("import_obj_from_local_path","Import OBJ","Import obj file from local path."),
 		("material_create","Create Material","Creates a new Material."),
 		("material_add_map","Add Map","Add Map to Material"),
 		("material_assign","Assign Material","Assigns a material to an object"),
@@ -258,11 +350,13 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 registration_targets = [
 	AF_PR_GenericString,
 	AF_PR_FixedQuery,
+	AF_PR_BoolParameter,
 	AF_PR_TextParameter,
 	AF_PR_FloatParameter,
 	AF_PR_IntegerParameter,
 	AF_PR_FixedParameter,
 	AF_PR_SelectParameter,
+	AF_PR_MultiSelectItem,
 	AF_PR_MultiSelectParameter,
 	AF_PR_VariableQuery,
 	AF_PR_Header,

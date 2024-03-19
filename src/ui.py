@@ -1,4 +1,5 @@
 import bpy
+from bpy.types import Context
 from .property import AF_PR_AssetFetch, AF_PR_Implementation
 
 def register():
@@ -77,13 +78,17 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 	bl_region_type = 'UI'
 	bl_category = 'AssetFetch'
 
+	@classmethod
+	def poll(self, context: Context) -> bool:
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		return af.current_connection_state.state == "connected"
+
 	def draw(self, context):
 		layout = self.layout
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Query properties
-		for asset_list_parameter in af.current_provider_initialization.asset_list_query.parameters.values():
-			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["name"])
+		af.current_provider_initialization.asset_list_query.draw_ui(layout)
 
 		# Send button
 		layout.operator("af.update_asset_list",text="Search Assets")
@@ -97,14 +102,14 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		#icons_dict = bpy.utils.previews.new()
 		#icons_dict.load("CAT_1","E:/Git/assetfetch-blender/tmp_icons/CAT_1.jpeg",'IMAGE')
 		#layout.label(text="ASDF",icon_value=icons_dict['CAT_1'].icon_id)
-
-		layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index")
-		
 		
 		if len(af.current_asset_list.assets) > 0:
+			layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index")
 			layout.separator()
 			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 			layout.label(text=current_asset.text.title,icon="PACKAGE")
+		else:
+			layout.label(text="The search returned no results.",icon="ORPHAN_DATA")
 			
 		
 
@@ -117,14 +122,18 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_region_type = 'UI'
 	bl_category = 'AssetFetch'
 
+	@classmethod
+	def poll(self, context: Context) -> bool:
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		return len(af.current_asset_list.assets) > 0
+
 	def draw(self, context):
 		layout = self.layout
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Query properties
-		for impl_list_parameter in current_asset.implementation_list_query.parameters.values():
-			layout.prop(impl_list_parameter,"value",text=impl_list_parameter["name"])
+		current_asset.implementation_list_query.draw_ui(layout)
 
 		layout.operator("af.update_implementations_list",text="Get implementations")
 
@@ -141,11 +150,12 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				steps_box = layout.box()
 				for step in current_impl.import_steps:
 					steps_box.label(text=str(step),icon="DOT")
-				# Import button
-				layout.operator("af.execute_import_plan",text="Perform import")
+				
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
 				layout.label(text=current_impl.validation_message)
+		# Import button
+		layout.operator("af.execute_import_plan",text="Perform import")
 
 registration_targets = [
 	AF_PT_ProviderPanel,

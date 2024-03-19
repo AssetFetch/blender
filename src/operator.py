@@ -1,11 +1,12 @@
+import glob
 import hashlib
 import json
 import os
-import bpy,math
+import bpy,math,tempfile
 import bpy_extras.image_utils
 from typing import Dict,List
 
-from src.property import AF_PR_AssetFetch
+from src.property import AF_PR_AssetFetch, AF_PR_Component
 from . import http
 from . import implementations
 import urllib
@@ -98,20 +99,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 
 		# asset_list_query
 		if "asset_list_query" in response.parsed['data']:
-			
-			# Set URI and HTTP method
-			dict_to_attr(response.parsed['data']['asset_list_query'],['uri','method'],af.current_provider_initialization.asset_list_query)
-
-			# Set Parameters
-			af.current_provider_initialization.asset_list_query.parameters.clear()
-			for parameter_info in response.parsed['data']['asset_list_query']['parameters']:
-				current_parameter = af.current_provider_initialization.asset_list_query.parameters.add()
-				dict_to_attr(parameter_info,['type','name','title','default','mandatory','delimiter'],current_parameter)
-				
-				if "choices" in parameter_info:
-					for choice in parameter_info['choices']:
-						new_choice = current_parameter.choices.add()
-						new_choice.value = choice
+			af.current_provider_initialization.asset_list_query.from_dict(response.parsed['data']['asset_list_query'])
 		else:
 			raise Exception("No Asset List Query!")
 		
@@ -128,7 +116,7 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Contact initialization endpoint and get the response
-		response : http.AF_HttpResponse = http.AF_HttpQuery.from_fixed_query(af.current_provider_initialization.provider_configuration.connection_status_query).execute()
+		response : http.AF_HttpResponse = af.current_provider_initialization.provider_configuration.connection_status_query.to_http_query().execute()
 
 		# Test if connection is ok
 		if response.is_ok():
@@ -172,7 +160,7 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Contact initialization endpoint
-		response = http.AF_HttpQuery.from_variable_query(af.current_provider_initialization.asset_list_query).execute()
+		response = af.current_provider_initialization.asset_list_query.to_http_query().execute()
 		
 		# Save assets in blender properties
 		af.current_asset_list.assets.clear()
@@ -186,18 +174,10 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 				asset_entry.text.description = asset['data']['text']['title']
 			
 			# Implementations Query
-			asset_entry.implementation_list_query.parameters.clear()
 			if "implementation_list_query" in asset['data']:
-				dict_to_attr(asset['data']['implementation_list_query'],['uri','method'],asset_entry.implementation_list_query)
+				asset_entry.implementation_list_query.from_dict(asset['data']['implementation_list_query'])
 
-				for parameter_info in asset['data']['implementation_list_query']['parameters']:
-					current_parameter = asset_entry.implementation_list_query.parameters.add()
-					current_parameter.name = parameter_info['name']
-					current_parameter.type = parameter_info['type']
-					if "default" in parameter_info:
-						current_parameter.value = parameter_info['default']
-					else:
-						current_parameter.value = ""
+		af.current_asset_list_index = 0
 		
 		return {'FINISHED'}
 
@@ -220,7 +200,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Contact implementations endpoint
-		response = http.AF_HttpQuery.from_variable_query(current_asset.implementation_list_query).execute()
+		response = current_asset.implementation_list_query.to_http_query().execute()
 		
 		# Find valid implementations
 		af['current_implementation_list'].clear()
@@ -249,7 +229,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 		return {'FINISHED'}
 	
 class AF_OP_ExecuteImportPlan(bpy.types.Operator):
-	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
+	"""Executes the currently loaded import plan."""
 	
 	bl_idname = "af.execute_import_plan"
 	bl_label = "Execute Import Plan"
@@ -261,6 +241,11 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	#	pass
 		#layout = self.layout
 		#layout.prop(self,'radius')
+
+	@classmethod
+	def poll(self,context):
+		af = bpy.context.window_manager.af
+		return len(af.current_implementation_list.implementations) > 0 and af.current_implementation_list.implementations[af.current_implementation_list_index].is_valid
 	
 	def get_or_create_material(self,material_name:str,asset_id:str):
 		if material_name in bpy.data.materials and bpy.data.materials[material_name]['af_managed'] and bpy.data.materials[material_name]['af_asset_id'] == asset_id:
@@ -284,16 +269,99 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		new_material['af_asset_id'] = asset_id
 
 		return new_material
-		
 
 	def execute(self,context):
+		af = bpy.context.window_manager.af
+		implementation = af.current_implementation_list.implementations[af.current_implementation_list_index]
+		asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
+
+		# Ensure that an empty temp directory is available
+		temp_dir = os.path.join(tempfile.gettempdir(),"assetfetch-blender")
+		if os.path.exists(temp_dir):
+			os.rmdir(temp_dir)
+		os.makedirs(temp_dir,exist_ok=True)
+		
+	
+		for step in implementation.import_steps:
+
+			if step.action == "directory_create":
+				print(f"Creating directory {step.config['directory'].value}")
+				os.makedirs(step.config['directory'].value,exist_ok=True)
+			
+			if step.action == "fetch_download":
+				
+				component : AF_PR_Component = implementation.components[step.config['component_id'].value]
+
+				# Prepare query
+				uri = component.file_fetch_download.uri
+				method = component.file_fetch_download.method
+				payload = component.file_fetch_download.payload
+				query = http.AF_HttpQuery(uri=uri,method=method,parameters=payload)
+
+				# Determine target path
+				if component.file_info.behavior in ['file_passive','file_active']:
+					# Download directly into local dir
+					destination = os.path.join(implementation.local_directory,component.file_info.local_path)
+				elif component.file_info.behavior == "archive":
+					destination = os.path.join(temp_dir,component.name)
+				else:
+					raise Exception("Invalid behavior!")
+				
+				print(f"Downloading into {destination}")
+				query.execute_as_file(destination_path=destination)
+			
+			if step.action == "fetch_download_unlocked":
+				pass
+
+			if step.action == "fetch_from_archive":
+				pass
+
+			if step.action == "import_obj_from_local_path":
+				# The path where the obj file was downloaded in a previous step
+				obj_component = implementation.components[step.config['component_id'].value]
+				obj_target_path = os.path.join(implementation.local_directory,obj_component.file_info.local_path)
+
+				print(f"Importing OBJ from {obj_target_path}")
+
+				up_axis = 'Y'
+				use_mtl = True
+				if "format_obj" in obj_component:
+					if obj_component.format_obj.up_axis == "+y":
+						up_axis = 'Y'
+					elif obj_component.format_obj.up_axis == "+z":
+						up_axis = 'Z'
+
+					use_mtl = obj_component.format_obj.use_mtl
+
+				bpy.ops.wm.obj_import(up_axis=up_axis,filepath=obj_target_path)
+				imported_objects = bpy.context.selected_objects
+
+				# remove materials from import (if requested)
+				if not use_mtl:
+					for obj in imported_objects:
+						obj.active_material_index = 0
+						for slot in obj.material_slots:
+							with context.temp_override(object=obj):
+								if slot.material:
+									bpy.data.materials.remove(slot.material)
+								bpy.ops.object.material_slot_remove()
+
+						if "loose_material_apply" in obj_component:
+							for material_declaration in obj_component.loose_material_apply:
+								material_name = asset_id + "_" + material_name
+								obj.data.materials.append(self.get_or_create_material(material_name,asset_id))
+
+
+
+
+		###########################################################################
 
 		# Assuming that the implementations + index are set properly
 		# Progress: https://stackoverflow.com/a/53877507
 
 		#imported_components : Dict[str,any] = {}
 		#downloaded_components: Dict[str,str] = {}
-
+		"""
 		impl = af_asset_implementations_options[af_asset_implementations_options_index]
 		comps = json.loads(impl.components_json)
 
@@ -359,7 +427,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 						target_material.node_tree.links.new(normal_map_node.outputs['Normal'],target_material.node_tree.nodes['BSDF'].inputs['Normal'])
 						target_material.node_tree.links.new(image_node.outputs['Color'],normal_map_node.inputs['Color'])
 
-
+		"""
 		return {'FINISHED'}
 	
 registration_targets = [

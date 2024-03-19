@@ -58,7 +58,7 @@ def build_import_plan(implementation:AF_PR_Implementation) -> None:
 		implementation.import_steps.add().set_action("unlock").set_config_value("query_id",q)
 
 	# Step 3: Plan how to acquire and arrange all files in the asset directory
-	# Currently ignoring archives
+	# TODO Currently ignoring archives
 	for comp in implementation.components:
 		if comp.file_fetch_download.uri != "":
 			implementation.import_steps.add().set_action("fetch_download").set_config_value("component_id",comp.name)
@@ -70,26 +70,6 @@ def build_import_plan(implementation:AF_PR_Implementation) -> None:
 				implementation.import_steps.add().set_action("import_obj_from_local_path").set_config_value("component_id",comp.name)
 
 
-def execute_import_plan(implementation:AF_PR_Implementation) -> None:
-	af = bpy.context.window_manager.af
+#def execute_import_plan(implementation:AF_PR_Implementation) -> None:
 	
-	for step in implementation.import_steps:
-
-		if step.action == "directory_create":
-			os.mkdir(step.config.directory)
-		
-		if step.action == "fetch_download":
-
-			component : AF_PR_Component = implementation.components[step.config.component_id]
-
-			# Prepare query
-			uri = component.file_fetch_download.uri
-			method = component.file_fetch_download.method
-			payload = component.file_fetch_download.payload
-			query = AF_HttpQuery(uri=uri,method=method,parameters=payload)
-
-			# Determine target path
-			if component.file_info.behavior in ['file_passive','file_active']:
-				# Download directly into local dir
-				destination = os.path.join(implementation.local_directory,component.file_info.local_path)
 
