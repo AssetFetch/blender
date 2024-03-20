@@ -155,7 +155,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
-				layout.label(text=current_impl.validation_message)
+		for m in current_impl.validation_messages:
+			layout.label(text=m.text)
 		# Import button
 		layout.operator("af.execute_import_plan",text="Perform import")
 

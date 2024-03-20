@@ -26,19 +26,17 @@ http_method_enum = [
 		]		
 
 class AF_OptionalBlock:
-	is_set: bpy.props.BoolProperty()
+	is_set: bpy.props.BoolProperty(default=False)
 
 class AF_Configurable:
 	"""A class inheriting from AF_Configurable means that its parameters
 	can be loaded from a dict which is usually the result of parsed json.
 	See https://stackoverflow.com/a/2466207 """
 
-	def configure(self,*initial_data:Dict, **kwargs):
+	def configure(self,initial_data):
 		for key in initial_data.keys():
 			if key in self:
 				setattr(self,key,initial_data[key])
-		for key in kwargs:
-			setattr(self,key,kwargs[key])
 
 class AF_PR_GenericString(bpy.types.PropertyGroup):
 	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
@@ -361,6 +359,10 @@ class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
 class AF_PR_FormatUsdBlock(bpy.types.PropertyGroup,AF_Configurable):
 	is_crate: bpy.props.BoolProperty()
 
+class AF_PR_FormatObjBlock(bpy.types.PropertyGroup,AF_Configurable):
+	up_axis: bpy.props.StringProperty()
+	use_mtl: bpy.props.BoolProperty()
+
 # Core elements
 
 class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
@@ -406,6 +408,7 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	loose_material_apply: bpy.props.PointerProperty(type=AF_PR_LooseMaterialApplyBlock)
 
 	format_blend: bpy.props.PointerProperty(type=AF_PR_FormatBlendBlock)
+	format_obj: bpy.props.PointerProperty(type=AF_PR_FormatObjBlock)
 	format_usd: bpy.props.PointerProperty(type=AF_PR_FormatUsdBlock)
 
 
@@ -509,6 +512,7 @@ registration_targets = [
 	AF_PR_FormatBlendTarget,
 	AF_PR_FormatBlendBlock,
 	AF_PR_FormatUsdBlock,
+	AF_PR_FormatObjBlock,
 	
 	AF_PR_ProviderInitialization,
 	AF_PR_ConnectionStatus,

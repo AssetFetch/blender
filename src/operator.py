@@ -13,11 +13,11 @@ import urllib
 
 # Utility functions
 
-#def dict_to_attr(source:Dict[str,str],keys:List[str],destination:any):
-#	"""Assigns all the provided keys from source as attributes to the destination object."""
-#	for key in keys:
-#		if key in source:
-#			setattr(destination,key,source[key])
+def dict_to_attr(source:Dict[str,str],keys:List[str],destination:any):
+	"""Assigns all the provided keys from source as attributes to the destination object."""
+	for key in keys:
+		if key in source:
+			setattr(destination,key,source[key])
 
 # Registration and unregistration functions
 	
@@ -80,8 +80,8 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 
 		# Get the provider text (title and description)
 		if "text" in response.parsed['data']:
-			dict_to_attr(response.parsed['data']['text'],['title','description'],af.current_provider_initialization.text)
-
+			af.current_provider_initialization.text.configure(response.parsed['data']['text'])
+			
 		# Provider configuration
 		af.current_provider_initialization.provider_configuration.headers.clear()
 		if "provider_configuration" in response.parsed['data']:
@@ -111,7 +111,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 
 		# asset_list_query
 		if "asset_list_query" in response.parsed['data']:
-			af.current_provider_initialization.asset_list_query.from_dict(response.parsed['data']['asset_list_query'])
+			af.current_provider_initialization.asset_list_query.configure(response.parsed['data']['asset_list_query'])
 		else:
 			raise Exception("No Asset List Query!")
 		
@@ -187,7 +187,7 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 			
 			# Implementations Query
 			if "implementation_list_query" in asset['data']:
-				asset_entry.implementation_list_query.from_dict(asset['data']['implementation_list_query'])
+				asset_entry.implementation_list_query.configure(asset['data']['implementation_list_query'])
 
 		af.current_asset_list_index = 0
 		
@@ -280,7 +280,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 						
 						]:
 						if key in pcd:
-							blender_comp[key.replace(".","_")].configure(pcd[key])
+							getattr(blender_comp,key.replace(".","_")).configure(pcd[key])
 						else:
 							# Some datablocks are required and get tested for here.
 							if key in ['file_info']:
@@ -341,6 +341,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 			except Exception as e:
 				current_impl.is_valid = False
 				current_impl.validation_messages.add().set("crit",str(e))
+				raise e
 
 		return {'FINISHED'}
 	
