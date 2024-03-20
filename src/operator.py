@@ -6,18 +6,18 @@ import bpy,math,tempfile
 import bpy_extras.image_utils
 from typing import Dict,List
 
-from src.property import AF_PR_AssetFetch, AF_PR_Component
+from src.property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation
 from . import http
 from . import implementations
 import urllib
 
 # Utility functions
 
-def dict_to_attr(source:Dict[str,str],keys:List[str],destination:any):
-	"""Assigns all the provided keys from source as attributes to the destination object."""
-	for key in keys:
-		if key in source:
-			setattr(destination,key,source[key])
+#def dict_to_attr(source:Dict[str,str],keys:List[str],destination:any):
+#	"""Assigns all the provided keys from source as attributes to the destination object."""
+#	for key in keys:
+#		if key in source:
+#			setattr(destination,key,source[key])
 
 # Registration and unregistration functions
 	
@@ -213,30 +213,134 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 
 		# Contact implementations endpoint
 		response = current_asset.implementation_list_query.to_http_query().execute()
-		
-		# Find valid implementations
+
+		# Converting the json response into blender bpy data
 		af['current_implementation_list'].clear()
 		for incoming_impl in response.parsed['implementations']:
-			
-			current_impl = af.current_implementation_list.implementations.add()
-			current_impl.name = incoming_impl['id']
-			
-			for comp in incoming_impl['components']:
-				current_comp = current_impl.components.add()
 
-				current_comp.name = comp['id']
+			# -------------------------------------------------------------------------------
+			# Create a new implementation to fill with data
+			current_impl : AF_PR_Implementation = af.current_implementation_list.implementations.add()
+
+
+			# Enter try-catch block
+			# Failing this block causes an implementation to be considered unreadable.
+			# If it passes, it is considered readable.
+			
+			try:
+
+				# -------------------------------------------------------------------------------
+				# Fill the implementation with data from the HTTP endpoint
+
+				# Implementation id
+				if "id" not in incoming_impl:
+					raise Exception("Implementation is missing and id.")
+				current_impl.name = incoming_impl['id']
+
+				# Component data
+				if "components" not in incoming_impl or len(incoming_impl['components']) < 1:
+					raise Exception("This implementation has no components.")
+				for provider_comp in incoming_impl['components']:
+					
+					blender_comp = current_impl.components.add()
+
+					# For clarity:
+					# provider_comp -> the component data sent by the provider
+					# blender_comp -> the blender bpy property this component gets turned into
+					# pcd -> shorthand for "provider component data" (This will appear a lot)
+					pcd = provider_comp['data']
+					
+					# Component id
+					if "id" not in provider_comp:
+						raise Exception("A component is missing an id.")
+					blender_comp.name = provider_comp['id']
+
+					# Testing for file-related datablocks.
+					# Their rules are more complex and therefore not covered by the schema below
+					if "file_fetch.download" not in pcd and "file_fetch.from_archive" not in pcd and "unlock_link" not in pcd:
+						raise Exception(f"{blender_comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
+					
+					# Easily configurable datablocks
+					for key in [
+
+						"file_info",
+						"file_fetch.download",
+						"file_fetch.from_archive",
+
+						"loose_environment",
+						"loose_material_define",
+						"loose_material_apply",
+
+						"format.blend",
+						"format.usd",
+						"format.obj",
+
+						"unlock_link",
+						"text"
+						
+						]:
+						if key in pcd:
+							blender_comp[key.replace(".","_")].configure(pcd[key])
+						else:
+							# Some datablocks are required and get tested for here.
+							if key in ['file_info']:
+								raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
+					
+					# Unsupported datablocks which lead to a warning
+					for key in ["mtlx_apply"]:
+						if key in pcd:
+							current_impl.validation_messages.add().set("warn",f"{blender_comp.name} uses MTLX which is currently unsupported.")
+						
+					
+
+
+				# -------------------------------------------------------------------------------
+				# Attempt to build an import plan for the implementation
+
+				# Step 0: Create helpful variables
+				provider_id = af.current_provider_initialization.name
+				asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
+				implementation_id = current_impl.name
+
+				# Step 1: Find the implementation directory
+				if provider_id == "":
+					raise Exception("No provider ID to create implementation directory.")
+				if asset_id == "":
+					raise Exception("No asset ID to create implementation directory.")
+				if implementation_id == "":
+					raise Exception("No implementation ID to create implementation directory.")
 				
-				if "file_info" in comp['data']:
-					dict_to_attr(comp['data']['file_info'],['local_path','length','extension','behavior'],current_comp.file_info)
-				if "file_fetch.download" in comp['data']:
-					dict_to_attr(comp['data']['file_fetch.download'],['uri','method'],current_comp.file_fetch_download)
-					# TODO handle parameters
-				if "file_fetch.from_archive" in comp['data']:
-					dict_to_attr(comp['data']['file_fetch.from_archive'],['archive_component_id','component_path'],current_comp.file_fetch_from_archive)
+				current_impl.local_directory = os.path.join(af.download_directory,provider_id)
+				current_impl.local_directory = os.path.join(current_impl.local_directory,asset_id)
+				current_impl.local_directory = os.path.join(current_impl.local_directory,implementation_id)
+
+				current_impl.import_steps.add().set_action("directory_create").set_config_value("directory",current_impl.local_directory)
+
+				# Step 2: Find the relevant unlocking queries
+				required_unlocking_query_ids : set = {}
+
+				for comp in current_impl.components:
+					if comp.unlock_link.unlock_query_id != "":
+						required_unlocking_query_ids.add(comp.unlock_link.unlock_query_id)
 				
-			implementations.validate_implementation(current_impl)
-			if(current_impl.is_valid):
-				implementations.build_import_plan(current_impl)
+				for q in required_unlocking_query_ids:
+					current_impl.import_steps.add().set_action("unlock").set_config_value("query_id",q)
+
+				# Step 3: Plan how to acquire and arrange all files in the asset directory
+				# TODO Currently ignoring archives
+				for comp in current_impl.components:
+					if comp.file_fetch_download.uri != "":
+						current_impl.import_steps.add().set_action("fetch_download").set_config_value("component_id",comp.name)
+
+				# Step 4: Plan how to actually import
+				for comp in current_impl.components:
+					if comp.file_info.behavior == "file_active":
+						if comp.file_info.extension == ".obj":
+							current_impl.import_steps.add().set_action("import_obj_from_local_path").set_config_value("component_id",comp.name)
+
+			except Exception as e:
+				current_impl.is_valid = False
+				current_impl.validation_messages.add().set("crit",str(e))
 
 		return {'FINISHED'}
 	

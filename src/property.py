@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 import bpy
 
 from src.http import AF_HttpQuery
@@ -24,12 +25,26 @@ http_method_enum = [
 			('post','POST','HTTP POST')
 		]		
 
-		
+class AF_OptionalBlock:
+	is_set: bpy.props.BoolProperty()
+
+class AF_Configurable:
+	"""A class inheriting from AF_Configurable means that its parameters
+	can be loaded from a dict which is usually the result of parsed json.
+	See https://stackoverflow.com/a/2466207 """
+
+	def configure(self,*initial_data:Dict, **kwargs):
+		for key in initial_data.keys():
+			if key in self:
+				setattr(self,key,initial_data[key])
+		for key in kwargs:
+			setattr(self,key,kwargs[key])
+
 class AF_PR_GenericString(bpy.types.PropertyGroup):
 	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
 	value: bpy.props.StringProperty()
 
-class AF_PR_FixedQuery(bpy.types.PropertyGroup):
+class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_Configurable):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	payload: bpy.props.CollectionProperty(type=AF_PR_GenericString)
@@ -37,7 +52,7 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup):
 	def to_http_query(self) -> AF_HttpQuery:
 		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=self.payload)
 
-class AF_PR_TextParameter(bpy.types.PropertyGroup):
+class AF_PR_TextParameter(bpy.types.PropertyGroup,AF_Configurable,AF_OptionalBlock):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
@@ -102,8 +117,9 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
 	parameters_multiselect: bpy.props.CollectionProperty(type=AF_PR_MultiSelectParameter)
 
-
-	def from_dict(self,variable_query):
+	# This class brings its own configure() instead of in heriting from
+	# AF_Configurable because it is a bit more complicated.
+	def configure(self,variable_query):
 
 		self.uri = ""
 
@@ -206,7 +222,7 @@ class AF_PR_Header(bpy.types.PropertyGroup):
 
 # Datablocks
 
-class AF_PR_TextBlock(bpy.types.PropertyGroup):
+class AF_PR_TextBlock(bpy.types.PropertyGroup,AF_Configurable,AF_OptionalBlock):
 	title: bpy.props.StringProperty()
 	description: bpy.props.StringProperty()
 
@@ -215,7 +231,7 @@ class AF_PR_UserBlock(bpy.types.PropertyGroup):
 	display_tier: bpy.props.StringProperty()
 	display_icon_uri: bpy.props.StringProperty()
 
-class AF_PR_FileInfoBlock(bpy.types.PropertyGroup):
+class AF_PR_FileInfoBlock(bpy.types.PropertyGroup,AF_Configurable):
 	local_path: bpy.props.StringProperty()
 	length: bpy.props.IntProperty()
 	extension: bpy.props.StringProperty()
@@ -240,7 +256,7 @@ class AF_PR_UnlockBalanceBlock(bpy.types.PropertyGroup):
 class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup):
 	headers: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
-class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup):
+class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup,AF_Configurable):
 	archive_component_id: bpy.props.StringProperty
 	component_path: bpy.props.StringProperty
 
@@ -250,9 +266,100 @@ class AF_PR_WebReference(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty
 	icon_uri: bpy.props.StringProperty
 
-class AF_PR_UnlockLinkBlock(bpy.types.PropertyGroup):
+class AF_PR_UnlockLinkBlock(bpy.types.PropertyGroup,AF_Configurable):
 	unlock_query_id: bpy.props.StringProperty()
 	unlocked_datablocks_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
+
+class AF_PR_LooseEnvironmentBlock(bpy.types.PropertyGroup,AF_Configurable):
+	projection: bpy.props.EnumProperty(items=[
+		("equirectangular","equirectangular","equirectangular"),
+		("mirror_ball","mirror_ball","mirror_ball")
+	])
+
+class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup,AF_Configurable):
+	material_name: bpy.props.StringProperty()
+	map: bpy.props.EnumProperty(items=[
+		("albedo", "Albedo", "Albedo"),
+		("roughness", "Roughness", "Roughness"),
+		("metallic", "Metallic", "Metallic"),
+		("diffuse", "Diffuse", "Diffuse"),
+		("glossiness", "Glossiness", "Glossiness"),
+		("specular", "Specular", "Specular"),
+		("height", "Height", "Height"),
+		("normal+y", "Normal +Y", "Normal +Y"),
+		("normal-y", "Normal -Y", "Normal -Y"),
+		("opacity", "Opacity", "Opacity"),
+		("ambient_occlusion", "Ambient Occlusion", "Ambient Occlusion"),
+		("emission", "Emission", "Emission"),
+	])
+	colorspace: bpy.props.EnumProperty(items=[
+		("srgb","sRGB","sRGB"),
+		("linear","linear","linear")
+	])
+
+class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup,AF_Configurable):
+	material_name: bpy.props.StringProperty()
+	apply_selectively_to: bpy.props.StringProperty()
+
+class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup, AF_Configurable):
+	names: bpy.props.CollectionProperty(type=AF_PR_GenericString)
+	kind: bpy.props.EnumProperty(items=[
+		("actions", "Actions", "Actions"),
+		("armatures", "Armatures", "Armatures"),
+		("brushes", "Brushes", "Brushes"),
+		("cache_files", "Cache Files", "Cache Files"),
+		("cameras", "Cameras", "Cameras"),
+		("collections", "Collections", "Collections"),
+		("curves", "Curves", "Curves"),
+		("fonts", "Fonts", "Fonts"),
+		("grease_pencils", "Grease Pencils", "Grease Pencils"),
+		("hair_curves", "Hair Curves", "Hair Curves"),
+		("images", "Images", "Images"),
+		("lattices", "Lattices", "Lattices"),
+		("lightprobes", "Lightprobes", "Lightprobes"),
+		("lights", "Lights", "Lights"),
+		("linestyles", "Linestyles", "Linestyles"),
+		("masks", "Masks", "Masks"),
+		("materials", "Materials", "Materials"),
+		("meshes", "Meshes", "Meshes"),
+		("metaballs", "Metaballs", "Metaballs"),
+		("movieclips", "Movieclips", "Movieclips"),
+		("node_groups", "Node Groups", "Node Groups"),
+		("objects", "Objects", "Objects"),
+		("paint_curves", "Paint Curves", "Paint Curves"),
+		("palettes", "Palettes", "Palettes"),
+		("particles", "Particles", "Particles"),
+		("pointclouds", "Pointclouds", "Pointclouds"),
+		("scenes", "Scenes", "Scenes"),
+		("screens", "Screens", "Screens"),
+		("simulations", "Simulations", "Simulations"),
+		("sounds", "Sounds", "Sounds"),
+		("speakers", "Speakers", "Speakers"),
+		("texts", "Texts", "Texts"),
+		("textures", "Textures", "Textures"),
+		("volumes", "Volumes", "Volumes"),
+		("workspaces", "Workspaces", "Workspaces"),
+		("worlds", "Worlds", "Worlds"),
+	])
+
+class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
+	version: bpy.props.StringProperty()
+	is_asset: bpy.props.BoolProperty()
+	targets: bpy.props.CollectionProperty(type=AF_PR_FormatBlendTarget)
+
+	# The complex target object means that we need a custom config method
+	def configure(self,format_blend):
+		self.version = format_blend['version']
+		self.is_asset = format_blend['is_asset']
+		for t in format_blend['targets']:
+			new_target = self.targets.add()
+			new_target.kind = t['kind']
+			for n in t['names']:
+				new_name = new_target.names.add()
+				new_name.value = n
+
+class AF_PR_FormatUsdBlock(bpy.types.PropertyGroup,AF_Configurable):
+	is_crate: bpy.props.BoolProperty()
 
 # Core elements
 
@@ -286,12 +393,23 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 	# Datablocks...
 
 class AF_PR_Component(bpy.types.PropertyGroup):
+
+	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
+
 	file_info:bpy.props.PointerProperty(type=AF_PR_FileInfoBlock)
 	file_fetch_download:bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_FileFetchFromArchiveBlock)
 	unlock_link: bpy.props.PointerProperty(type=AF_PR_UnlockLinkBlock)
 
-class AF_PR_ImportStep(bpy.types.PropertyGroup):
+	loose_environment: bpy.props.PointerProperty(type=AF_PR_LooseEnvironmentBlock)
+	loose_material_define: bpy.props.PointerProperty(type=AF_PR_LooseMaterialDefineBlock)
+	loose_material_apply: bpy.props.PointerProperty(type=AF_PR_LooseMaterialApplyBlock)
+
+	format_blend: bpy.props.PointerProperty(type=AF_PR_FormatBlendBlock)
+	format_usd: bpy.props.PointerProperty(type=AF_PR_FormatUsdBlock)
+
+
+class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	action: bpy.props.EnumProperty(items=[
 		("directory_create","Create Directory","Create a directory."),
 		("unlock","Unlock Resource",""),
@@ -326,12 +444,25 @@ class AF_PR_ImportStep(bpy.types.PropertyGroup):
 			out += f" ({c.name}: {c.value})"
 		return out
 
+class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
+	text : bpy.props.StringProperty()
+	kind: bpy.props.EnumProperty(items=[
+		("info","info","info"),
+		("warn","warning","warning"),
+		("crit","critical","critical")
+	])
+
+	def set(self,kind:str,text:str):
+		self.text = text
+		self.kind = kind
+		return self
+
 class AF_PR_Implementation(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	components: bpy.props.CollectionProperty(type=AF_PR_Component)
 	is_valid: bpy.props.BoolProperty()
-	validation_message: bpy.props.StringProperty()
-	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImportStep)
+	validation_messages: bpy.props.CollectionProperty(type=AF_PR_ImplementationValidationMessage)
+	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImplementationImportStep)
 	local_directory: bpy.props.StringProperty()
 
 class AF_PR_ImplementationList(bpy.types.PropertyGroup):
@@ -372,13 +503,20 @@ registration_targets = [
 	AF_PR_UnlockBalanceBlock,
 	AF_PR_FileFetchFromArchiveBlock,
 	AF_PR_UnlockLinkBlock,
+	AF_PR_LooseEnvironmentBlock,
+	AF_PR_LooseMaterialDefineBlock,
+	AF_PR_LooseMaterialApplyBlock,
+	AF_PR_FormatBlendTarget,
+	AF_PR_FormatBlendBlock,
+	AF_PR_FormatUsdBlock,
 	
 	AF_PR_ProviderInitialization,
 	AF_PR_ConnectionStatus,
 	AF_PR_Asset,
 	AF_PR_AssetList,
 	AF_PR_Component,
-	AF_PR_ImportStep,
+	AF_PR_ImplementationImportStep,
+	AF_PR_ImplementationValidationMessage,
 	AF_PR_Implementation,
 	AF_PR_ImplementationList,
 	AF_PR_AssetFetch

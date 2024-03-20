@@ -2,7 +2,7 @@ import os
 import bpy
 from typing import List,Dict
 from .http import *
-from .property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_ImportStep
+from .property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_ImplementationImportStep
 
 def validate_implementation(implementation:AF_PR_Implementation) -> None:
 
