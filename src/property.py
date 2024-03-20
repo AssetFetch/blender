@@ -317,8 +317,11 @@ class AF_PR_ImportStep(bpy.types.PropertyGroup):
 		new_conf.value = value
 		return self
 	
-	def __str__(self) -> str:
-		out = self.bl_rna.properties['action'].enum_items[self.action].name
+	def get_action_title(self):
+		return self.bl_rna.properties['action'].enum_items[self.action].name
+	
+	def get_action_config(self) -> str:
+		out = ""
 		for c in self.config:
 			out += f" ({c.name}: {c.value})"
 		return out

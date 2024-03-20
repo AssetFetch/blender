@@ -147,9 +147,11 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			if current_impl.is_valid:
 				layout.label(text="Implementation is readable. Ready to import.",icon="SEQUENCE_COLOR_04")
 
-				steps_box = layout.box()
+				all_steps_box = layout.box()
 				for step in current_impl.import_steps:
-					steps_box.label(text=str(step),icon="DOT")
+					step_box = all_steps_box.box()
+					step_box.label(text=step.get_action_title())
+					step_box.label(text=step.get_action_config())
 				
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")

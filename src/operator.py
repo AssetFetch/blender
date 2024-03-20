@@ -49,12 +49,24 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		# Reset existing connection_state
-		af['current_provider_initialization'].clear()
-		af['current_connection_state'].clear()
-		af['current_asset_list'].clear()
-		af['current_asset_list_index'] = 0
-		af['current_implementation_list'].clear()
-		af['current_implementation_list_index'] = 0
+		if 'current_provider_initialization' in af:
+			af['current_provider_initialization'].clear()
+
+		if 'current_connection_state' in af:
+			af['current_connection_state'].clear()
+
+		if 'current_asset_list' in af:
+			af['current_asset_list'].clear()
+
+		if 'current_asset_list_index' in af:
+			af['current_asset_list_index'] = 0
+
+		if 'current_implementation_list' in af:
+			af['current_implementation_list'].clear()
+
+		if 'current_implementation_list_index' in af:
+			af['current_implementation_list_index'] = 0
+
 
 		# Contact initialization endpoint and get the response
 		query = http.AF_HttpQuery(uri=af.current_init_url,method="get")
