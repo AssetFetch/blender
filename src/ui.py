@@ -124,7 +124,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 	@classmethod
 	def poll(self, context: Context) -> bool:
-		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af 
 		return len(af.current_asset_list.assets) > 0
 
 	def draw(self, context):
@@ -155,8 +155,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
-		for m in current_impl.validation_messages:
-			layout.label(text=m.text)
+			for m in current_impl.validation_messages:
+				layout.label(text=m.text)
 		# Import button
 		layout.operator("af.execute_import_plan",text="Perform import")
 
