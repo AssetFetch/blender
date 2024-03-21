@@ -146,19 +146,22 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			# Import plan
 			if current_impl.is_valid:
 				layout.label(text="Implementation is readable. Ready to import.",icon="SEQUENCE_COLOR_04")
-
-				all_steps_box = layout.box()
-				for step in current_impl.import_steps:
-					step_box = all_steps_box.box()
-					step_box.label(text=step.get_action_title())
-					step_box.label(text=step.get_action_config())
 				
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
-			for m in current_impl.validation_messages:
-				layout.label(text=m.text)
+
 		# Import button
 		layout.operator("af.execute_import_plan",text="Perform import")
+			
+		if len(af.current_implementation_list.implementations) > 0:
+			all_steps_box = layout.box()
+			for step in current_impl.import_steps:
+				step_box = all_steps_box.box()
+				step_box.label(text=step.get_action_title())
+				step_box.label(text=step.get_action_config())
+			for m in current_impl.validation_messages:
+				layout.label(text=m.text)
+		
 
 registration_targets = [
 	AF_PT_ProviderPanel,

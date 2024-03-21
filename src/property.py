@@ -25,32 +25,42 @@ http_method_enum = [
 			('post','POST','HTTP POST')
 		]		
 
-class AF_OptionalBlock:
-	is_set: bpy.props.BoolProperty(default=False)
-
-class AF_Configurable:
-	"""A class inheriting from AF_Configurable means that its parameters
+class AF_PR_GenericBlock:
+	"""A class inheriting from AF_PR_GenericBlock means that its parameters
 	can be loaded from a dict which is usually the result of parsed json.
 	See https://stackoverflow.com/a/2466207 """
 
+	is_set: bpy.props.BoolProperty(default=False)
+
 	def configure(self,initial_data):
 		for key in initial_data.keys():
-			if key in self:
+			try:
 				setattr(self,key,initial_data[key])
+			except Exception as e:
+				print(f"skipping {key} because {e}")
 
 class AF_PR_GenericString(bpy.types.PropertyGroup):
 	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
 	value: bpy.props.StringProperty()
 
-class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_Configurable):
+	def set(self,value):
+		self.value = value
+
+class AF_PR_FixedQuery(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	payload: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
+	def configure(self,fixed_query):
+		self.uri = fixed_query['uri']
+		self.method = fixed_query['method']
+		for p in fixed_query['payload']:
+			self.payload.add().set(p)
+
 	def to_http_query(self) -> AF_HttpQuery:
 		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=self.payload)
 
-class AF_PR_TextParameter(bpy.types.PropertyGroup,AF_Configurable,AF_OptionalBlock):
+class AF_PR_TextParameter(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
@@ -116,7 +126,7 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	parameters_multiselect: bpy.props.CollectionProperty(type=AF_PR_MultiSelectParameter)
 
 	# This class brings its own configure() instead of in heriting from
-	# AF_Configurable because it is a bit more complicated.
+	# AF_PR_GenericBlock because it is a bit more complicated.
 	def configure(self,variable_query):
 
 		self.uri = ""
@@ -220,7 +230,7 @@ class AF_PR_Header(bpy.types.PropertyGroup):
 
 # Datablocks
 
-class AF_PR_TextBlock(bpy.types.PropertyGroup,AF_Configurable,AF_OptionalBlock):
+class AF_PR_TextBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	title: bpy.props.StringProperty()
 	description: bpy.props.StringProperty()
 
@@ -229,7 +239,7 @@ class AF_PR_UserBlock(bpy.types.PropertyGroup):
 	display_tier: bpy.props.StringProperty()
 	display_icon_uri: bpy.props.StringProperty()
 
-class AF_PR_FileInfoBlock(bpy.types.PropertyGroup,AF_Configurable):
+class AF_PR_FileInfoBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	local_path: bpy.props.StringProperty()
 	length: bpy.props.IntProperty()
 	extension: bpy.props.StringProperty()
@@ -254,7 +264,7 @@ class AF_PR_UnlockBalanceBlock(bpy.types.PropertyGroup):
 class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup):
 	headers: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
-class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup,AF_Configurable):
+class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	archive_component_id: bpy.props.StringProperty
 	component_path: bpy.props.StringProperty
 
@@ -264,17 +274,21 @@ class AF_PR_WebReference(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty
 	icon_uri: bpy.props.StringProperty
 
-class AF_PR_UnlockLinkBlock(bpy.types.PropertyGroup,AF_Configurable):
+class AF_PR_UnlockLinkBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	unlock_query_id: bpy.props.StringProperty()
 	unlocked_datablocks_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 
-class AF_PR_LooseEnvironmentBlock(bpy.types.PropertyGroup,AF_Configurable):
+	def configure(self,unlock_link):
+		self.unlock_query_id = unlock_link['unlock_query_id']
+		self.unlocked_datablocks_query.configure(unlock_link['unlocked_datablocks_query'])
+
+class AF_PR_LooseEnvironmentBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	projection: bpy.props.EnumProperty(items=[
 		("equirectangular","equirectangular","equirectangular"),
 		("mirror_ball","mirror_ball","mirror_ball")
 	])
 
-class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup,AF_Configurable):
+class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	material_name: bpy.props.StringProperty()
 	map: bpy.props.EnumProperty(items=[
 		("albedo", "Albedo", "Albedo"),
@@ -295,11 +309,11 @@ class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup,AF_Configurable):
 		("linear","linear","linear")
 	])
 
-class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup,AF_Configurable):
+class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	material_name: bpy.props.StringProperty()
 	apply_selectively_to: bpy.props.StringProperty()
 
-class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup, AF_Configurable):
+class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	names: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 	kind: bpy.props.EnumProperty(items=[
 		("actions", "Actions", "Actions"),
@@ -356,10 +370,10 @@ class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
 				new_name = new_target.names.add()
 				new_name.value = n
 
-class AF_PR_FormatUsdBlock(bpy.types.PropertyGroup,AF_Configurable):
+class AF_PR_FormatUsdBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	is_crate: bpy.props.BoolProperty()
 
-class AF_PR_FormatObjBlock(bpy.types.PropertyGroup,AF_Configurable):
+class AF_PR_FormatObjBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	up_axis: bpy.props.StringProperty()
 	use_mtl: bpy.props.BoolProperty()
 
@@ -420,6 +434,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."),
 		("fetch_from_archive","Load File From Archive","Load a file from an archive."),
 		("import_obj_from_local_path","Import OBJ","Import obj file from local path."),
+		("import_usd_from_local_path","Import USD","Import USDA/C/Z file from a local path"),
 		("material_create","Create Material","Creates a new Material."),
 		("material_add_map","Add Map","Add Map to Material"),
 		("material_assign","Assign Material","Assigns a material to an object"),
@@ -444,7 +459,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	def get_action_config(self) -> str:
 		out = ""
 		for c in self.config:
-			out += f" ({c.name}: {c.value})"
+			out += f"{c.name}: {c.value}\n"
 		return out
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):

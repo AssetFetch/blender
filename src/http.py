@@ -71,7 +71,7 @@ class AF_HttpQuery:
 	
 	def execute_as_file(self, destination_path: str) -> None:
 
-		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		af = bpy.context.window_manager.af
 
 		headers = {}
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():

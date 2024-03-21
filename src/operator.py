@@ -8,8 +8,6 @@ from typing import Dict,List
 
 from src.property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation
 from . import http
-from . import implementations
-import urllib
 
 # Utility functions
 
@@ -154,8 +152,6 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 
 		return {'FINISHED'}
 
-
-
 class AF_OP_UpdateAssetList(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
 	
@@ -228,6 +224,9 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 			# If it passes, it is considered readable.
 			
 			try:
+				
+				# We start by assuming that the implementation is valid
+				current_impl.is_valid = True
 
 				# -------------------------------------------------------------------------------
 				# Fill the implementation with data from the HTTP endpoint
@@ -280,7 +279,10 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 						
 						]:
 						if key in pcd:
-							getattr(blender_comp,key.replace(".","_")).configure(pcd[key])
+							print(f"setting {blender_comp.name} -> {key}")
+							block = getattr(blender_comp,key.replace(".","_"))
+							block.is_set = True
+							block.configure(pcd[key])
 						else:
 							# Some datablocks are required and get tested for here.
 							if key in ['file_info']:
@@ -290,9 +292,6 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 					for key in ["mtlx_apply"]:
 						if key in pcd:
 							current_impl.validation_messages.add().set("warn",f"{blender_comp.name} uses MTLX which is currently unsupported.")
-						
-					
-
 
 				# -------------------------------------------------------------------------------
 				# Attempt to build an import plan for the implementation
@@ -317,7 +316,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 				current_impl.import_steps.add().set_action("directory_create").set_config_value("directory",current_impl.local_directory)
 
 				# Step 2: Find the relevant unlocking queries
-				required_unlocking_query_ids : set = {}
+				required_unlocking_query_ids : set = set()
 
 				for comp in current_impl.components:
 					if comp.unlock_link.unlock_query_id != "":
@@ -332,11 +331,28 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 					if comp.file_fetch_download.uri != "":
 						current_impl.import_steps.add().set_action("fetch_download").set_config_value("component_id",comp.name)
 
-				# Step 4: Plan how to actually import
+				# Step 4: Plan how to import main model file
 				for comp in current_impl.components:
 					if comp.file_info.behavior == "file_active":
 						if comp.file_info.extension == ".obj":
 							current_impl.import_steps.add().set_action("import_obj_from_local_path").set_config_value("component_id",comp.name)
+						if comp.file_info.extension in [".usd",".usda",".usdc",".usdz"]:
+							current_impl.import_steps.add().set_action("import_usd_from_local_path").set_config_value("component_id",comp.name)
+
+				# Step 5: Plan how to import other active files, such as loose materials
+				# List to keep track of which materials have already been created
+				already_created_materials = []
+				for comp in current_impl.components:
+					if comp.loose_material_define.is_set:
+						if comp.loose_material_define.material_name not in already_created_materials:
+							current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",comp.loose_material_define.material_name)
+							already_created_materials.append(comp.loose_material_define.material_name)
+						current_impl.import_steps.add().set_action("material_add_map").set_config_value("component_id",comp.name)
+					if comp.loose_material_apply.is_set:
+						if comp.loose_material_apply.material_name not in already_created_materials:
+							current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",comp.loose_material_apply.material_name)
+							already_created_materials.append(comp.loose_material_apply.material_name)
+						current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",comp.loose_material_apply.material_name)
 
 			except Exception as e:
 				current_impl.is_valid = False
@@ -472,7 +488,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 
 		###########################################################################
-
+		# Old code to be integrated into the new code above
 		# Assuming that the implementations + index are set properly
 		# Progress: https://stackoverflow.com/a/53877507
 
