@@ -46,7 +46,7 @@ class AF_PR_GenericString(bpy.types.PropertyGroup):
 	def set(self,value):
 		self.value = value
 
-class AF_PR_FixedQuery(bpy.types.PropertyGroup):
+class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	payload: bpy.props.CollectionProperty(type=AF_PR_GenericString)
@@ -265,8 +265,8 @@ class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup):
 	headers: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
 class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
-	archive_component_id: bpy.props.StringProperty
-	component_path: bpy.props.StringProperty
+	archive_component_id: bpy.props.StringProperty()
+	component_path: bpy.props.StringProperty()
 
 # This is not the actual datablock, just one list item within it
 class AF_PR_WebReference(bpy.types.PropertyGroup):

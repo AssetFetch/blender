@@ -257,13 +257,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 						raise Exception("A component is missing an id.")
 					blender_comp.name = provider_comp['id']
 
-					# Testing for file-related datablocks.
-					# Their rules are more complex and therefore not covered by the schema below
-					if "file_fetch.download" not in pcd and "file_fetch.from_archive" not in pcd and "unlock_link" not in pcd:
-						raise Exception(f"{blender_comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
-					
-					# Easily configurable datablocks
-					for key in [
+					recognized_datablocks = [
 
 						"file_info",
 						"file_fetch.download",
@@ -280,7 +274,15 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 						"unlock_link",
 						"text"
 						
-						]:
+						]
+					
+					# Unsupported datablocks which lead to a warning
+					for key in pcd.keys():
+						if key not in recognized_datablocks:
+							current_impl.validation_messages.add().set("warn",f"Datablock {key} in {blender_comp.name} has not been recognized and will be ignored.")
+					
+					# Configure datablocks
+					for key in recognized_datablocks:
 						if key in pcd:
 							print(f"setting {blender_comp.name} -> {key}")
 							block = getattr(blender_comp,key.replace(".","_"))
@@ -291,10 +293,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 							if key in ['file_info']:
 								raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
 					
-					# Unsupported datablocks which lead to a warning
-					for key in ["mtlx_apply"]:
-						if key in pcd:
-							current_impl.validation_messages.add().set("warn",f"{blender_comp.name} uses MTLX which is currently unsupported.")
+					
 
 				# -------------------------------------------------------------------------------
 				# Attempt to build an import plan for the implementation
@@ -330,9 +329,32 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 
 				# Step 3: Plan how to acquire and arrange all files in the asset directory
 				# TODO Currently ignoring archives
-				for comp in current_impl.components:
-					if comp.file_fetch_download.uri != "":
+				already_processed_component_ids = set()
+				
+				def recursive_fetching_datablock_handler(comp : AF_PR_Component):
+
+					# Keep track of which components were already processed
+					if comp.name in already_processed_component_ids:
+						return
+					else:
+						already_processed_component_ids.add(comp.name)
+					
+					# Decide how to handle this component (recursively if it references an archive)
+					if comp.file_fetch_download.is_set:
 						current_impl.import_steps.add().set_action("fetch_download").set_config_value("component_id",comp.name)
+					elif comp.file_fetch_from_archive.is_set:
+						target_comp = next(c for c in current_impl.components if c.name == comp.file_fetch_from_archive.archive_component_id)
+						if not target_comp:
+							raise Exception(f"Referenced component {comp.file_fetch_from_archive.archive_component_id} could not be found.")
+						recursive_fetching_datablock_handler(target_comp)
+					elif comp.unlock_link.is_set:
+						current_impl.import_steps.add().set_action("fetch_download_unlocked").set_config_value("component_id",comp.name)
+					else:
+						raise Exception(f"{blender_comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
+
+				for comp in current_impl.components:
+					recursive_fetching_datablock_handler(comp)
+					
 
 				# Step 4: Plan how to import main model file
 				for comp in current_impl.components:

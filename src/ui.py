@@ -155,6 +155,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			
 		if len(af.current_implementation_list.implementations) > 0:
 			all_steps_box = layout.box()
+			all_steps_box.label(text="Import steps:")
 			for step in current_impl.import_steps:
 				step_box = all_steps_box.box()
 				step_box.label(text=step.get_action_title())
