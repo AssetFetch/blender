@@ -186,6 +186,9 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 				asset_entry.implementation_list_query.configure(asset['data']['implementation_list_query'])
 
 		af.current_asset_list_index = 0
+
+		# Reset implementations list
+		af.current_implementation_list.implementations.clear()
 		
 		return {'FINISHED'}
 

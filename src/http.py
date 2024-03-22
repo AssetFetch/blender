@@ -28,6 +28,8 @@ class AF_HttpQuery:
 	def execute(self) -> AF_HttpResponse:
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
+		print(f"sending http {self.method} to {self.uri} with {self.parameters}")
+
 		headers = {}
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
@@ -35,7 +37,7 @@ class AF_HttpQuery:
 		if self.method == "get":
 			response = requests.get(self.uri, params=self.parameters,headers=headers)
 		elif self.method == "post":
-			response = requests.post(self.uri, data=self.parameters,headers=headers)
+			response = requests.post(self.uri,params=self.parameters,headers=headers)
 		else:
 			raise ValueError(f"Unsupported HTTP method: {self.method}")
 

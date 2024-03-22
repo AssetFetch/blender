@@ -488,12 +488,15 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 
 # Final AssetFetch property
 
+def asset_list_index_update(property,context):
+	bpy.context.window_manager.af.current_implementation_list.implementations.clear()
+
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_init_url: bpy.props.StringProperty(description="Init")
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)
-	current_asset_list_index: bpy.props.IntProperty()
+	current_asset_list_index: bpy.props.IntProperty(update=asset_list_index_update)
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
 	current_implementation_list_index: bpy.props.IntProperty()
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))
