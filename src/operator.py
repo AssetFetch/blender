@@ -6,7 +6,7 @@ import bpy,math,tempfile
 import bpy_extras.image_utils
 from typing import Dict,List
 
-from src.property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation
+from src.property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_UnlockQuery
 from . import http
 
 # Utility functions
@@ -219,8 +219,9 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 		# Parse the datablocks for the ImplementationList itself
 
 		if "unlock_queries" in response.parsed['data']:
+			af.current_implementation_list.unlock_queries.is_set = True
 			for unlock_query in response.parsed['data']['unlock_queries']:
-				af.current_implementation_list.unlock_queries.add().configure(unlock_query)
+				af.current_implementation_list.unlock_queries.items.add().configure(unlock_query)
 
 		for incoming_impl in response.parsed['implementations']:
 
@@ -381,10 +382,11 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 							already_created_materials.append(comp.loose_material_define.material_name)
 						current_impl.import_steps.add().set_action("material_add_map").set_config_value("component_id",comp.name)
 					if comp.loose_material_apply.is_set:
-						if comp.loose_material_apply.material_name not in already_created_materials:
-							current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",comp.loose_material_apply.material_name)
-							already_created_materials.append(comp.loose_material_apply.material_name)
-						current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",comp.loose_material_apply.material_name)
+						for mat_def in comp.loose_material_apply.items:
+							if mat_def.material_name not in already_created_materials:
+								current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",mat_def.material_name)
+								already_created_materials.append(mat_def.material_name)
+							current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",mat_def.material_name)
 
 			except Exception as e:
 				current_impl.is_valid = False
@@ -454,11 +456,13 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				os.makedirs(step.config['directory'].value,exist_ok=True)
 
 			elif step.action == "unlock":
-
-				pass
-				
-				
-
+				unlock_query : AF_PR_UnlockQuery = af.current_implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
+				request : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
+				response = request.execute()
+				if response.is_ok:
+					unlock_query.unlocked = True
+				else:
+					raise Exception(f"Unlocking Query {unlock_query.name} failed.")
 			
 			elif step.action == "fetch_download":
 				component : AF_PR_Component = implementation.get_component_by_id(step.config['component_id'].value)
@@ -511,8 +515,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 									bpy.data.materials.remove(slot.material)
 								bpy.ops.object.material_slot_remove()
 
-						if "loose_material_apply" in obj_component:
-							for material_declaration in obj_component.loose_material_apply:
+						if obj_component.loose_material_apply.is_set:
+							for material_declaration in obj_component.loose_material_apply.items:
 								material_name = asset_id + "_" + material_name
 								obj.data.materials.append(self.get_or_create_material(material_name,asset_id))
 			else:

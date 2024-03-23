@@ -46,6 +46,9 @@ class AF_PR_GenericString(bpy.types.PropertyGroup):
 	def set(self,value):
 		self.value = value
 
+	def __str__(self) -> str:
+		return str(self.value)
+	
 class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
@@ -60,7 +63,10 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 			par.value = fixed_query['payload'][p]
 
 	def to_http_query(self) -> AF_HttpQuery:
-		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=self.payload)
+		parameters = {}
+		for p in self.payload:
+			parameters[p.name] = p.value
+		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=parameters)
 
 class AF_PR_TextParameter(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	title: bpy.props.StringProperty()
@@ -257,13 +263,12 @@ class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup):
 	header_acquisition_uri: bpy.props.StringProperty()
 	header_acquisition_uri_title: bpy.props.StringProperty()
 
-class AF_PR_UnlockBalanceBlock(bpy.types.PropertyGroup):
-	is_set: bpy.props.BoolProperty(default=False)
+class AF_PR_UnlockBalanceBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	balance: bpy.props.FloatProperty()
 	balance_unit: bpy.props.StringProperty()
 	balance_refill_uri: bpy.props.StringProperty()
 
-class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup):
+class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	headers: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
 class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
@@ -311,11 +316,21 @@ class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock)
 		("linear","linear","linear")
 	])
 
-class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
+class AF_PR_LooseMaterialApplyElement(bpy.types.PropertyGroup):
 	material_name: bpy.props.StringProperty()
 	apply_selectively_to: bpy.props.StringProperty()
 
-class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup, AF_PR_GenericBlock):
+class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
+	items: bpy.props.CollectionProperty(type=AF_PR_LooseMaterialApplyElement)
+
+	def configure(self,loose_material_apply):
+		for elem in loose_material_apply:
+			new_item = self.items.add()
+			new_item.material_name = elem['material_name']
+			if "apply_selectively_to" in elem and elem['apply_selectively_to'] != None:
+				new_item.apply_selectively_to = elem['apply_selectively_to']
+
+class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup):
 	names: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 	kind: bpy.props.EnumProperty(items=[
 		("actions", "Actions", "Actions"),
@@ -381,14 +396,14 @@ class AF_PR_FormatObjBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 
 # Single element of the unlock_queries list
 class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
-	id: bpy.props.StringProperty()
+	# ID is handled by blenders property name
 	unlocked: bpy.props.BoolProperty(default=False)
 	price: bpy.props.FloatProperty()
 	unlock_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	unlock_query_fallback_uri: bpy.props.StringProperty()
 
 	def configure(self,unlock_query):
-		self.id = unlock_query['id']
+		self.name = unlock_query['id']
 		if "unlocked" in unlock_query:
 			self.unlocked = unlock_query['unlocked']
 		if "price" in unlock_query:
@@ -397,6 +412,13 @@ class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
 			self.unlock_query.configure(unlock_query['unlock_query'])
 		if "unlock_query_fallback_uri" in unlock_query and unlock_query['unlock_query_fallback_uri']:
 			self.unlock_query_fallback_uri = unlock_query['unlock_query_fallback_uri']
+
+class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
+	items: bpy.props.CollectionProperty(type=AF_PR_UnlockQuery)
+
+	def configure(self,unlock_queries):
+		for q in unlock_queries:
+			self.items.add().configure(q)
 
 # Core elements
 
@@ -524,7 +546,14 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 
 class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 	implementations: bpy.props.CollectionProperty(type=AF_PR_Implementation)
-	unlock_queries: bpy.props.CollectionProperty(type=AF_PR_UnlockQuery)
+	unlock_queries: bpy.props.PointerProperty(type=AF_PR_UnlockQueriesBlock)
+
+	def get_unlock_query_by_id(self,query_id:str) -> AF_PR_UnlockQuery:
+		for q in self.unlock_queries.items:
+			if q.name == query_id:
+				return q
+			
+		raise Exception(f"No unlocking query with id {query_id} could be found.")
 
 # Final AssetFetch property
 
@@ -566,12 +595,14 @@ registration_targets = [
 	AF_PR_UnlockLinkBlock,
 	AF_PR_LooseEnvironmentBlock,
 	AF_PR_LooseMaterialDefineBlock,
+	AF_PR_LooseMaterialApplyElement,
 	AF_PR_LooseMaterialApplyBlock,
 	AF_PR_FormatBlendTarget,
 	AF_PR_FormatBlendBlock,
 	AF_PR_FormatUsdBlock,
 	AF_PR_FormatObjBlock,
 	AF_PR_UnlockQuery,
+	AF_PR_UnlockQueriesBlock,
 	
 	AF_PR_ProviderInitialization,
 	AF_PR_ConnectionStatus,
