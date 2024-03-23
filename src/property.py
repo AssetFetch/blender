@@ -54,8 +54,10 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	def configure(self,fixed_query):
 		self.uri = fixed_query['uri']
 		self.method = fixed_query['method']
-		for p in fixed_query['payload']:
-			self.payload.add().set(p)
+		for p in fixed_query['payload'].keys():
+			par = self.payload.add()
+			par.name = p
+			par.value = fixed_query['payload'][p]
 
 	def to_http_query(self) -> AF_HttpQuery:
 		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=self.payload)
@@ -377,6 +379,25 @@ class AF_PR_FormatObjBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	up_axis: bpy.props.StringProperty()
 	use_mtl: bpy.props.BoolProperty()
 
+# Single element of the unlock_queries list
+class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
+	id: bpy.props.StringProperty()
+	unlocked: bpy.props.BoolProperty(default=False)
+	price: bpy.props.FloatProperty()
+	unlock_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
+	unlock_query_fallback_uri: bpy.props.StringProperty()
+
+	def configure(self,unlock_query):
+		self.id = unlock_query['id']
+		if "unlocked" in unlock_query:
+			self.unlocked = unlock_query['unlocked']
+		if "price" in unlock_query:
+			self.price = unlock_query['price']
+		if "unlock_query" in unlock_query:
+			self.unlock_query.configure(unlock_query['unlock_query'])
+		if "unlock_query_fallback_uri" in unlock_query and unlock_query['unlock_query_fallback_uri']:
+			self.unlock_query_fallback_uri = unlock_query['unlock_query_fallback_uri']
+
 # Core elements
 
 class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
@@ -428,18 +449,30 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	action: bpy.props.EnumProperty(items=[
-		("directory_create","Create Directory","Create a directory."),
-		("unlock","Unlock Resource",""),
-		("fetch_download","Download File","Download a file."),
-		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."),
+
+		# The comments behind each item describe the config keys used for it.
+
+		# File actions
+		("fetch_download","Download File","Download a file."), # component_id
+		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."), # component_id
 		("fetch_from_archive","Load File From Archive","Load a file from an archive."),
-		("import_obj_from_local_path","Import OBJ","Import obj file from local path."),
-		("import_usd_from_local_path","Import USD","Import USDA/C/Z file from a local path"),
-		("material_create","Create Material","Creates a new Material."),
-		("material_add_map","Add Map","Add Map to Material"),
-		("material_assign","Assign Material","Assigns a material to an object"),
+
+		# Import actions
+		("import_obj_from_local_path","Import OBJ","Import obj file from local path."), # component_id
+		("import_usd_from_local_path","Import USD","Import USDA/C/Z file from a local path"), # component_id
+
+		# Material actions
+		("material_create","Create Material","Creates a new Material."), # material_name
+		("material_add_map","Add Map","Add Map to Material"), # component_id
+		("material_assign","Assign Material","Assigns a material to an object"), # component_id
+
+		# Environment actions
 		("world_create","Create World","Creates a new world/environment."),
-		("world_set","Set World Map","Set the environment map for a world.")
+		("world_set","Set World Map","Set the environment map for a world."),
+
+		# Misc actions
+		("directory_create","Create Directory","Create a directory."), # directory
+		("unlock","Unlock Resource","") # query_id
 	])
 	config:bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
@@ -483,8 +516,15 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImplementationImportStep)
 	local_directory: bpy.props.StringProperty()
 
+	def get_component_by_id(self,component_id:str) -> AF_PR_Component:
+		for c in self.components:
+			if c.name == component_id:
+				return c
+		raise Exception(f"No component with id {component_id} could be found.")
+
 class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 	implementations: bpy.props.CollectionProperty(type=AF_PR_Implementation)
+	unlock_queries: bpy.props.CollectionProperty(type=AF_PR_UnlockQuery)
 
 # Final AssetFetch property
 
@@ -531,6 +571,7 @@ registration_targets = [
 	AF_PR_FormatBlendBlock,
 	AF_PR_FormatUsdBlock,
 	AF_PR_FormatObjBlock,
+	AF_PR_UnlockQuery,
 	
 	AF_PR_ProviderInitialization,
 	AF_PR_ConnectionStatus,

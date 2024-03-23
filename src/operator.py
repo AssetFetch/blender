@@ -215,6 +215,13 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 
 		# Converting the json response into blender bpy data
 		af['current_implementation_list'].clear()
+
+		# Parse the datablocks for the ImplementationList itself
+
+		if "unlock_queries" in response.parsed['data']:
+			for unlock_query in response.parsed['data']['unlock_queries']:
+				af.current_implementation_list.unlock_queries.add().configure(unlock_query)
+
 		for incoming_impl in response.parsed['implementations']:
 
 			# -------------------------------------------------------------------------------
@@ -257,7 +264,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 						raise Exception("A component is missing an id.")
 					blender_comp.name = provider_comp['id']
 
-					recognized_datablocks = [
+					recognized_datablock_names = [
 
 						"file_info",
 						"file_fetch.download",
@@ -278,11 +285,11 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 					
 					# Unsupported datablocks which lead to a warning
 					for key in pcd.keys():
-						if key not in recognized_datablocks:
+						if key not in recognized_datablock_names:
 							current_impl.validation_messages.add().set("warn",f"Datablock {key} in {blender_comp.name} has not been recognized and will be ignored.")
 					
 					# Configure datablocks
-					for key in recognized_datablocks:
+					for key in recognized_datablock_names:
 						if key in pcd:
 							print(f"setting {blender_comp.name} -> {key}")
 							block = getattr(blender_comp,key.replace(".","_"))
@@ -445,10 +452,16 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			if step.action == "directory_create":
 				print(f"Creating directory {step.config['directory'].value}")
 				os.makedirs(step.config['directory'].value,exist_ok=True)
-			
-			if step.action == "fetch_download":
+
+			elif step.action == "unlock":
+
+				pass
 				
-				component : AF_PR_Component = implementation.components[step.config['component_id'].value]
+				
+
+			
+			elif step.action == "fetch_download":
+				component : AF_PR_Component = implementation.get_component_by_id(step.config['component_id'].value)
 
 				# Prepare query
 				uri = component.file_fetch_download.uri
@@ -467,14 +480,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				
 				print(f"Downloading into {destination}")
 				query.execute_as_file(destination_path=destination)
-			
-			if step.action == "fetch_download_unlocked":
-				pass
 
-			if step.action == "fetch_from_archive":
-				pass
-
-			if step.action == "import_obj_from_local_path":
+			elif step.action == "import_obj_from_local_path":
 				# The path where the obj file was downloaded in a previous step
 				obj_component = implementation.components[step.config['component_id'].value]
 				obj_target_path = os.path.join(implementation.local_directory,obj_component.file_info.local_path)
@@ -508,6 +515,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 							for material_declaration in obj_component.loose_material_apply:
 								material_name = asset_id + "_" + material_name
 								obj.data.materials.append(self.get_or_create_material(material_name,asset_id))
+			else:
+				raise Exception(f"No known procedure for action {step.action}")
 
 
 
