@@ -373,8 +373,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 							current_impl.import_steps.add().set_action("import_usd_from_local_path").set_config_value("component_id",comp.name)
 
 				# Step 5: Plan how to import other active files, such as loose materials
-				# List to keep track of which materials have already been created
-				already_created_materials = []
+				already_created_materials = [] # List to keep track of which materials have already been created
 				for comp in current_impl.components:
 					if comp.loose_material_define.is_set:
 						if comp.loose_material_define.material_name not in already_created_materials:
@@ -382,11 +381,13 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 							already_created_materials.append(comp.loose_material_define.material_name)
 						current_impl.import_steps.add().set_action("material_add_map").set_config_value("component_id",comp.name)
 					if comp.loose_material_apply.is_set:
-						for mat_def in comp.loose_material_apply.items:
+						for i in range(len(comp.loose_material_apply.items)):
+							mat_def = comp.loose_material_apply.items[i]
 							if mat_def.material_name not in already_created_materials:
 								current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",mat_def.material_name)
 								already_created_materials.append(mat_def.material_name)
-							current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",mat_def.material_name)
+							current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",mat_def.material_name).set_config_value("material_index",str(i))
+
 
 			except Exception as e:
 				current_impl.is_valid = False

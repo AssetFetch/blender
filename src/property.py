@@ -514,7 +514,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	def get_action_config(self) -> str:
 		out = ""
 		for c in self.config:
-			out += f"{c.name}: {c.value}\n"
+			out += f"{c.name}={c.value} "
 		return out
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
