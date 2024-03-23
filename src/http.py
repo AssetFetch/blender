@@ -92,8 +92,8 @@ class AF_HttpQuery:
 			stream_handle.raise_for_status()
 
 			for chunk in stream_handle.iter_content(4096):
-						if chunk:
-							file_handle.write(chunk)
+				if chunk:
+					file_handle.write(chunk)
 			
 		finally:
 			stream_handle.close()

@@ -2,6 +2,7 @@ import glob
 import hashlib
 import json
 import os
+import shutil
 import bpy,math,tempfile
 import bpy_extras.image_utils
 from typing import Dict,List
@@ -326,14 +327,13 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 				current_impl.import_steps.add().set_action("directory_create").set_config_value("directory",current_impl.local_directory)
 
 				# Step 2: Find the relevant unlocking queries
-				required_unlocking_query_ids : set = set()
-
+				already_scheduled_unlocking_query_ids = []
 				for comp in current_impl.components:
-					if comp.unlock_link.unlock_query_id != "":
-						required_unlocking_query_ids.add(comp.unlock_link.unlock_query_id)
-				
-				for q in required_unlocking_query_ids:
-					current_impl.import_steps.add().set_action("unlock").set_config_value("query_id",q)
+					if comp.unlock_link.is_set:
+						referenced_query : AF_PR_UnlockQuery = af.current_implementation_list.get_unlock_query_by_id(comp.unlock_link.unlock_query_id)
+						if (not referenced_query.unlocked) and (referenced_query.name not in already_scheduled_unlocking_query_ids):
+							current_impl.import_steps.add().set_action("unlock").set_config_value("query_id",comp.unlock_link.unlock_query_id)
+							already_scheduled_unlocking_query_ids.append(comp.unlock_link.unlock_query_id)					
 
 				# Step 3: Plan how to acquire and arrange all files in the asset directory
 				# TODO Currently ignoring archives
@@ -436,7 +436,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		new_material['af_managed'] = True
 		new_material['af_asset_id'] = asset_id
 
-		return new_material
+		return new_material	
 
 	def execute(self,context):
 		af = bpy.context.window_manager.af
@@ -444,10 +444,18 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
 
 		# Ensure that an empty temp directory is available
-		temp_dir = os.path.join(tempfile.gettempdir(),"assetfetch-blender")
+		temp_dir = os.path.join(tempfile.gettempdir(),"assetfetch-blender-temp-dl")
 		if os.path.exists(temp_dir):
-			os.rmdir(temp_dir)
+			shutil.rmtree(temp_dir)
 		os.makedirs(temp_dir,exist_ok=True)
+
+		# Clear the local implementation_directory
+		try:
+			if os.path.exists(implementation.local_directory):
+				shutil.rmtree(implementation.local_directory)
+			os.makedirs(implementation.local_directory,exist_ok=True)
+		except Exception as e:
+			print(e)
 		
 	
 		for step in implementation.import_steps:
@@ -456,23 +464,38 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				print(f"Creating directory {step.config['directory'].value}")
 				os.makedirs(step.config['directory'].value,exist_ok=True)
 
-			elif step.action == "unlock":
+			if step.action == "unlock":
 				unlock_query : AF_PR_UnlockQuery = af.current_implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
-				request : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
-				response = request.execute()
+				query : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
+				response = query.execute()
 				if response.is_ok:
 					unlock_query.unlocked = True
 				else:
 					raise Exception(f"Unlocking Query {unlock_query.name} failed.")
 			
-			elif step.action == "fetch_download":
+
+			# This code will fetch the file_fetch.download datablock that is missing on the locked asset.
+			# It can do that now because the resource was already unlocked during a previous step.
+			if step.action == "fetch_download_unlocked":
+				component : AF_PR_Component = implementation.get_component_by_id(step.config['component_id'].value)
+				
+				# Perform the query to get the previously withheld datablocks
+				response = component.unlock_link.unlocked_datablocks_query.to_http_query().execute()
+				
+				# Add the real download configuration to the component so that it can be called in the next step.
+				if "file_fetch.download" in response.parsed['data']:
+					component.file_fetch_download.configure(response.parsed['data']['file_fetch.download'])
+				else:
+					raise Exception(f"Could not get unlocked download link for component {component.name}")
+
+			# Actually download the asset file.
+			# The data was either there already or has been fetched using the code above (action=file_download_unlocked)
+			# In both cases, this code below actually downloads the asset and places it in its desired place
+			if step.action in ["fetch_download","fetch_download_unlocked"]:
 				component : AF_PR_Component = implementation.get_component_by_id(step.config['component_id'].value)
 
 				# Prepare query
-				uri = component.file_fetch_download.uri
-				method = component.file_fetch_download.method
-				payload = component.file_fetch_download.payload
-				query = http.AF_HttpQuery(uri=uri,method=method,parameters=payload)
+				query = component.file_fetch_download.to_http_query()
 
 				# Determine target path
 				if component.file_info.behavior in ['file_passive','file_active']:
@@ -485,10 +508,16 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				
 				print(f"Downloading into {destination}")
 				query.execute_as_file(destination_path=destination)
+			
+			if step.action == "import_usd_from_local_path":
+				usd_component = implementation.get_component_by_id(step.config['component_id'].value)
+				usd_target_path = os.path.join(implementation.local_directory,usd_component.file_info.local_path)
+				print(f"Importing USD from {usd_target_path}")
+				bpy.ops.wm.usd_import(filepath=usd_target_path,import_all_materials=True)
 
-			elif step.action == "import_obj_from_local_path":
+			if step.action == "import_obj_from_local_path":
 				# The path where the obj file was downloaded in a previous step
-				obj_component = implementation.components[step.config['component_id'].value]
+				obj_component = implementation.get_component_by_id(step.config['component_id'].value)
 				obj_target_path = os.path.join(implementation.local_directory,obj_component.file_info.local_path)
 
 				print(f"Importing OBJ from {obj_target_path}")
@@ -520,8 +549,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 							for material_declaration in obj_component.loose_material_apply.items:
 								material_name = asset_id + "_" + material_name
 								obj.data.materials.append(self.get_or_create_material(material_name,asset_id))
-			else:
-				raise Exception(f"No known procedure for action {step.action}")
 
 
 
