@@ -104,10 +104,17 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		#layout.label(text="ASDF",icon_value=icons_dict['CAT_1'].icon_id)
 		
 		if len(af.current_asset_list.assets) > 0:
+			layout.template_icon_view(data=af.current_asset_list,property="assets",show_labels=True)
 			layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index")
 			layout.separator()
 			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
+			
 			layout.label(text=current_asset.text.title,icon="PACKAGE")
+			asset_box = layout.box()
+			if current_asset.preview_image_thumbnail.icon_id:
+				asset_box.template_icon(icon_value=current_asset.preview_image_thumbnail.icon_id,scale=8.0)
+			else:
+				asset_box.label(text="No thumbnail available.",icon="CANCEL")
 		else:
 			layout.label(text="The search returned no results.",icon="ORPHAN_DATA")
 			

@@ -33,6 +33,7 @@ class AF_PR_GenericBlock:
 	is_set: bpy.props.BoolProperty(default=False)
 
 	def configure(self,initial_data):
+		self.is_set = True
 		for key in initial_data.keys():
 			try:
 				setattr(self,key,initial_data[key])
@@ -420,6 +421,22 @@ class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 		for q in unlock_queries:
 			self.items.add().configure(q)
 
+class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
+	alt: bpy.props.StringProperty()
+	uris: bpy.props.CollectionProperty(type=AF_PR_GenericString)
+	chosen_resolution: bpy.props.IntProperty()
+	temp_file_id: bpy.props.StringProperty()
+	icon_id: bpy.props.IntProperty()
+
+	def configure(self, preview_image_thumbnail):
+		self.is_set = True
+		if "alt" in preview_image_thumbnail:
+			self.alt = preview_image_thumbnail['alt']
+		for resolution in preview_image_thumbnail['uris'].keys():
+			new_res = self.uris.add()
+			new_res.name = resolution
+			new_res.value = preview_image_thumbnail['uris'][resolution]
+
 # Core elements
 
 class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
@@ -445,6 +462,7 @@ class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
 	implementation_list_query: bpy.props.PointerProperty(type=AF_PR_VariableQuery)
+	preview_image_thumbnail: bpy.props.PointerProperty(type=AF_PR_PreviewImageThumbnailBlock)
 	#...
 
 class AF_PR_AssetList(bpy.types.PropertyGroup):
@@ -603,6 +621,7 @@ registration_targets = [
 	AF_PR_FormatObjBlock,
 	AF_PR_UnlockQuery,
 	AF_PR_UnlockQueriesBlock,
+	AF_PR_PreviewImageThumbnailBlock,
 	
 	AF_PR_ProviderInitialization,
 	AF_PR_ConnectionStatus,
