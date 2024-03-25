@@ -395,6 +395,8 @@ class AF_PR_FormatObjBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	up_axis: bpy.props.StringProperty()
 	use_mtl: bpy.props.BoolProperty()
 
+	blender_objects: bpy.props.CollectionProperty(type=AF_PR_GenericString)
+
 # Single element of the unlock_queries list
 class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
 	# ID is handled by blenders property name
@@ -426,7 +428,7 @@ class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,AF_PR_GenericBloc
 	uris: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 	chosen_resolution: bpy.props.IntProperty()
 	temp_file_id: bpy.props.StringProperty()
-	icon_id: bpy.props.IntProperty()
+	icon_id: bpy.props.IntProperty(default=-1)
 
 	def configure(self, preview_image_thumbnail):
 		self.is_set = True
@@ -469,6 +471,13 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 	assets: bpy.props.CollectionProperty(type=AF_PR_Asset)
 	# Datablocks...
 
+class AF_PR_BlenderResource(bpy.types.PropertyGroup):
+	# object name is handled by name property
+	kind: bpy.props.EnumProperty(items=[
+		("material","material","material"),
+		("object","object","object")
+	])
+
 class AF_PR_Component(bpy.types.PropertyGroup):
 
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
@@ -485,6 +494,10 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	format_blend: bpy.props.PointerProperty(type=AF_PR_FormatBlendBlock)
 	format_obj: bpy.props.PointerProperty(type=AF_PR_FormatObjBlock)
 	format_usd: bpy.props.PointerProperty(type=AF_PR_FormatUsdBlock)
+
+	# This is mainly being used to track objects for
+	# the purpose of performing links for loose_materials
+	related_blender_resources: bpy.props.CollectionProperty(type=AF_PR_BlenderResource)
 
 
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
@@ -627,6 +640,7 @@ registration_targets = [
 	AF_PR_ConnectionStatus,
 	AF_PR_Asset,
 	AF_PR_AssetList,
+	AF_PR_BlenderResource,
 	AF_PR_Component,
 	AF_PR_ImplementationImportStep,
 	AF_PR_ImplementationValidationMessage,

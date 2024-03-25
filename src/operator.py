@@ -446,7 +446,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 							if mat_def.material_name not in already_created_materials:
 								current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",mat_def.material_name)
 								already_created_materials.append(mat_def.material_name)
-							current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",mat_def.material_name).set_config_value("material_index",str(i))
+							current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",comp.name).set_config_value("material_index",str(i))
 
 
 			except Exception as e:
@@ -473,7 +473,9 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	@classmethod
 	def poll(self,context):
 		af = bpy.context.window_manager.af
-		return len(af.current_implementation_list.implementations) > 0 and af.current_implementation_list.implementations[af.current_implementation_list_index].is_valid
+		implementation_list = af.current_implementation_list
+		return len(implementation_list.implementations) > 0 and implementation_list.implementations[af.current_implementation_list_index].is_valid
+	
 	
 	def get_or_create_material(self,material_name:str,asset_id:str):
 		if material_name in bpy.data.materials and bpy.data.materials[material_name]['af_managed'] and bpy.data.materials[material_name]['af_asset_id'] == asset_id:
@@ -492,16 +494,23 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		# Basic links
 		new_material.node_tree.links.new(bsdf_shader.outputs['BSDF'],output.inputs['Surface'])
 
-		# Mark as AF
+		# Mark as AssetFetch-managed
 		new_material['af_managed'] = True
 		new_material['af_asset_id'] = asset_id
+
 
 		return new_material	
 
 	def execute(self,context):
+
+		# Prepare helpful variables
 		af = bpy.context.window_manager.af
-		implementation = af.current_implementation_list.implementations[af.current_implementation_list_index]
+		implementation_list = af.current_implementation_list
+		implementation = implementation_list.implementations[af.current_implementation_list_index]
 		asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
+
+		materials_created = {}
+		worlds_created = {}
 
 		# Ensure that an empty temp directory is available
 		temp_dir = os.path.join(tempfile.gettempdir(),"assetfetch-blender-temp-dl")
@@ -520,18 +529,23 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	
 		for step in implementation.import_steps:
 
+			step_complete = False
+
 			if step.action == "directory_create":
 				print(f"Creating directory {step.config['directory'].value}")
 				os.makedirs(step.config['directory'].value,exist_ok=True)
+				step_complete = True
 
 			if step.action == "unlock":
-				unlock_query : AF_PR_UnlockQuery = af.current_implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
+				unlock_query : AF_PR_UnlockQuery = implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
 				query : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
 				response = query.execute()
 				if response.is_ok:
 					unlock_query.unlocked = True
 				else:
 					raise Exception(f"Unlocking Query {unlock_query.name} failed.")
+				
+				step_complete = True
 			
 
 			# This code will fetch the file_fetch.download datablock that is missing on the locked asset.
@@ -568,12 +582,16 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				
 				print(f"Downloading into {destination}")
 				query.execute_as_file(destination_path=destination)
+
+				step_complete = True
 			
 			if step.action == "import_usd_from_local_path":
 				usd_component = implementation.get_component_by_id(step.config['component_id'].value)
 				usd_target_path = os.path.join(implementation.local_directory,usd_component.file_info.local_path)
 				print(f"Importing USD from {usd_target_path}")
 				bpy.ops.wm.usd_import(filepath=usd_target_path,import_all_materials=True)
+
+				step_complete = True
 
 			if step.action == "import_obj_from_local_path":
 				# The path where the obj file was downloaded in a previous step
@@ -590,28 +608,79 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					elif obj_component.format_obj.up_axis == "+z":
 						up_axis = 'Z'
 
-					use_mtl = obj_component.format_obj.use_mtl
+				#	use_mtl = obj_component.format_obj.use_mtl
 
 				bpy.ops.wm.obj_import(up_axis=up_axis,filepath=obj_target_path)
 				imported_objects = bpy.context.selected_objects
 
 				# remove materials from import (if requested)
-				if not use_mtl:
-					for obj in imported_objects:
-						obj.active_material_index = 0
-						for slot in obj.material_slots:
-							with context.temp_override(object=obj):
-								if slot.material:
-									bpy.data.materials.remove(slot.material)
-								bpy.ops.object.material_slot_remove()
+				# This will get dropped from the standard
+				#if not use_mtl:
+				#	for obj in imported_objects:
+				#		obj.active_material_index = 0
+				#		for slot in obj.material_slots:
+				#			with context.temp_override(object=obj):
+				#				if slot.material:
+				#					bpy.data.materials.remove(slot.material)
+				#				bpy.ops.object.material_slot_remove()
 
-						if obj_component.loose_material_apply.is_set:
-							for material_declaration in obj_component.loose_material_apply.items:
-								material_name = asset_id + "_" + material_name
-								obj.data.materials.append(self.get_or_create_material(material_name,asset_id))
+				# Apply materials, if referenced
+				obj_component.related_blender_resources.clear()
+				for obj in imported_objects:
+					
+					# Keep tracks of which blender scene objects originated from this obj
+					bl_obj_entry = obj_component.related_blender_resources.add()
+					bl_obj_entry.name = obj.name
+					bl_obj_entry.kind = "object"
 
+				step_complete = True
 
+			if step.action == "material_assign":
+				
+				target_component : AF_PR_Component = implementation.get_component_by_id(step.config['component_id'].value)
 
+				for material_declaration in target_component.loose_material_apply.items:
+					if material_declaration.material_name in materials_created:
+						target_material = materials_created[material_declaration.material_name]
+					else:
+						raise Exception(f"Attempting to assign material {material_declaration.material_name} which does not exist yet.")
+
+					for target_resource in target_component.related_blender_resources:
+						if target_resource.kind == "object":
+							bpy.data.objects[target_resource.name].data.materials.append(target_material)
+				
+				step_complete = True
+
+			if step.action == "material_create":
+				
+				material_name = step.config['material_name'].value
+
+				new_material= bpy.data.materials.new(name=material_name)
+				new_material.use_nodes = True
+
+				# Add principled bsdf and tex coord
+				new_material.node_tree.nodes.clear()
+				output = new_material.node_tree.nodes.new(type='ShaderNodeOutputMaterial')
+				bsdf_shader = new_material.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
+				bsdf_shader.name = "BSDF"
+				tex_coord = new_material.node_tree.nodes.new(type='ShaderNodeTexCoord')
+				tex_coord.name = "TEX_COORD"
+
+				# Basic links
+				new_material.node_tree.links.new(bsdf_shader.outputs['BSDF'],output.inputs['Surface'])
+
+				# Mark as AssetFetch-managed
+				new_material['af_managed'] = True
+				new_material['af_asset_id'] = asset_id
+
+				# Register material for future reference
+				materials_created[material_name] = new_material
+
+				step_complete = True
+			
+
+			if not step_complete:
+				raise Exception(f"Step {step.action} could not be completed.")
 
 		###########################################################################
 		# Old code to be integrated into the new code above
