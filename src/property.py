@@ -393,7 +393,6 @@ class AF_PR_FormatUsdBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 
 class AF_PR_FormatObjBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	up_axis: bpy.props.StringProperty()
-	use_mtl: bpy.props.BoolProperty()
 
 	blender_objects: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
@@ -495,10 +494,6 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	format_obj: bpy.props.PointerProperty(type=AF_PR_FormatObjBlock)
 	format_usd: bpy.props.PointerProperty(type=AF_PR_FormatUsdBlock)
 
-	# This is mainly being used to track objects for
-	# the purpose of performing links for loose_materials
-	related_blender_resources: bpy.props.CollectionProperty(type=AF_PR_BlenderResource)
-
 
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	action: bpy.props.EnumProperty(items=[
@@ -511,17 +506,10 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		("fetch_from_archive","Load File From Archive","Load a file from an archive."),
 
 		# Import actions
-		("import_obj_from_local_path","Import OBJ","Import obj file from local path."), # component_id
-		("import_usd_from_local_path","Import USD","Import USDA/C/Z file from a local path"), # component_id
-
-		# Material actions
-		("material_create","Create Material","Creates a new Material."), # material_name
-		("material_add_map","Add Map","Add Map to Material"), # component_id
-		("material_assign","Assign Material","Assigns a material to an object"), # component_id
-
-		# Environment actions
-		("world_create","Create World","Creates a new world/environment."),
-		("world_set","Set World Map","Set the environment map for a world."),
+		("import_obj_from_local_path","Import OBJ","Imports obj file from local path."), # component_id
+		("import_usd_from_local_path","Import USD","Imports USDA/C/Z file from a local path."), # component_id
+		("import_loose_material_map_from_local_path","Import loose material map","Adds a loose material map from a local path to a material."), # component_id
+		("import_loose_environment_from_local_path","Import a loose environment","Imports a loose HDR/EXR/... file and creates a world from it."), # component_id
 
 		# Misc actions
 		("directory_create","Create Directory","Create a directory."), # directory

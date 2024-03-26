@@ -104,7 +104,6 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		#layout.label(text="ASDF",icon_value=icons_dict['CAT_1'].icon_id)
 		
 		if len(af.current_asset_list.assets) > 0:
-			layout.template_icon_view(data=af.current_asset_list,property="assets",show_labels=True)
 			layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index")
 			layout.separator()
 			current_asset = af.current_asset_list.assets[af.current_asset_list_index]

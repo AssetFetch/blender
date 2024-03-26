@@ -9,7 +9,7 @@ import bpy_extras.image_utils
 import bpy.utils.previews
 from typing import Dict,List
 
-from src.property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_UnlockQuery
+from src.property import AF_PR_AssetFetch, AF_PR_Component, AF_PR_Implementation, AF_PR_LooseMaterialApplyBlock, AF_PR_UnlockQuery
 from . import http
 
 # Utility functions
@@ -425,6 +425,8 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 					
 
 				# Step 4: Plan how to import main model file
+				# "Importing" includes loading the file using the software's native format handler
+				# and creating or applying loose materials referenced in loose_material datablocks
 				for comp in current_impl.components:
 					if comp.file_info.behavior == "file_active":
 						if comp.file_info.extension == ".obj":
@@ -432,21 +434,10 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 						if comp.file_info.extension in [".usd",".usda",".usdc",".usdz"]:
 							current_impl.import_steps.add().set_action("import_usd_from_local_path").set_config_value("component_id",comp.name)
 
-				# Step 5: Plan how to import other active files, such as loose materials
-				already_created_materials = [] # List to keep track of which materials have already been created
+				# Step 5: Plan how to import other files, such as loose materials
 				for comp in current_impl.components:
 					if comp.loose_material_define.is_set:
-						if comp.loose_material_define.material_name not in already_created_materials:
-							current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",comp.loose_material_define.material_name)
-							already_created_materials.append(comp.loose_material_define.material_name)
-						current_impl.import_steps.add().set_action("material_add_map").set_config_value("component_id",comp.name)
-					if comp.loose_material_apply.is_set:
-						for i in range(len(comp.loose_material_apply.items)):
-							mat_def = comp.loose_material_apply.items[i]
-							if mat_def.material_name not in already_created_materials:
-								current_impl.import_steps.add().set_action("material_create").set_config_value("material_name",mat_def.material_name)
-								already_created_materials.append(mat_def.material_name)
-							current_impl.import_steps.add().set_action("material_assign").set_config_value("component_id",comp.name).set_config_value("material_index",str(i))
+						current_impl.import_steps.add().set_action("import_loose_material_map_from_local_path").set_config_value("component_id",comp.name)
 
 
 			except Exception as e:
@@ -477,15 +468,20 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return len(implementation_list.implementations) > 0 and implementation_list.implementations[af.current_implementation_list_index].is_valid
 	
 	
-	def get_or_create_material(self,material_name:str,asset_id:str):
-		if material_name in bpy.data.materials and bpy.data.materials[material_name]['af_managed'] and bpy.data.materials[material_name]['af_asset_id'] == asset_id:
-			return bpy.data.materials[material_name]
+	def get_or_create_material(self,material_name:str,af_namespace:str):
+		
+		for existing_material in bpy.data.materials:
+			if ("af_name" in existing_material) and ("af_namespace" in existing_material):
+				if existing_material['af_name'] == material_name and existing_material['af_namespace'] == af_namespace:
+					return existing_material
+
 		new_material= bpy.data.materials.new(name=material_name)
 		new_material.use_nodes = True
 
 		# Add principled bsdf and tex coord
 		new_material.node_tree.nodes.clear()
 		output = new_material.node_tree.nodes.new(type='ShaderNodeOutputMaterial')
+		output.name = "OUTPUT"
 		bsdf_shader = new_material.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
 		bsdf_shader.name = "BSDF"
 		tex_coord = new_material.node_tree.nodes.new(type='ShaderNodeTexCoord')
@@ -495,11 +491,18 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		new_material.node_tree.links.new(bsdf_shader.outputs['BSDF'],output.inputs['Surface'])
 
 		# Mark as AssetFetch-managed
-		new_material['af_managed'] = True
-		new_material['af_asset_id'] = asset_id
-
+		new_material['af_namespace'] = af_namespace
+		new_material['af_name'] = material_name
 
 		return new_material	
+	
+	def assign_loose_materials(self,loose_material_apply_block:AF_PR_LooseMaterialApplyBlock,target_blender_objects:List[bpy.types.Object],af_namespace:str):
+		if loose_material_apply_block.is_set:
+			for obj in target_blender_objects:
+				obj.data.materials.clear()
+				for material_declaration in loose_material_apply_block.items:
+					target_material = self.get_or_create_material(material_name=material_declaration.material_name,af_namespace=af_namespace)
+					obj.data.materials.append(target_material)
 
 	def execute(self,context):
 
@@ -509,8 +512,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		implementation = implementation_list.implementations[af.current_implementation_list_index]
 		asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
 
-		materials_created = {}
-		worlds_created = {}
+		# Namespace for this import execution (used for loose material linking)
+		af_namespace = str(uuid.uuid4())
 
 		# Ensure that an empty temp directory is available
 		temp_dir = os.path.join(tempfile.gettempdir(),"assetfetch-blender-temp-dl")
@@ -526,7 +529,9 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		except Exception as e:
 			print(e)
 		
-	
+		# Generate a namespace to use for loose materials
+		# This tells the plugin whether an existing material is
+
 		for step in implementation.import_steps:
 
 			step_complete = False
@@ -601,161 +606,113 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				print(f"Importing OBJ from {obj_target_path}")
 
 				up_axis = 'Y'
-				use_mtl = True
 				if "format_obj" in obj_component:
 					if obj_component.format_obj.up_axis == "+y":
 						up_axis = 'Y'
 					elif obj_component.format_obj.up_axis == "+z":
 						up_axis = 'Z'
 
-				#	use_mtl = obj_component.format_obj.use_mtl
-
 				bpy.ops.wm.obj_import(up_axis=up_axis,filepath=obj_target_path)
-				imported_objects = bpy.context.selected_objects
-
-				# remove materials from import (if requested)
-				# This will get dropped from the standard
-				#if not use_mtl:
-				#	for obj in imported_objects:
-				#		obj.active_material_index = 0
-				#		for slot in obj.material_slots:
-				#			with context.temp_override(object=obj):
-				#				if slot.material:
-				#					bpy.data.materials.remove(slot.material)
-				#				bpy.ops.object.material_slot_remove()
 
 				# Apply materials, if referenced
-				obj_component.related_blender_resources.clear()
-				for obj in imported_objects:
-					
-					# Keep tracks of which blender scene objects originated from this obj
-					bl_obj_entry = obj_component.related_blender_resources.add()
-					bl_obj_entry.name = obj.name
-					bl_obj_entry.kind = "object"
-
-				step_complete = True
-
-			if step.action == "material_assign":
+				self.assign_loose_materials(
+					loose_material_apply_block=obj_component.loose_material_apply,
+					target_blender_objects=bpy.context.selected_objects,
+					af_namespace=af_namespace)
 				
-				target_component : AF_PR_Component = implementation.get_component_by_id(step.config['component_id'].value)
-
-				for material_declaration in target_component.loose_material_apply.items:
-					if material_declaration.material_name in materials_created:
-						target_material = materials_created[material_declaration.material_name]
-					else:
-						raise Exception(f"Attempting to assign material {material_declaration.material_name} which does not exist yet.")
-
-					for target_resource in target_component.related_blender_resources:
-						if target_resource.kind == "object":
-							bpy.data.objects[target_resource.name].data.materials.append(target_material)
-				
-				step_complete = True
-
-			if step.action == "material_create":
-				
-				material_name = step.config['material_name'].value
-
-				new_material= bpy.data.materials.new(name=material_name)
-				new_material.use_nodes = True
-
-				# Add principled bsdf and tex coord
-				new_material.node_tree.nodes.clear()
-				output = new_material.node_tree.nodes.new(type='ShaderNodeOutputMaterial')
-				bsdf_shader = new_material.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
-				bsdf_shader.name = "BSDF"
-				tex_coord = new_material.node_tree.nodes.new(type='ShaderNodeTexCoord')
-				tex_coord.name = "TEX_COORD"
-
-				# Basic links
-				new_material.node_tree.links.new(bsdf_shader.outputs['BSDF'],output.inputs['Surface'])
-
-				# Mark as AssetFetch-managed
-				new_material['af_managed'] = True
-				new_material['af_asset_id'] = asset_id
-
-				# Register material for future reference
-				materials_created[material_name] = new_material
-
 				step_complete = True
 			
+			if step.action == "import_loose_material_map_from_local_path":
+
+				image_component : AF_PR_Component = implementation.get_component_by_id(step.config['component_id'].value)
+				image_target_path = os.path.join(implementation.local_directory,image_component.file_info.local_path)
+				target_material = self.get_or_create_material(material_name=image_component.loose_material_define.material_name,af_namespace=af_namespace)
+
+				# Import the file from local_path into blender
+				image = bpy_extras.image_utils.load_image(imagepath=image_target_path)
+
+				# Set color space
+				if image_component.loose_material_define.colorspace == "linear":
+					image.colorspace_settings.name = "Non-Color"
+				else:
+					image.colorspace_settings.name = "sRGB"
+
+				# Assign the map to the material
+				#bsdf_shader = target_material.node_tree.nodes
+				image_node = target_material.node_tree.nodes.new(type='ShaderNodeTexImage')
+				image_node.image = image
+
+				# Connect
+				target_material.node_tree.links.new(target_material.node_tree.nodes['TEX_COORD'].outputs['UV'],image_node.inputs['Vector'])
+				
+				# Make connection into bsdf shader
+				map = image_component.loose_material_define.map
+				image_color_out = image_node.outputs['Color']
+				bsdf_inputs = target_material.node_tree.nodes['BSDF'].inputs
+
+				# Color Map
+				if map in ['albedo','diffuse']:
+					color_image_node = target_material.node_tree.links.new(image_color_out,bsdf_inputs['Base Color'])
+
+				# Normal Map
+				if map in ['normal+y','normal-y']:
+					normal_map_node = target_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
+					target_material.node_tree.links.new(normal_map_node.outputs['Normal'],target_material.node_tree.nodes['BSDF'].inputs['Normal'])
+					if map == "normal+y":
+						target_material.node_tree.links.new(image_node.outputs['Color'],normal_map_node.inputs['Color'])
+					if map == "normal-y":
+						# Green channel must be inverted
+						# Separate Color
+						separate_color_node = target_material.node_tree.nodes.new(type="ShaderNodeSeparateColor")
+						target_material.node_tree.links.new(image_node.outputs['Color'],separate_color_node.inputs['Color'])
+						# Invert Green
+						invert_normal_y_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
+						target_material.node_tree.links.new(separate_color_node.outputs['Green'],invert_normal_y_node.inputs['Color'])
+						# Combine again
+						combine_color_node = target_material.node_tree.nodes.new(type="ShaderNodeCombineColor")
+						target_material.node_tree.links.new(invert_normal_y_node.outputs['Color'],combine_color_node.inputs['Green'])
+						target_material.node_tree.links.new(separate_color_node.outputs['Red'],combine_color_node.inputs['Red'])
+						target_material.node_tree.links.new(separate_color_node.outputs['Blue'],combine_color_node.inputs['Blue'])
+						# Connect to normal node
+						target_material.node_tree.links.new(combine_color_node.outputs['Color'],normal_map_node.inputs['Color'])
+
+				# Roughness Map
+				if map == "roughness":
+					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Roughness'])
+
+				# Glossiness
+				if map == "glossiness":
+					# Map needs to be inverted
+					invert_roughness_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
+					target_material.node_tree.links.new(image_color_out,invert_roughness_node.inputs['Color'])
+					target_material.node_tree.links.new(invert_roughness_node.outputs['Color'],bsdf_inputs['Roughness'])
+
+				# Metalness Map
+				if map == "metallic":
+					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Metallic'])
+
+				# Height
+				if map == "height":
+					displacement_node = target_material.node_tree.nodes.new("ShaderNodeDisplacement")
+					target_material.node_tree.links.new(image_color_out,displacement_node.inputs['Height'])
+					target_material.node_tree.links.new(displacement_node.outputs['Displacement'],target_material.node_tree.nodes['OUTPUT'].inputs['Displacement'])
+				
+				# Opacity
+				if map == "opacity":
+					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Alpha'])
+
+				if map == "emission":
+					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Emission Color'])
+
+				step_complete = True
 
 			if not step_complete:
 				raise Exception(f"Step {step.action} could not be completed.")
 
 		###########################################################################
-		# Old code to be integrated into the new code above
-		# Assuming that the implementations + index are set properly
+
 		# Progress: https://stackoverflow.com/a/53877507
 
-		#imported_components : Dict[str,any] = {}
-		#downloaded_components: Dict[str,str] = {}
-		"""
-		impl = af_asset_implementations_options[af_asset_implementations_options_index]
-		comps = json.loads(impl.components_json)
-
-		asset_id = af_asset_list_entries.values()[af_asset_list_entries_index].name
-
-		# Download
-		for comp in comps:
-			# obv. insecure without checks
-			local_path = ASSETFETCH_HOME + f"{asset_id}/" + comp['data']['resolve_file']['local_path']
-			if not os.path.isfile(local_path):
-				os.makedirs(os.path.dirname(local_path), exist_ok=True)
-				urllib.request.urlretrieve(comp['data']['resolve_file']['location'],local_path)
-			else:	
-				print(f"Skipping {local_path} because it already exists.")
-
-		# Run Imports
-		for comp in comps:
-			local_path = ASSETFETCH_HOME + f"{asset_id}/" + comp['data']['resolve_file']['local_path']
-			extension = comp['data']['resolve_file']['extension']
-
-			if extension == ".obj":
-				bpy.ops.wm.obj_import(up_axis='Y',filepath=local_path,)
-				imported_objects = bpy.context.selected_objects
-
-				# remove materials from import (if requested)
-				for obj in imported_objects:
-					obj.active_material_index = 0
-					for slot in obj.material_slots:
-						with context.temp_override(object=obj):
-							if slot.material:
-								bpy.data.materials.remove(slot.material)
-							bpy.ops.object.material_slot_remove()
-
-					if comp['data']['material_reference']['material_names']:
-						for material_name in comp['data']['material_reference']['material_names']:
-							material_name = asset_id + "_" + material_name
-							obj.data.materials.append(self.get_or_create_material(material_name,asset_id))
-
-			if extension == ".jpg":
-				# Import the JPG file from local_path into blender
-				image = bpy_extras.image_utils.load_image(local_path)
-
-				if comp['data']['material_map']:
-					material_name = asset_id + "_" + comp['data']['material_map']['material']
-					material_map = asset_id + "_" + comp['data']['material_map']['map']
-					
-					
-					target_material = self.get_or_create_material(material_name,asset_id)
-					bsdf_shader = target_material.node_tree.nodes
-					image_node = target_material.node_tree.nodes.new(type='ShaderNodeTexImage')
-					image_node.image = image
-
-
-					# Handle Color space
-
-					# Connect
-					target_material.node_tree.links.new(target_material.node_tree.nodes['TEX_COORD'].outputs['UV'],image_node.inputs['Vector'])
-					if comp['data']['material_map']['map'] == "color":
-						target_material.node_tree.links.new(image_node.outputs['Color'],target_material.node_tree.nodes['BSDF'].inputs['Base Color'])
-					if comp['data']['material_map']['map'] == "normal":
-						# Needs improved handling for multiple normal maps
-						normal_map_node = target_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
-						target_material.node_tree.links.new(normal_map_node.outputs['Normal'],target_material.node_tree.nodes['BSDF'].inputs['Normal'])
-						target_material.node_tree.links.new(image_node.outputs['Color'],normal_map_node.inputs['Color'])
-
-		"""
 		return {'FINISHED'}
 	
 registration_targets = [
