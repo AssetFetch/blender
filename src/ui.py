@@ -108,8 +108,8 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 			layout.separator()
 			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 			
-			layout.label(text=current_asset.text.title,icon="PACKAGE")
 			asset_box = layout.box()
+			asset_box.label(text=current_asset.text.title,icon="PACKAGE")
 			if current_asset.preview_image_thumbnail.icon_id:
 				asset_box.template_icon(icon_value=current_asset.preview_image_thumbnail.icon_id,scale=8.0)
 			else:
