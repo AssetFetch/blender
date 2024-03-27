@@ -18,12 +18,25 @@ def unregister():
 	for cl in reversed(registration_targets):
 		bpy.utils.unregister_class(cl)
 
+# Update functions
+def property_update_handler(property,context):
+	if "update_target" in property:
+		if property.update_target == "update_implementations_list":
+			bpy.ops.af.update_implementations_list()
+		if property.update_target == "update_asset_list":
+			bpy.ops.af_update_asset_list()
+
 # Templates
 
 http_method_enum = [
 			('get','GET','HTTP GET'),
 			('post','POST','HTTP POST')
 		]		
+
+update_target_enum = [
+	('update_implementations_list','update_implementations_list','update_implementations_list'),
+	('update_asset_list','update_asset_list','update_asset_list')
+]
 
 class AF_PR_GenericBlock:
 	"""A class inheriting from AF_PR_GenericBlock means that its parameters
@@ -69,29 +82,33 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 			parameters[p.name] = p.value
 		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=parameters)
 
-class AF_PR_TextParameter(bpy.types.PropertyGroup,AF_PR_GenericBlock):
+class AF_PR_TextParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
-	value: bpy.props.StringProperty()
+	value: bpy.props.StringProperty(update=property_update_handler)
+	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_IntegerParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
-	value: bpy.props.IntProperty()
+	value: bpy.props.IntProperty(update=property_update_handler)
+	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_FloatParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
-	value: bpy.props.FloatProperty()
+	value: bpy.props.FloatProperty(update=property_update_handler)
+	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_BoolParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.BoolProperty()
 	mandatory: bpy.props.BoolProperty()
-	value: bpy.props.BoolProperty()
+	value: bpy.props.BoolProperty(update=property_update_handler)
+	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_FixedParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
@@ -494,6 +511,10 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	format_obj: bpy.props.PointerProperty(type=AF_PR_FormatObjBlock)
 	format_usd: bpy.props.PointerProperty(type=AF_PR_FormatUsdBlock)
 
+	def configure(self,component):
+		pass
+
+
 
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	action: bpy.props.EnumProperty(items=[
@@ -562,6 +583,70 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			if c.name == component_id:
 				return c
 		raise Exception(f"No component with id {component_id} could be found.")
+	
+	def configure(self,incoming_impl):
+		# -------------------------------------------------------------------------------
+		# Fill the implementation with data from the HTTP endpoint
+
+		# Implementation id
+		if "id" not in incoming_impl:
+			raise Exception("Implementation is missing and id.")
+		self.name = incoming_impl['id']
+
+		# Component data
+		if "components" not in incoming_impl or len(incoming_impl['components']) < 1:
+			raise Exception("This implementation has no components.")
+		for provider_comp in incoming_impl['components']:
+			
+			blender_comp = self.components.add()
+
+			# For clarity:
+			# provider_comp -> the component data sent by the provider
+			# blender_comp -> the blender bpy property this component gets turned into
+			# pcd -> shorthand for "provider component data" (This will appear a lot)
+			pcd = provider_comp['data']
+			
+			# Component id
+			if "id" not in provider_comp:
+				raise Exception("A component is missing an id.")
+			blender_comp.name = provider_comp['id']
+
+			recognized_datablock_names = [
+
+				"file_info",
+				"file_fetch.download",
+				"file_fetch.from_archive",
+
+				"loose_environment",
+				"loose_material_define",
+				"loose_material_apply",
+
+				"format.blend",
+				"format.usd",
+				"format.obj",
+
+				"unlock_link",
+				"text"
+				
+				]
+			
+			# Unsupported datablocks which lead to a warning
+			for key in pcd.keys():
+				if key not in recognized_datablock_names:
+					self.validation_messages.add().set("warn",f"Datablock {key} in {blender_comp.name} has not been recognized and will be ignored.")
+			
+			# Configure datablocks
+			for key in recognized_datablock_names:
+				if key in pcd:
+					print(f"setting {blender_comp.name} -> {key}")
+					block = getattr(blender_comp,key.replace(".","_"))
+					block.is_set = True
+					block.configure(pcd[key])
+				else:
+					# Some datablocks are required and get tested for here.
+					if key in ['file_info']:
+						raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
+		return self
 
 class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 	implementations: bpy.props.CollectionProperty(type=AF_PR_Implementation)
@@ -573,18 +658,26 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 				return q
 			
 		raise Exception(f"No unlocking query with id {query_id} could be found.")
+	
+	def configure(self,implementation_list):
+		# Parse the datablocks for the ImplementationList itself
+		if "unlock_queries" in implementation_list['data']:
+			self.unlock_queries.is_set = True
+			for unlock_query in implementation_list['data']['unlock_queries']:
+				self.unlock_queries.items.add().configure(unlock_query)
+
+		for incoming_impl in implementation_list['implementations']:
+			new_impl = self.implementations.add()
+			new_impl.configure(incoming_impl)	
 
 # Final AssetFetch property
-
-def asset_list_index_update(property,context):
-	bpy.context.window_manager.af.current_implementation_list.implementations.clear()
 
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_init_url: bpy.props.StringProperty(description="Init")
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)
-	current_asset_list_index: bpy.props.IntProperty(update=asset_list_index_update)
+	current_asset_list_index: bpy.props.IntProperty(update=property_update_handler)
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
 	current_implementation_list_index: bpy.props.IntProperty()
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))

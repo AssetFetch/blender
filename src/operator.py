@@ -253,44 +253,17 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 
 		return {'FINISHED'}
 
-class AF_OP_UpdateImplementationsList(bpy.types.Operator):
-	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
+class AF_OP_BuildImportPlans(bpy.types.Operator):
+	"""Populates every currently loaded implementation with a plan for how to import them, if possible."""
 	
-	bl_idname = "af.update_implementations_list"
-	bl_label = "Update Implementations List"
-	bl_options = {"REGISTER","UNDO"}
-
-	#url: StringProperty(name="URL")
-
-	def draw(self,context):
-		pass
-		#layout = self.layout
-		#layout.prop(self,'radius')
+	bl_idname = "af.build_import_plans"
+	bl_label = "Build Import Plans"
+	bl_options = {"REGISTER"}
 
 	def execute(self,context):
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
-		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
-		# Contact implementations endpoint
-		response = current_asset.implementation_list_query.to_http_query().execute()
-
-		# Converting the json response into blender bpy data
-		af['current_implementation_list'].clear()
-
-		# Parse the datablocks for the ImplementationList itself
-
-		if "unlock_queries" in response.parsed['data']:
-			af.current_implementation_list.unlock_queries.is_set = True
-			for unlock_query in response.parsed['data']['unlock_queries']:
-				af.current_implementation_list.unlock_queries.items.add().configure(unlock_query)
-
-		for incoming_impl in response.parsed['implementations']:
-
-			# -------------------------------------------------------------------------------
-			# Create a new implementation to fill with data
-			current_impl : AF_PR_Implementation = af.current_implementation_list.implementations.add()
-
-
+		for current_impl in af.current_implementation_list.implementations:
 			# Enter try-catch block
 			# Failing this block causes an implementation to be considered unreadable.
 			# If it passes, it is considered readable.
@@ -299,70 +272,6 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 				
 				# We start by assuming that the implementation is valid
 				current_impl.is_valid = True
-
-				# -------------------------------------------------------------------------------
-				# Fill the implementation with data from the HTTP endpoint
-
-				# Implementation id
-				if "id" not in incoming_impl:
-					raise Exception("Implementation is missing and id.")
-				current_impl.name = incoming_impl['id']
-
-				# Component data
-				if "components" not in incoming_impl or len(incoming_impl['components']) < 1:
-					raise Exception("This implementation has no components.")
-				for provider_comp in incoming_impl['components']:
-					
-					blender_comp = current_impl.components.add()
-
-					# For clarity:
-					# provider_comp -> the component data sent by the provider
-					# blender_comp -> the blender bpy property this component gets turned into
-					# pcd -> shorthand for "provider component data" (This will appear a lot)
-					pcd = provider_comp['data']
-					
-					# Component id
-					if "id" not in provider_comp:
-						raise Exception("A component is missing an id.")
-					blender_comp.name = provider_comp['id']
-
-					recognized_datablock_names = [
-
-						"file_info",
-						"file_fetch.download",
-						"file_fetch.from_archive",
-
-						"loose_environment",
-						"loose_material_define",
-						"loose_material_apply",
-
-						"format.blend",
-						"format.usd",
-						"format.obj",
-
-						"unlock_link",
-						"text"
-						
-						]
-					
-					# Unsupported datablocks which lead to a warning
-					for key in pcd.keys():
-						if key not in recognized_datablock_names:
-							current_impl.validation_messages.add().set("warn",f"Datablock {key} in {blender_comp.name} has not been recognized and will be ignored.")
-					
-					# Configure datablocks
-					for key in recognized_datablock_names:
-						if key in pcd:
-							print(f"setting {blender_comp.name} -> {key}")
-							block = getattr(blender_comp,key.replace(".","_"))
-							block.is_set = True
-							block.configure(pcd[key])
-						else:
-							# Some datablocks are required and get tested for here.
-							if key in ['file_info']:
-								raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
-					
-					
 
 				# -------------------------------------------------------------------------------
 				# Attempt to build an import plan for the implementation
@@ -418,7 +327,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 					elif comp.unlock_link.is_set:
 						current_impl.import_steps.add().set_action("fetch_download_unlocked").set_config_value("component_id",comp.name)
 					else:
-						raise Exception(f"{blender_comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
+						raise Exception(f"{comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
 
 				for comp in current_impl.components:
 					recursive_fetching_datablock_handler(comp)
@@ -444,6 +353,38 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 				current_impl.is_valid = False
 				current_impl.validation_messages.add().set("crit",str(e))
 				raise e
+		return {'FINISHED'}
+
+
+class AF_OP_UpdateImplementationsList(bpy.types.Operator):
+	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
+	
+	bl_idname = "af.update_implementations_list"
+	bl_label = "Update Implementations List"
+	bl_options = {"REGISTER","UNDO"}
+
+	#url: StringProperty(name="URL")
+
+	def draw(self,context):
+		pass
+		#layout = self.layout
+		#layout.prop(self,'radius')
+
+	def execute(self,context):
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
+
+		# Contact implementations endpoint
+		response = current_asset.implementation_list_query.to_http_query().execute()
+
+		# Converting the json response into blender bpy data
+		af['current_implementation_list'].clear()
+
+		# Load the data into the implementation_list
+		af.current_implementation_list.configure(response.parsed)
+
+		# Update import plans
+		bpy.ops.af.build_import_plans()
 
 		return {'FINISHED'}
 	
@@ -712,6 +653,9 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		###########################################################################
 
 		# Progress: https://stackoverflow.com/a/53877507
+		
+		# Refresh connection status
+		bpy.ops.af.connection_status()
 
 		return {'FINISHED'}
 	
@@ -719,6 +663,7 @@ registration_targets = [
 	AF_OP_InitializeProvider,
 	AF_OP_UpdateAssetList,
 	AF_OP_UpdateImplementationsList,
+	AF_OP_BuildImportPlans,
 	AF_OP_ExecuteImportPlan,
 	AF_OP_ConnectionStatus
 ]

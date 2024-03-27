@@ -141,7 +141,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		# Query properties
 		current_asset.implementation_list_query.draw_ui(layout)
 
-		layout.operator("af.update_implementations_list",text="Get implementations")
+		#layout.operator("af.update_implementations_list",text="Get implementations")
 
 		# Selection of implementations (if applicable)
 		layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")
