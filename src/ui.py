@@ -141,7 +141,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		# Query properties
 		current_asset.implementation_list_query.draw_ui(layout)
 
-		#layout.operator("af.update_implementations_list",text="Get implementations")
+		layout.operator("af.update_implementations_list",text="Get implementations")
 
 		# Selection of implementations (if applicable)
 		layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")
@@ -159,19 +159,36 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		# Import button
 		layout.operator("af.execute_import_plan",text="Perform import")
 			
-		if len(af.current_implementation_list.implementations) > 0:
-			all_steps_box = layout.box()
-			all_steps_box.label(text="Import steps:")
-			for step in current_impl.import_steps:
-				step_box = all_steps_box.box()
-				step_box.label(text=step.get_action_title())
-				step_box.label(text=step.get_action_config())
-			for m in current_impl.validation_messages:
-				layout.label(text=m.text)
+		
+
+class AF_PT_ImportStepsPanel(bpy.types.Panel):
+	bl_label = "Import Steps"
+	bl_idname = "AF_PT_IMPORT_STEPS_PANEL"
+	bl_space_type = 'VIEW_3D'
+	bl_region_type = 'UI'
+	bl_category = 'AssetFetch'
+
+	@classmethod
+	def poll(self, context: Context) -> bool:
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af 
+		return len(af.current_implementation_list.implementations) > 0
+
+	def draw(self, context):
+		layout = self.layout
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		current_impl : AF_PR_Implementation = af.current_implementation_list.implementations[af.current_implementation_list_index]
+		for step in current_impl.import_steps:
+			step_box = layout.box()
+			step_box.label(text=step.get_action_title())
+			step_box.label(text=step.get_action_config())
+		for m in current_impl.validation_messages:
+			layout.label(text=m.text)
+
 		
 
 registration_targets = [
 	AF_PT_ProviderPanel,
 	AF_PT_AssetPanel,
-	AF_PT_ImplementationsPanel
+	AF_PT_ImplementationsPanel,
+	AF_PT_ImportStepsPanel
 ]

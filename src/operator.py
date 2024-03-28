@@ -36,7 +36,6 @@ def unregister():
 		bpy.utils.unregister_class(cl)
 
 # Operator definitions
-
 class AF_OP_InitializeProvider(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
 	
@@ -106,11 +105,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 				af.current_connection_state.state = "connected"
 
 			# Status endpoint
-			dict_to_attr(provider_config['connection_status_query'],['uri','method'],af.current_provider_initialization.provider_configuration.connection_status_query)
-			for payload_key in provider_config['connection_status_query']['payload']:
-				new_payload = af.current_provider_initialization.connection_status_query.payload.add()
-				new_payload.name = payload_key
-				new_payload.value = provider_config['connection_status_query']['payload'][payload_key]
+			af.current_provider_initialization.provider_configuration.connection_status_query.configure(provider_config['connection_status_query'])
 		else:
 			# No configuration required...
 			af.current_connection_state.state = "connected"
@@ -133,28 +128,30 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 	def execute(self,context):
 		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 
-		# Contact initialization endpoint and get the response
-		response : http.AF_HttpResponse = af.current_provider_initialization.provider_configuration.connection_status_query.to_http_query().execute()
+		if af.current_provider_initialization.provider_configuration.connection_status_query.is_set:
 
-		# Test if connection is ok
-		if response.is_ok():
-			af.current_connection_state.state = "connected"
+			# Contact initialization endpoint and get the response
+			response : http.AF_HttpResponse = af.current_provider_initialization.provider_configuration.connection_status_query.to_http_query().execute()
 
-			# Set user data if available
-			if "user" in response.parsed['data']:
-				dict_to_attr(response.parsed['data']['user'],['display_name','display_tier','display_icon_uri'],af.current_connection_state.user)
+			# Test if connection is ok
+			if response.is_ok():
+				af.current_connection_state.state = "connected"
+
+				# Set user data if available
+				if "user" in response.parsed['data']:
+					dict_to_attr(response.parsed['data']['user'],['display_name','display_tier','display_icon_uri'],af.current_connection_state.user)
+				else:
+					af.current_connection_state['user'].clear()
+
+				# Set unlock balance if available
+				if "unlock_balance" in response.parsed['data']:
+					dict_to_attr(response.parsed['data']['unlock_balance'],['balance','balance_unit','balance_refill_url'],af.current_connection_state.unlock_balance)
+					af.current_connection_state.unlock_balance.is_set = True
+				else:
+					af.current_connection_state['unlock_balance'].clear()
+
 			else:
-				af.current_connection_state['user'].clear()
-
-			# Set unlock balance if available
-			if "unlock_balance" in response.parsed['data']:
-				dict_to_attr(response.parsed['data']['unlock_balance'],['balance','balance_unit','balance_refill_url'],af.current_connection_state.unlock_balance)
-				af.current_connection_state.unlock_balance.is_set = True
-			else:
-				af.current_connection_state['unlock_balance'].clear()
-
-		else:
-			af.current_connection_state.state = "connection_error"
+				af.current_connection_state.state = "connection_error"
 
 		
 

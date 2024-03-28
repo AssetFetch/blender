@@ -75,6 +75,7 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 			par = self.payload.add()
 			par.name = p
 			par.value = fixed_query['payload'][p]
+		self.is_set = True
 
 	def to_http_query(self) -> AF_HttpQuery:
 		parameters = {}
