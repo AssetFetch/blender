@@ -113,6 +113,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 		# asset_list_query
 		if "asset_list_query" in response.parsed['data']:
 			af.current_provider_initialization.asset_list_query.configure(response.parsed['data']['asset_list_query'])
+			af.current_asset_list.already_queried = False
 		else:
 			raise Exception("No Asset List Query!")
 		
@@ -184,26 +185,7 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 		response = af.current_provider_initialization.asset_list_query.to_http_query().execute()
 		
 		# Save assets in blender properties
-		af.current_asset_list.assets.clear()
-		for asset in response.parsed['assets']:
-			asset_entry = af.current_asset_list.assets.add()
-			asset_entry.name = asset['id']
-
-			# Text
-			if "text" in asset['data']:
-				asset_entry.text.configure(asset['data']['text'])
-			
-			# Implementations Query
-			if "implementation_list_query" in asset['data']:
-				asset_entry.implementation_list_query.configure(asset['data']['implementation_list_query'])
-
-			if "preview_image_thumbnail" in asset['data']:
-				asset_entry.preview_image_thumbnail.configure(asset['data']['preview_image_thumbnail'])
-
-		af.current_asset_list_index = 0
-
-		# Reset implementations list
-		af.current_implementation_list.implementations.clear()
+		af.current_asset_list.configure(response.parsed)
 
 		# Find the best thumbnail resolution and download it
 		target_resolution = 128

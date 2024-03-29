@@ -114,12 +114,10 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 				asset_box.template_icon(icon_value=current_asset.preview_image_thumbnail.icon_id,scale=8.0)
 			else:
 				asset_box.label(text="No thumbnail available.",icon="CANCEL")
-		else:
-			layout.label(text="The search returned no results.",icon="ORPHAN_DATA")
+		elif af.current_asset_list.already_queried:
+			no_results_box = layout.box()
+			no_results_box.label(text="No assets found for this query.",icon="ORPHAN_DATA")
 			
-		
-
-
 
 class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_label = "Implementations"
@@ -141,12 +139,13 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		# Query properties
 		current_asset.implementation_list_query.draw_ui(layout)
 
-		layout.operator("af.update_implementations_list",text="Get implementations")
-
-		# Selection of implementations (if applicable)
-		layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")
+		layout.operator("af.update_implementations_list",text="Search Implementations")
 		
 		if len(af.current_implementation_list.implementations) > 0:
+
+			# Selection of implementations (if applicable)
+			layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")
+
 			current_impl : AF_PR_Implementation = af.current_implementation_list.implementations[af.current_implementation_list_index]
 
 			# Import plan
@@ -155,14 +154,17 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
+		elif af.current_implementation_list.already_queried:
+			no_results_box = layout.box()
+			no_results_box.label(text="No implementations found for this query.",icon="ORPHAN_DATA")
 
 		# Import button
-		layout.operator("af.execute_import_plan",text="Perform import")
+		layout.operator("af.execute_import_plan",text="Import")
 			
 		
 
 class AF_PT_ImportStepsPanel(bpy.types.Panel):
-	bl_label = "Import Steps"
+	bl_label = "Import Details"
 	bl_idname = "AF_PT_IMPORT_STEPS_PANEL"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'UI'

@@ -488,6 +488,40 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 	assets: bpy.props.CollectionProperty(type=AF_PR_Asset)
 	# Datablocks...
 
+	# If the list is empty this field decides whether it is empty because there were no results (True)
+	# or because it simply hasn't been queried yet (False)
+	already_queried: bpy.props.BoolProperty(default=False)
+
+	def configure(self,asset_list):
+		af = bpy.context.window_manager.af
+
+		self.assets.clear()
+		for asset in asset_list['assets']:
+			asset_entry = self.assets.add()
+			asset_entry.name = asset['id']
+
+			# Text
+			if "text" in asset['data']:
+				asset_entry.text.configure(asset['data']['text'])
+			
+			# Implementations Query
+			if "implementation_list_query" in asset['data']:
+				asset_entry.implementation_list_query.configure(asset['data']['implementation_list_query'])
+
+			if "preview_image_thumbnail" in asset['data']:
+				asset_entry.preview_image_thumbnail.configure(asset['data']['preview_image_thumbnail'])
+
+		af.current_asset_list_index = 0
+
+		# Indicate that the asset list has already been fetched
+		# (This becomes important if it happens to contain 0 elements)
+		self.already_queried = True
+
+		# Reset implementations list
+		# (Again, indicate that the implementation list hasn't been fetched)
+		af.current_implementation_list.implementations.clear()
+		af.current_implementation_list.already_queried = False
+
 class AF_PR_BlenderResource(bpy.types.PropertyGroup):
 	# object name is handled by name property
 	kind: bpy.props.EnumProperty(items=[
@@ -653,6 +687,10 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 	implementations: bpy.props.CollectionProperty(type=AF_PR_Implementation)
 	unlock_queries: bpy.props.PointerProperty(type=AF_PR_UnlockQueriesBlock)
 
+	# If the list is empty this field decides whether it is empty because there were no results (True)
+	# or because it simply hasn't been queried yet (False)
+	already_queried: bpy.props.BoolProperty(default=False)
+
 	def get_unlock_query_by_id(self,query_id:str) -> AF_PR_UnlockQuery:
 		for q in self.unlock_queries.items:
 			if q.name == query_id:
@@ -670,6 +708,7 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 		for incoming_impl in implementation_list['implementations']:
 			new_impl = self.implementations.add()
 			new_impl.configure(incoming_impl)	
+		self.already_queried = True
 
 # Final AssetFetch property
 
