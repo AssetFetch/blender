@@ -46,12 +46,12 @@ class AF_PR_GenericBlock:
 	is_set: bpy.props.BoolProperty(default=False)
 
 	def configure(self,initial_data):
-		self.is_set = True
 		for key in initial_data.keys():
 			try:
 				setattr(self,key,initial_data[key])
 			except Exception as e:
 				print(f"skipping {key} because {e}")
+		self.is_set = True
 
 class AF_PR_GenericString(bpy.types.PropertyGroup):
 	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
@@ -255,13 +255,20 @@ class AF_PR_Header(bpy.types.PropertyGroup):
 	# The actual value entered by the user
 	value: bpy.props.StringProperty()
 
+	def configure(self,header):
+		for key in ['name','default','is_required','is_sensitive','prefix','suffix','title','encoding']:
+			if key in header:
+				setattr(self,key,header[key])
+		self.value = self.default
+		
+
 # Datablocks
 
 class AF_PR_TextBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	title: bpy.props.StringProperty()
 	description: bpy.props.StringProperty()
 
-class AF_PR_UserBlock(bpy.types.PropertyGroup):
+class AF_PR_UserBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	display_name: bpy.props.StringProperty()
 	display_tier: bpy.props.StringProperty()
 	display_icon_uri: bpy.props.StringProperty()
@@ -276,11 +283,20 @@ class AF_PR_FileInfoBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 		('archive','archive','archive')
 	])
 
-class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup):
+class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	headers: bpy.props.CollectionProperty(type=AF_PR_Header)
 	connection_status_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	header_acquisition_uri: bpy.props.StringProperty()
 	header_acquisition_uri_title: bpy.props.StringProperty()
+
+	def configure(self,provider_configuration):
+		for h in provider_configuration['headers']:
+			self.headers.add().configure(h)
+		self.connection_status_query.configure(provider_configuration['connection_status_query'])
+		self.header_acquisition_uri = provider_configuration['header_acquisition_uri']
+		self.header_acquisition_uri_title = provider_configuration['header_acquisition_uri_title']
+
+		self.is_set = True
 
 class AF_PR_UnlockBalanceBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	balance: bpy.props.FloatProperty()
