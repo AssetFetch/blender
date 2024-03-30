@@ -156,6 +156,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	is_valid: bpy.props.BoolProperty()
 	validation_messages: bpy.props.CollectionProperty(type=AF_PR_ImplementationValidationMessage)
 	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImplementationImportStep)
+	expected_charges: bpy.props.FloatProperty(default=0)
 	local_directory: bpy.props.StringProperty()
 
 	def get_component_by_id(self,component_id:str) -> AF_PR_Component:

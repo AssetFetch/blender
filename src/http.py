@@ -26,7 +26,7 @@ class AF_HttpQuery:
 		self.parameters = parameters
 
 	def execute(self) -> AF_HttpResponse:
-		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		af  = bpy.context.window_manager.af
 
 		print(f"sending http {self.method} to {self.uri} with {self.parameters}")
 
@@ -46,7 +46,7 @@ class AF_HttpQuery:
 	
 	def execute_as_temporary_file(self) -> tempfile.NamedTemporaryFile:
 		"""This method is only used for small media files, such as thumbnails."""
-		af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		af = bpy.context.window_manager.af
 
 		headers = {}
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():

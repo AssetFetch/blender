@@ -49,7 +49,8 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 						referenced_query  = af.current_implementation_list.get_unlock_query_by_id(comp.unlock_link.unlock_query_id)
 						if (not referenced_query.unlocked) and (referenced_query.name not in already_scheduled_unlocking_query_ids):
 							current_impl.import_steps.add().set_action("unlock").set_config_value("query_id",comp.unlock_link.unlock_query_id)
-							already_scheduled_unlocking_query_ids.append(comp.unlock_link.unlock_query_id)					
+							already_scheduled_unlocking_query_ids.append(comp.unlock_link.unlock_query_id)		
+							current_impl.expected_charges += referenced_query.price
 
 				# Step 3: Plan how to acquire and arrange all files in the asset directory
 				# TODO Currently ignoring archives
