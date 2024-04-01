@@ -1,5 +1,5 @@
 import bpy,os,shutil,tempfile,uuid
-from .. import http
+from ..util import http
 
 class AF_OP_UpdateAssetList(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""

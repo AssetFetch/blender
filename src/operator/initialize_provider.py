@@ -1,5 +1,5 @@
 import bpy
-from .. import http
+from ..util import http
 
 class AF_OP_InitializeProvider(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""

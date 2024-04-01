@@ -1,5 +1,5 @@
 import bpy
-from ..http import *
+from ..util.http import *
 
 http_method_enum = [
 			('get','GET','HTTP GET'),

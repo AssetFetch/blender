@@ -2,7 +2,7 @@ import bpy
 import bpy.utils.previews
 from typing import Dict,List
 
-from ..http import *
+from ..util.http import *
 from .initialize_provider import *
 from .connection_status import *
 from .update_asset_list import *

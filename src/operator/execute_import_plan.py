@@ -1,6 +1,6 @@
 from typing import List
 import bpy,bpy_extras,uuid,tempfile,os,shutil
-from .. import http
+from ..util import http
 
 class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	"""Executes the currently loaded import plan."""

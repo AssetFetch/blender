@@ -1,5 +1,5 @@
 import bpy
-from .. import http
+from ..util import http
 	
 class AF_OP_ConnectionStatus(bpy.types.Operator):
 	"""Performs a status query to the provider, if applicable."""
