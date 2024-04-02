@@ -13,11 +13,10 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 
 		if af.current_provider_initialization.provider_configuration.connection_status_query.is_set:
 
-			# Contact initialization endpoint and get the response
-			response : http.AF_HttpResponse = af.current_provider_initialization.provider_configuration.connection_status_query.to_http_query().execute()
+			try:
+				# Contact initialization endpoint and get the response
+				response : http.AF_HttpResponse = af.current_provider_initialization.provider_configuration.connection_status_query.to_http_query().execute()
 
-			# Test if connection is ok
-			if response.is_ok():
 				af.current_connection_state.state = "connected"
 
 				# Set user data if available
@@ -32,8 +31,9 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 				else:
 					af.current_connection_state['unlock_balance'].clear()
 
-			else:
+			except Exception as e:
 				af.current_connection_state.state = "connection_error"
+				raise e
 
 		
 
