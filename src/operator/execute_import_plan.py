@@ -1,5 +1,6 @@
 from typing import List
 import bpy,bpy_extras,uuid,tempfile,os,shutil
+import bpy_extras.image_utils
 from ..util import http
 
 class AF_OP_ExecuteImportPlan(bpy.types.Operator):
@@ -101,10 +102,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				unlock_query  = implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
 				query : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
 				response = query.execute()
-				if response.is_ok:
-					unlock_query.unlocked = True
-				else:
-					raise Exception(f"Unlocking Query {unlock_query.name} failed.")
+				unlock_query.unlocked = True
 				
 				step_complete = True
 			
