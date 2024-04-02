@@ -5,6 +5,8 @@ LIB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),"lib")
 if LIB_PATH not in sys.path:
 	sys.path.insert(0,LIB_PATH)
 
+SCHEMA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),"json-schema")
+
 bl_info ={
 	"name": "assetfetch-blender",
 	"description":"AssetFetch for Blender",
