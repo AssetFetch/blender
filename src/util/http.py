@@ -1,18 +1,47 @@
-import json,requests,tempfile
+import json,requests,tempfile,os
+import pathlib
 from enum import Enum
 from typing import List,Dict
 import bpy
+import jsonschema
+
+from .. import SCHEMA_PATH
 
 class AF_HttpResponse:
+
 	"""Represents a response received from a provider."""
-	def __init__(self,content:str,response_code:int):
+	def __init__(self,raw_response:requests.Response):
 
-		self.content = content
-		self.response_code = response_code
-		self.parsed = json.loads(content)
+		self.content = raw_response.text
+		self.response_code = raw_response.status_code
+		self.parsed = json.loads(self.content)
 
-	def is_ok(self):
-		return self.response_code == 200
+		raw_response.raise_for_status()
+		
+		try:
+			kind = self.parsed['meta']['kind']
+		except Exception as e:
+			raise Exception("Could not resolve meta.kind for this request.")
+
+		target_schema_path = (SCHEMA_PATH+f"/endpoint/{kind}.json").replace("\\","/")
+		target_base_path = SCHEMA_PATH.replace("\\","/")
+
+		if not os.path.exists(target_schema_path):
+			raise Exception(f"Kind {kind} is not recognized as an endpoint kind because file {target_schema_path} could not be found.")
+		
+		print(f"Validating against {target_schema_path} with base path {target_base_path}...")
+		
+		with open(target_schema_path, 'r') as schema_file:
+			schema = json.load(schema_file)
+			jsonschema.validate(instance=self.parsed,schema=schema,
+					   resolver=jsonschema.RefResolver(
+						   referrer=f"file:///{target_schema_path}",
+						   base_uri=f"file:///{target_schema_path}"
+						)	   
+					)
+			
+		print("... Validation OK") 
+
 
 class AF_HttpQuery:
 
@@ -42,7 +71,7 @@ class AF_HttpQuery:
 			raise ValueError(f"Unsupported HTTP method: {self.method}")
 
 		# Create and return AF_HttpResponse
-		return AF_HttpResponse(content=response.text, response_code=response.status_code)
+		return AF_HttpResponse(response)
 	
 	def execute_as_temporary_file(self) -> tempfile.NamedTemporaryFile:
 		"""This method is only used for small media files, such as thumbnails."""
