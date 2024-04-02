@@ -88,186 +88,190 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		
 		# Generate a namespace to use for loose materials
 		# This tells the plugin whether an existing material is
+		try:
+			for step in implementation.import_steps:
 
-		for step in implementation.import_steps:
+				step_complete = False
 
-			step_complete = False
+				if step.action == "directory_create":
+					print(f"Creating directory {step.config['directory'].value}")
+					os.makedirs(step.config['directory'].value,exist_ok=True)
+					step_complete = True
 
-			if step.action == "directory_create":
-				print(f"Creating directory {step.config['directory'].value}")
-				os.makedirs(step.config['directory'].value,exist_ok=True)
-				step_complete = True
-
-			if step.action == "unlock":
-				unlock_query  = implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
-				query : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
-				response = query.execute()
-				unlock_query.unlocked = True
+				if step.action == "unlock":
+					unlock_query  = implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
+					query : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
+					response = query.execute()
+					unlock_query.unlocked = True
+					
+					step_complete = True
 				
-				step_complete = True
-			
 
-			# This code will fetch the file_fetch.download datablock that is missing on the locked asset.
-			# It can do that now because the resource was already unlocked during a previous step.
-			if step.action == "fetch_download_unlocked":
-				component = implementation.get_component_by_id(step.config['component_id'].value)
+				# This code will fetch the file_fetch.download datablock that is missing on the locked asset.
+				# It can do that now because the resource was already unlocked during a previous step.
+				if step.action == "fetch_download_unlocked":
+					component = implementation.get_component_by_id(step.config['component_id'].value)
+					
+					# Perform the query to get the previously withheld datablocks
+					response = component.unlock_link.unlocked_datablocks_query.to_http_query().execute()
+					
+					# Add the real download configuration to the component so that it can be called in the next step.
+					if "file_fetch.download" in response.parsed['data']:
+						component.file_fetch_download.configure(response.parsed['data']['file_fetch.download'])
+					else:
+						raise Exception(f"Could not get unlocked download link for component {component.name}")
+
+				# Actually download the asset file.
+				# The data was either there already or has been fetched using the code above (action=file_download_unlocked)
+				# In both cases, this code below actually downloads the asset and places it in its desired place
+				if step.action in ["fetch_download","fetch_download_unlocked"]:
+					component = implementation.get_component_by_id(step.config['component_id'].value)
+
+					# Prepare query
+					query = component.file_fetch_download.to_http_query()
+
+					# Determine target path
+					if component.file_info.behavior in ['file_passive','file_active']:
+						# Download directly into local dir
+						destination = os.path.join(implementation.local_directory,component.file_info.local_path)
+					elif component.file_info.behavior == "archive":
+						destination = os.path.join(temp_dir,component.name)
+					else:
+						raise Exception("Invalid behavior!")
+					
+					print(f"Downloading into {destination}")
+					query.execute_as_file(destination_path=destination)
+
+					step_complete = True
 				
-				# Perform the query to get the previously withheld datablocks
-				response = component.unlock_link.unlocked_datablocks_query.to_http_query().execute()
+				if step.action == "import_usd_from_local_path":
+					usd_component = implementation.get_component_by_id(step.config['component_id'].value)
+					usd_target_path = os.path.join(implementation.local_directory,usd_component.file_info.local_path)
+					print(f"Importing USD from {usd_target_path}")
+					bpy.ops.wm.usd_import(filepath=usd_target_path,import_all_materials=True)
+
+					step_complete = True
+
+				if step.action == "import_obj_from_local_path":
+					# The path where the obj file was downloaded in a previous step
+					obj_component = implementation.get_component_by_id(step.config['component_id'].value)
+					obj_target_path = os.path.join(implementation.local_directory,obj_component.file_info.local_path)
+
+					print(f"Importing OBJ from {obj_target_path}")
+
+					up_axis = 'Y'
+					if "format_obj" in obj_component:
+						if obj_component.format_obj.up_axis == "+y":
+							up_axis = 'Y'
+						elif obj_component.format_obj.up_axis == "+z":
+							up_axis = 'Z'
+
+					bpy.ops.wm.obj_import(up_axis=up_axis,filepath=obj_target_path)
+
+					# Apply materials, if referenced
+					self.assign_loose_materials(
+						loose_material_apply_block=obj_component.loose_material_apply,
+						target_blender_objects=bpy.context.selected_objects,
+						af_namespace=af_namespace)
+					
+					step_complete = True
 				
-				# Add the real download configuration to the component so that it can be called in the next step.
-				if "file_fetch.download" in response.parsed['data']:
-					component.file_fetch_download.configure(response.parsed['data']['file_fetch.download'])
-				else:
-					raise Exception(f"Could not get unlocked download link for component {component.name}")
+				if step.action == "import_loose_material_map_from_local_path":
 
-			# Actually download the asset file.
-			# The data was either there already or has been fetched using the code above (action=file_download_unlocked)
-			# In both cases, this code below actually downloads the asset and places it in its desired place
-			if step.action in ["fetch_download","fetch_download_unlocked"]:
-				component = implementation.get_component_by_id(step.config['component_id'].value)
+					image_component  = implementation.get_component_by_id(step.config['component_id'].value)
+					image_target_path = os.path.join(implementation.local_directory,image_component.file_info.local_path)
+					target_material = self.get_or_create_material(material_name=image_component.loose_material_define.material_name,af_namespace=af_namespace)
 
-				# Prepare query
-				query = component.file_fetch_download.to_http_query()
+					# Import the file from local_path into blender
+					image = bpy_extras.image_utils.load_image(imagepath=image_target_path)
 
-				# Determine target path
-				if component.file_info.behavior in ['file_passive','file_active']:
-					# Download directly into local dir
-					destination = os.path.join(implementation.local_directory,component.file_info.local_path)
-				elif component.file_info.behavior == "archive":
-					destination = os.path.join(temp_dir,component.name)
-				else:
-					raise Exception("Invalid behavior!")
-				
-				print(f"Downloading into {destination}")
-				query.execute_as_file(destination_path=destination)
+					# Set color space
+					if image_component.loose_material_define.colorspace == "linear":
+						image.colorspace_settings.name = "Non-Color"
+					else:
+						image.colorspace_settings.name = "sRGB"
 
-				step_complete = True
-			
-			if step.action == "import_usd_from_local_path":
-				usd_component = implementation.get_component_by_id(step.config['component_id'].value)
-				usd_target_path = os.path.join(implementation.local_directory,usd_component.file_info.local_path)
-				print(f"Importing USD from {usd_target_path}")
-				bpy.ops.wm.usd_import(filepath=usd_target_path,import_all_materials=True)
+					# Assign the map to the material
+					#bsdf_shader = target_material.node_tree.nodes
+					image_node = target_material.node_tree.nodes.new(type='ShaderNodeTexImage')
+					image_node.image = image
 
-				step_complete = True
+					# Connect
+					target_material.node_tree.links.new(target_material.node_tree.nodes['TEX_COORD'].outputs['UV'],image_node.inputs['Vector'])
+					
+					# Make connection into bsdf shader
+					map = image_component.loose_material_define.map
+					image_color_out = image_node.outputs['Color']
+					bsdf_inputs = target_material.node_tree.nodes['BSDF'].inputs
 
-			if step.action == "import_obj_from_local_path":
-				# The path where the obj file was downloaded in a previous step
-				obj_component = implementation.get_component_by_id(step.config['component_id'].value)
-				obj_target_path = os.path.join(implementation.local_directory,obj_component.file_info.local_path)
+					# Color Map
+					if map in ['albedo','diffuse']:
+						color_image_node = target_material.node_tree.links.new(image_color_out,bsdf_inputs['Base Color'])
 
-				print(f"Importing OBJ from {obj_target_path}")
+					# Normal Map
+					if map in ['normal+y','normal-y']:
+						normal_map_node = target_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
+						target_material.node_tree.links.new(normal_map_node.outputs['Normal'],target_material.node_tree.nodes['BSDF'].inputs['Normal'])
+						if map == "normal+y":
+							target_material.node_tree.links.new(image_node.outputs['Color'],normal_map_node.inputs['Color'])
+						if map == "normal-y":
+							# Green channel must be inverted
+							# Separate Color
+							separate_color_node = target_material.node_tree.nodes.new(type="ShaderNodeSeparateColor")
+							target_material.node_tree.links.new(image_node.outputs['Color'],separate_color_node.inputs['Color'])
+							# Invert Green
+							invert_normal_y_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
+							target_material.node_tree.links.new(separate_color_node.outputs['Green'],invert_normal_y_node.inputs['Color'])
+							# Combine again
+							combine_color_node = target_material.node_tree.nodes.new(type="ShaderNodeCombineColor")
+							target_material.node_tree.links.new(invert_normal_y_node.outputs['Color'],combine_color_node.inputs['Green'])
+							target_material.node_tree.links.new(separate_color_node.outputs['Red'],combine_color_node.inputs['Red'])
+							target_material.node_tree.links.new(separate_color_node.outputs['Blue'],combine_color_node.inputs['Blue'])
+							# Connect to normal node
+							target_material.node_tree.links.new(combine_color_node.outputs['Color'],normal_map_node.inputs['Color'])
 
-				up_axis = 'Y'
-				if "format_obj" in obj_component:
-					if obj_component.format_obj.up_axis == "+y":
-						up_axis = 'Y'
-					elif obj_component.format_obj.up_axis == "+z":
-						up_axis = 'Z'
+					# Roughness Map
+					if map == "roughness":
+						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Roughness'])
 
-				bpy.ops.wm.obj_import(up_axis=up_axis,filepath=obj_target_path)
+					# Glossiness
+					if map == "glossiness":
+						# Map needs to be inverted
+						invert_roughness_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
+						target_material.node_tree.links.new(image_color_out,invert_roughness_node.inputs['Color'])
+						target_material.node_tree.links.new(invert_roughness_node.outputs['Color'],bsdf_inputs['Roughness'])
 
-				# Apply materials, if referenced
-				self.assign_loose_materials(
-					loose_material_apply_block=obj_component.loose_material_apply,
-					target_blender_objects=bpy.context.selected_objects,
-					af_namespace=af_namespace)
-				
-				step_complete = True
-			
-			if step.action == "import_loose_material_map_from_local_path":
+					# Metalness Map
+					if map == "metallic":
+						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Metallic'])
 
-				image_component  = implementation.get_component_by_id(step.config['component_id'].value)
-				image_target_path = os.path.join(implementation.local_directory,image_component.file_info.local_path)
-				target_material = self.get_or_create_material(material_name=image_component.loose_material_define.material_name,af_namespace=af_namespace)
+					# Height
+					if map == "height":
+						displacement_node = target_material.node_tree.nodes.new("ShaderNodeDisplacement")
+						target_material.node_tree.links.new(image_color_out,displacement_node.inputs['Height'])
+						target_material.node_tree.links.new(displacement_node.outputs['Displacement'],target_material.node_tree.nodes['OUTPUT'].inputs['Displacement'])
+					
+					# Opacity
+					if map == "opacity":
+						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Alpha'])
 
-				# Import the file from local_path into blender
-				image = bpy_extras.image_utils.load_image(imagepath=image_target_path)
+					if map == "emission":
+						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Emission Color'])
 
-				# Set color space
-				if image_component.loose_material_define.colorspace == "linear":
-					image.colorspace_settings.name = "Non-Color"
-				else:
-					image.colorspace_settings.name = "sRGB"
+					step_complete = True
 
-				# Assign the map to the material
-				#bsdf_shader = target_material.node_tree.nodes
-				image_node = target_material.node_tree.nodes.new(type='ShaderNodeTexImage')
-				image_node.image = image
+				if not step_complete:
+					raise Exception(f"Step {step.action} could not be completed.")
 
-				# Connect
-				target_material.node_tree.links.new(target_material.node_tree.nodes['TEX_COORD'].outputs['UV'],image_node.inputs['Vector'])
-				
-				# Make connection into bsdf shader
-				map = image_component.loose_material_define.map
-				image_color_out = image_node.outputs['Color']
-				bsdf_inputs = target_material.node_tree.nodes['BSDF'].inputs
+			###########################################################################
 
-				# Color Map
-				if map in ['albedo','diffuse']:
-					color_image_node = target_material.node_tree.links.new(image_color_out,bsdf_inputs['Base Color'])
-
-				# Normal Map
-				if map in ['normal+y','normal-y']:
-					normal_map_node = target_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
-					target_material.node_tree.links.new(normal_map_node.outputs['Normal'],target_material.node_tree.nodes['BSDF'].inputs['Normal'])
-					if map == "normal+y":
-						target_material.node_tree.links.new(image_node.outputs['Color'],normal_map_node.inputs['Color'])
-					if map == "normal-y":
-						# Green channel must be inverted
-						# Separate Color
-						separate_color_node = target_material.node_tree.nodes.new(type="ShaderNodeSeparateColor")
-						target_material.node_tree.links.new(image_node.outputs['Color'],separate_color_node.inputs['Color'])
-						# Invert Green
-						invert_normal_y_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
-						target_material.node_tree.links.new(separate_color_node.outputs['Green'],invert_normal_y_node.inputs['Color'])
-						# Combine again
-						combine_color_node = target_material.node_tree.nodes.new(type="ShaderNodeCombineColor")
-						target_material.node_tree.links.new(invert_normal_y_node.outputs['Color'],combine_color_node.inputs['Green'])
-						target_material.node_tree.links.new(separate_color_node.outputs['Red'],combine_color_node.inputs['Red'])
-						target_material.node_tree.links.new(separate_color_node.outputs['Blue'],combine_color_node.inputs['Blue'])
-						# Connect to normal node
-						target_material.node_tree.links.new(combine_color_node.outputs['Color'],normal_map_node.inputs['Color'])
-
-				# Roughness Map
-				if map == "roughness":
-					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Roughness'])
-
-				# Glossiness
-				if map == "glossiness":
-					# Map needs to be inverted
-					invert_roughness_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
-					target_material.node_tree.links.new(image_color_out,invert_roughness_node.inputs['Color'])
-					target_material.node_tree.links.new(invert_roughness_node.outputs['Color'],bsdf_inputs['Roughness'])
-
-				# Metalness Map
-				if map == "metallic":
-					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Metallic'])
-
-				# Height
-				if map == "height":
-					displacement_node = target_material.node_tree.nodes.new("ShaderNodeDisplacement")
-					target_material.node_tree.links.new(image_color_out,displacement_node.inputs['Height'])
-					target_material.node_tree.links.new(displacement_node.outputs['Displacement'],target_material.node_tree.nodes['OUTPUT'].inputs['Displacement'])
-				
-				# Opacity
-				if map == "opacity":
-					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Alpha'])
-
-				if map == "emission":
-					target_material.node_tree.links.new(image_color_out,bsdf_inputs['Emission Color'])
-
-				step_complete = True
-
-			if not step_complete:
-				raise Exception(f"Step {step.action} could not be completed.")
-
-		###########################################################################
-
-		# Progress: https://stackoverflow.com/a/53877507
+			# Progress: https://stackoverflow.com/a/53877507
+		finally:
 		
-		# Refresh connection status
-		bpy.ops.af.connection_status()
+			# Refresh connection status
+			bpy.ops.af.connection_status()
+
+			# Rebuild import plans to accommodate any unlocked components
+			bpy.ops.af.build_import_plans()
 
 		return {'FINISHED'}
