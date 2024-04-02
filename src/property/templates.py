@@ -87,19 +87,23 @@ def select_property_enum_items(property,context):
 	out = []
 	for c in property.choices:
 		out.append(
-			(c.value,c.value,c.value)
+			(c.value,c.title,c.title)
 		)
 	return out
+
+class AF_PR_SelectParameterChoice(bpy.types.PropertyGroup):
+	title : bpy.props.StringProperty()
+	value : bpy.props.StringProperty()
 
 class AF_PR_SelectParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
-	choices: bpy.props.CollectionProperty(type=AF_PR_GenericString)
+	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
 	value: bpy.props.EnumProperty(items=select_property_enum_items)
 
 class AF_PR_MultiSelectItem(bpy.types.PropertyGroup):
-	choice: bpy.props.StringProperty()
+	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
 	active: bpy.props.BoolProperty()
 
 class AF_PR_MultiSelectParameter(bpy.types.PropertyGroup):
@@ -141,7 +145,7 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 			if p['type'] in ["text","boolean","integer","float"]:
 				new_parameter = self.parameters_text.add()
 				new_parameter.title = p['title']
-				new_parameter.name = p['name']
+				new_parameter.name = p['id']
 				if p['default']:
 					new_parameter.value = p['default']
 				if p['mandatory']:
@@ -150,12 +154,13 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 			if p['type'] == "select":
 				new_parameter = self.parameters_select.add()
 				new_parameter.title = p['title']
-				new_parameter.name = p['name']
+				new_parameter.name = p['id']
 				if p['mandatory']:
 					new_parameter.mandatory = p['mandatory']
 				for c in p['choices']:
 					new_choice = new_parameter.choices.add()
-					new_choice.value = c
+					new_choice.value = c['value']
+					new_choice.title = c['title']
 
 		return self
 
@@ -198,11 +203,11 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		
 		# Text parameters
 		for asset_list_parameter in self.parameters_text:
-			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["name"])
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
 		
 		# Select parameters
 		for asset_list_parameter in self.parameters_select:
-			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["name"])
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
 
 
 class AF_PR_Header(bpy.types.PropertyGroup):

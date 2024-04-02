@@ -28,6 +28,7 @@ registration_targets = [
 	AF_PR_FloatParameter,
 	AF_PR_IntegerParameter,
 	AF_PR_FixedParameter,
+	AF_PR_SelectParameterChoice,
 	AF_PR_SelectParameter,
 	AF_PR_MultiSelectItem,
 	AF_PR_MultiSelectParameter,
