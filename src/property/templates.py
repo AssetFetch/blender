@@ -75,6 +75,10 @@ class AF_PR_FixedParameter(bpy.types.PropertyGroup):
 
 def select_property_enum_items(property,context):
 	out = []
+	if not property.mandatory:
+		out.append(
+			("<none>","<none>","<none>")
+		)
 	for c in property.choices:
 		out.append(
 			(c.value,c.title,c.title)
@@ -114,6 +118,15 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	parameters_fixed: bpy.props.CollectionProperty(type=AF_PR_FixedParameter)
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
 	parameters_multiselect: bpy.props.CollectionProperty(type=AF_PR_MultiSelectParameter)
+
+	def is_ready(self) -> bool:
+		"""Determines if the query is ready to be executed, meaning that all mandatory values are set."""
+		
+		for p in self.parameters_text:
+			if p.mandatory and p.value == "":
+				return False
+		return True
+				
 
 	def configure(self,variable_query,update_target:AF_VariableQueryUpdateTarget = AF_VariableQueryUpdateTarget.update_nothing):
 
@@ -188,7 +201,8 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 
 		# Select Parameters
 		for par in self.parameters_select:
-			parameters[par.name] = str(par.value)
+			if par.value != "<none>":
+				parameters[par.name] = str(par.value)
 
 		# Ignoring multi-select for now
 

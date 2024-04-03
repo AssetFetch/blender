@@ -72,7 +72,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 			# Status endpoint
 			af.current_provider_initialization.provider_configuration.connection_status_query.configure(provider_config['connection_status_query'])
 		else:
-			# No configuration required...
+			# No configuration required, we can immediately start getting the asset list (assuming the operator polling succeeded)
 			af.current_connection_state.state = "connected"
 
 		# asset_list_query

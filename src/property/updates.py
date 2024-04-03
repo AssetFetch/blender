@@ -12,19 +12,23 @@ class AF_VariableQueryUpdateTarget(Enum):
 
 def update_asset_list_index(property,context):
 	print("update_asset_list_index")
-	bpy.ops.af.update_implementations_list()
+	if bpy.ops.af.update_implementations_list.poll():
+		bpy.ops.af.update_implementations_list()
 
 def update_implementation_list_index(property,context):
 	print("update_implementation_list_index")
 
 def update_asset_list_parameter(property,context):
 	print("update_asset_list_parameter")
-	bpy.ops.af.update_asset_list()
-	bpy.ops.af.update_implementations_list()
+	if bpy.ops.af.update_asset_list.poll():
+		bpy.ops.af.update_asset_list()
+	if bpy.ops.af.update_implementations_list.poll():
+		bpy.ops.af.update_implementations_list()
 
 def update_implementation_list_parameter(property,context):
 	print("update_implementation_list_parameter")
-	bpy.ops.af.update_implementations_list()
+	if bpy.ops.af.update_implementations_list.poll():
+		bpy.ops.af.update_implementations_list()
 
 def update_variable_query_parameter(property,context):
 	print("update_variable_query_parameter")
