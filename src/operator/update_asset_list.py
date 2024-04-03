@@ -14,6 +14,11 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 		pass
 		#layout = self.layout
 		#layout.prop(self,'radius')
+	
+	@classmethod
+	def poll(self, context) -> bool:
+		af = bpy.context.window_manager.af
+		return af.current_connection_state.state == "connected" and af.current_provider_initialization.asset_list_query.is_ready()
 
 	def execute(self,context):
 		af  = bpy.context.window_manager.af

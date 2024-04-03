@@ -10,6 +10,23 @@ class AF_VariableQueryUpdateTarget(Enum):
 	def to_property_enum(cls):
 		return list(map(lambda c: (c.value,c.value,c.value), cls))
 
+# General update functions
+	
+def update_init_url(property,context):
+	print("update_init_url")
+	bpy.ops.af.initialize_provider()
+
+	if bpy.ops.af.update_asset_list.poll():
+		bpy.ops.af.update_asset_list()
+
+def update_provider_header(property,context):
+	print("update_provider_header")
+	if bpy.ops.af.connection_status.poll():
+		bpy.ops.af.connection_status()
+	
+	if bpy.ops.af.update_asset_list.poll():
+		bpy.ops.af.update_asset_list()
+
 def update_asset_list_index(property,context):
 	print("update_asset_list_index")
 	if bpy.ops.af.update_implementations_list.poll():
@@ -18,10 +35,23 @@ def update_asset_list_index(property,context):
 def update_implementation_list_index(property,context):
 	print("update_implementation_list_index")
 
+#def update_implementation_list_query(property,context):
+#	print("update_implementation_list_query")
+#	if bpy.ops.af.update_implementations_list.poll():
+#		bpy.ops.af.update_implementations_list()
+#
+#def update_asset_list_query(property,context):
+#	print("update_asset_list_query")
+#	if bpy.ops.af.update_asset_list.poll():
+#		bpy.ops.af.update_asset_list()
+
+# Update functions for variable query parameters
+
 def update_asset_list_parameter(property,context):
 	print("update_asset_list_parameter")
 	if bpy.ops.af.update_asset_list.poll():
 		bpy.ops.af.update_asset_list()
+
 	if bpy.ops.af.update_implementations_list.poll():
 		bpy.ops.af.update_implementations_list()
 

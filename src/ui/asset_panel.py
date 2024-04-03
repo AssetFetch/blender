@@ -20,7 +20,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		af.current_provider_initialization.asset_list_query.draw_ui(layout)
 
 		# Send button
-		layout.operator("af.update_asset_list",text="Search Assets")
+		#layout.operator("af.update_asset_list",text="Search Assets")
 
 		# List of assets
 			# Image
@@ -33,11 +33,12 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		#layout.label(text="ASDF",icon_value=icons_dict['CAT_1'].icon_id)
 		
 		if len(af.current_asset_list.assets) > 0:
-			layout.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index")
 			layout.separator()
+			row = layout.row()
+			row.template_list(listtype_name="UI_UL_list", list_id="asset_list", dataptr=af.current_asset_list, propname="assets", active_dataptr=af, active_propname="current_asset_list_index", maxrows=9)
 			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 			
-			asset_box = layout.box()
+			asset_box = row.box()
 			asset_box.label(text=current_asset.text.title,icon="PACKAGE")
 			if current_asset.preview_image_thumbnail.icon_id:
 				asset_box.template_icon(icon_value=current_asset.preview_image_thumbnail.icon_id,scale=8.0)

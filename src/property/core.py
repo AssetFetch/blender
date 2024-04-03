@@ -260,7 +260,7 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 # Final AssetFetch property
 
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
-	current_init_url: bpy.props.StringProperty(description="Init")
+	current_init_url: bpy.props.StringProperty(description="Init",update=update_init_url)
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)

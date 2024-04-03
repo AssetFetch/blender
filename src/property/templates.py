@@ -212,11 +212,11 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		
 		# Text parameters
 		for asset_list_parameter in self.parameters_text:
-			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"]+("","*")[asset_list_parameter.mandatory])
 		
 		# Select parameters
 		for asset_list_parameter in self.parameters_select:
-			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"]+("","*")[asset_list_parameter.mandatory])
 
 
 class AF_PR_Header(bpy.types.PropertyGroup):
@@ -233,7 +233,7 @@ class AF_PR_Header(bpy.types.PropertyGroup):
 	])
 
 	# The actual value entered by the user
-	value: bpy.props.StringProperty()
+	value: bpy.props.StringProperty(update=update_provider_header)
 
 	def configure(self,header):
 		for key in ['name','default','is_required','is_sensitive','prefix','suffix','title','encoding']:
