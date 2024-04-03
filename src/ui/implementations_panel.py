@@ -20,7 +20,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		# Query properties
 		current_asset.implementation_list_query.draw_ui(layout)
 
-		layout.operator("af.update_implementations_list",text="Search Implementations")
+		#layout.operator("af.update_implementations_list",text="Search Implementations")
 
 		# Create default import button label
 		import_button_label = "Import"

@@ -20,7 +20,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		af.current_provider_initialization.asset_list_query.draw_ui(layout)
 
 		# Send button
-		layout.operator("af.update_asset_list",text="Search Assets")
+		#layout.operator("af.update_asset_list",text="Search Assets")
 
 		# List of assets
 			# Image
