@@ -1,6 +1,8 @@
 import bpy
 from ..util.http import *
 
+from .updates import *
+
 http_method_enum = [
 			('get','GET','HTTP GET'),
 			('post','POST','HTTP POST')
@@ -10,15 +12,6 @@ update_target_enum = [
 	('update_implementations_list','update_implementations_list','update_implementations_list'),
 	('update_asset_list','update_asset_list','update_asset_list')
 ]
-
-# Update functions
-def property_update_handler(property,context):
-	if "update_target" in property:
-		if property.update_target == "update_implementations_list":
-			bpy.ops.af.update_implementations_list()
-		if property.update_target == "update_asset_list":
-			bpy.ops.af_update_asset_list()
-
 
 class AF_PR_GenericString(bpy.types.PropertyGroup):
 	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
@@ -55,28 +48,28 @@ class AF_PR_TextParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
-	value: bpy.props.StringProperty(update=property_update_handler)
+	value: bpy.props.StringProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_IntegerParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
-	value: bpy.props.IntProperty(update=property_update_handler)
+	value: bpy.props.IntProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_FloatParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
-	value: bpy.props.FloatProperty(update=property_update_handler)
+	value: bpy.props.FloatProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_BoolParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.BoolProperty()
 	mandatory: bpy.props.BoolProperty()
-	value: bpy.props.BoolProperty(update=property_update_handler)
+	value: bpy.props.BoolProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_FixedParameter(bpy.types.PropertyGroup):

@@ -1,5 +1,6 @@
 import bpy,os
 
+from .updates import *
 from .templates import *
 from .datablocks import *
 
@@ -263,8 +264,8 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)
-	current_asset_list_index: bpy.props.IntProperty(update=property_update_handler)
+	current_asset_list_index: bpy.props.IntProperty(update=update_assetfetch_asset_list_index)
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
-	current_implementation_list_index: bpy.props.IntProperty()
+	current_implementation_list_index: bpy.props.IntProperty(update=update_assetfetch_implementation_list_index)
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))
 

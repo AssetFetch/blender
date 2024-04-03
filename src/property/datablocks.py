@@ -1,5 +1,6 @@
 import bpy
 
+from .updates import *
 from .templates import *
 
 class AF_PR_GenericBlock:
