@@ -8,11 +8,6 @@ http_method_enum = [
 			('post','POST','HTTP POST')
 		]		
 
-update_target_enum = [
-	('update_implementations_list','update_implementations_list','update_implementations_list'),
-	('update_asset_list','update_asset_list','update_asset_list')
-]
-
 class AF_PR_GenericString(bpy.types.PropertyGroup):
 	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
 	value: bpy.props.StringProperty()
@@ -43,6 +38,8 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup):
 		for p in self.payload:
 			parameters[p.name] = p.value
 		return AF_HttpQuery(uri=self.uri,method=self.method,parameters=parameters)
+	
+update_target_enum = AF_VariableQueryUpdateTarget.to_property_enum()
 
 class AF_PR_TextParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
@@ -93,7 +90,8 @@ class AF_PR_SelectParameter(bpy.types.PropertyGroup):
 	default: bpy.props.StringProperty()
 	mandatory: bpy.props.BoolProperty()
 	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
-	value: bpy.props.EnumProperty(items=select_property_enum_items)
+	value: bpy.props.EnumProperty(items=select_property_enum_items,update=update_variable_query_parameter)
+	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_MultiSelectItem(bpy.types.PropertyGroup):
 	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
@@ -117,9 +115,10 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
 	parameters_multiselect: bpy.props.CollectionProperty(type=AF_PR_MultiSelectParameter)
 
-	def configure(self,variable_query):
+	def configure(self,variable_query,update_target:AF_VariableQueryUpdateTarget = AF_VariableQueryUpdateTarget.update_nothing):
 
 		self.uri = ""
+		update_target = update_target.value
 
 		self.parameters_text.clear()
 		self.parameters_boolean.clear()
@@ -139,15 +138,18 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 				new_parameter = self.parameters_text.add()
 				new_parameter.title = p['title']
 				new_parameter.name = p['id']
+				new_parameter.update_target = update_target
 				if p['default']:
 					new_parameter.value = p['default']
 				if p['mandatory']:
 					new_parameter.mandatory = p['mandatory']
 
+			# Select parameters
 			if p['type'] == "select":
 				new_parameter = self.parameters_select.add()
 				new_parameter.title = p['title']
 				new_parameter.name = p['id']
+				new_parameter.update_target = update_target
 				if p['mandatory']:
 					new_parameter.mandatory = p['mandatory']
 				for c in p['choices']:

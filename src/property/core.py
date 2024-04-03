@@ -52,7 +52,7 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 			
 			# Implementations Query
 			if "implementation_list_query" in asset['data']:
-				asset_entry.implementation_list_query.configure(asset['data']['implementation_list_query'])
+				asset_entry.implementation_list_query.configure(asset['data']['implementation_list_query'],update_target=AF_VariableQueryUpdateTarget.update_implementation_list_parameter)
 
 			if "preview_image_thumbnail" in asset['data']:
 				asset_entry.preview_image_thumbnail.configure(asset['data']['preview_image_thumbnail'])
@@ -264,8 +264,8 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)
-	current_asset_list_index: bpy.props.IntProperty(update=update_assetfetch_asset_list_index)
+	current_asset_list_index: bpy.props.IntProperty(update=update_asset_list_index)
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
-	current_implementation_list_index: bpy.props.IntProperty(update=update_assetfetch_implementation_list_index)
+	current_implementation_list_index: bpy.props.IntProperty(update=update_implementation_list_index)
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))
 

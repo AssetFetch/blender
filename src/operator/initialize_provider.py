@@ -1,4 +1,6 @@
 import bpy
+
+from ..property.templates import AF_VariableQueryUpdateTarget
 from ..util import http
 
 class AF_OP_InitializeProvider(bpy.types.Operator):
@@ -75,7 +77,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 
 		# asset_list_query
 		if "asset_list_query" in response.parsed['data']:
-			af.current_provider_initialization.asset_list_query.configure(response.parsed['data']['asset_list_query'])
+			af.current_provider_initialization.asset_list_query.configure(response.parsed['data']['asset_list_query'],update_target=AF_VariableQueryUpdateTarget.update_asset_list_parameter)
 			af.current_asset_list.already_queried = False
 		else:
 			raise Exception("No Asset List Query!")
