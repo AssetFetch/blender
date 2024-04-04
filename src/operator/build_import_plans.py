@@ -20,6 +20,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				# We start by assuming that the implementation is valid and make sure that it is empty
 				current_impl.is_valid = True
 				current_impl.import_steps.clear()
+				current_impl.expected_charges = 0
 
 				# -------------------------------------------------------------------------------
 				# Attempt to build an import plan for the implementation
