@@ -180,8 +180,8 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		self.name = incoming_impl['id']
 
 		# Component data
-		if "components" not in incoming_impl or len(incoming_impl['components']) < 1:
-			raise Exception("This implementation has no components.")
+		#if "components" not in incoming_impl or len(incoming_impl['components']) < 1:
+		#	raise Exception("This implementation has no components.")
 		for provider_comp in incoming_impl['components']:
 			
 			blender_comp = self.components.add()
