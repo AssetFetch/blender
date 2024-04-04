@@ -19,6 +19,9 @@ def update_init_url(property,context):
 	if bpy.ops.af.update_asset_list.poll():
 		bpy.ops.af.update_asset_list()
 
+	if bpy.ops.af.update_implementations_list.poll():
+		bpy.ops.af.update_implementations_list()
+
 def update_provider_header(property,context):
 	print("update_provider_header")
 	if bpy.ops.af.connection_status.poll():
@@ -26,6 +29,9 @@ def update_provider_header(property,context):
 	
 	if bpy.ops.af.update_asset_list.poll():
 		bpy.ops.af.update_asset_list()
+	
+	if bpy.ops.af.update_implementations_list.poll():
+		bpy.ops.af.update_implementations_list()
 
 def update_asset_list_index(property,context):
 	print("update_asset_list_index")
