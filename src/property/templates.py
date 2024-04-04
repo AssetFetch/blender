@@ -27,10 +27,11 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup):
 	def configure(self,fixed_query):
 		self.uri = fixed_query['uri']
 		self.method = fixed_query['method']
-		for p in fixed_query['payload'].keys():
-			par = self.payload.add()
-			par.name = p
-			par.value = fixed_query['payload'][p]
+		if "payload" in fixed_query and fixed_query['payload'] != None:
+			for p in fixed_query['payload'].keys():
+				par = self.payload.add()
+				par.name = p
+				par.value = fixed_query['payload'][p]
 		self.is_set = True
 
 	def to_http_query(self) -> AF_HttpQuery:
