@@ -134,7 +134,7 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		for p in variable_query['parameters']:
 
 			# Text parameters
-			if p['type'] in ["text","boolean","integer","float"]:
+			if p['type'] == "text":
 				new_parameter = self.parameters_text.add()
 				new_parameter.title = p['title']
 				new_parameter.name = p['id']
@@ -143,6 +143,14 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 					new_parameter.value = p['default']
 				if p['mandatory']:
 					new_parameter.mandatory = p['mandatory']
+			
+			if p['type'] == "fixed":
+				new_parameter = self.parameters_fixed.add()
+				new_parameter.title = p['title']
+				new_parameter.name = p['id']
+				new_parameter.update_target = update_target
+				new_parameter.default = p['default']
+				new_parameter.value = p['default']
 
 			# Select parameters
 			if p['type'] == "select":
@@ -182,8 +190,6 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 
 		# Fixed Parameters
 		for par in self.parameters_fixed:
-			if par.mandatory and par.value is None:
-				raise Exception(f"Parameter {par.name} is mandatory but empty.")
 			parameters[par.name] = str(par.value)
 
 		# Select Parameters
@@ -200,10 +206,15 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		# Text parameters
 		for asset_list_parameter in self.parameters_text:
 			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"]+("","*")[asset_list_parameter.mandatory])
+
 		
 		# Select parameters
 		for asset_list_parameter in self.parameters_select:
 			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"]+("","*")[asset_list_parameter.mandatory])
+
+		# Fixed parameters
+		for asset_list_parameter in self.parameters_fixed:
+			layout.label(text=f"{asset_list_parameter.name}: {asset_list_parameter.value}")
 
 
 class AF_PR_Header(bpy.types.PropertyGroup):
