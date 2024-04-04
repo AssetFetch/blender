@@ -11,7 +11,7 @@ class AF_PT_ImportStepsPanel(bpy.types.Panel):
 	@classmethod
 	def poll(self, context) -> bool:
 		af  = bpy.context.window_manager.af 
-		return len(af.current_implementation_list.implementations) > 0
+		return af.current_connection_state.state == "connected" and len(af.current_implementation_list.implementations) > 0
 
 	def draw(self, context):
 		layout = self.layout
