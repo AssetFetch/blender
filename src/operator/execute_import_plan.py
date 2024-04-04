@@ -273,7 +273,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		finally:
 		
 			# Refresh connection status
-			bpy.ops.af.connection_status()
+			if bpy.ops.af.connection_status.poll():
+				bpy.ops.af.connection_status()
 
 			# Rebuild import plans to accommodate any unlocked components
 			bpy.ops.af.build_import_plans()
