@@ -48,19 +48,19 @@ class AF_PR_TextParameter(bpy.types.PropertyGroup):
 	value: bpy.props.StringProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
-class AF_PR_IntegerParameter(bpy.types.PropertyGroup):
-	title: bpy.props.StringProperty()
-	mandatory: bpy.props.BoolProperty()
-	default: bpy.props.StringProperty()
-	value: bpy.props.IntProperty(update=update_variable_query_parameter)
-	update_target: bpy.props.EnumProperty(items=update_target_enum)
-
-class AF_PR_FloatParameter(bpy.types.PropertyGroup):
-	title: bpy.props.StringProperty()
-	mandatory: bpy.props.BoolProperty()
-	default: bpy.props.StringProperty()
-	value: bpy.props.FloatProperty(update=update_variable_query_parameter)
-	update_target: bpy.props.EnumProperty(items=update_target_enum)
+#class AF_PR_IntegerParameter(bpy.types.PropertyGroup):
+#	title: bpy.props.StringProperty()
+#	mandatory: bpy.props.BoolProperty()
+#	default: bpy.props.StringProperty()
+#	value: bpy.props.IntProperty(update=update_variable_query_parameter)
+#	update_target: bpy.props.EnumProperty(items=update_target_enum)
+#
+#class AF_PR_FloatParameter(bpy.types.PropertyGroup):
+#	title: bpy.props.StringProperty()
+#	mandatory: bpy.props.BoolProperty()
+#	default: bpy.props.StringProperty()
+#	value: bpy.props.FloatProperty(update=update_variable_query_parameter)
+#	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 class AF_PR_BoolParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
@@ -97,27 +97,15 @@ class AF_PR_SelectParameter(bpy.types.PropertyGroup):
 	value: bpy.props.EnumProperty(items=select_property_enum_items,update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
-class AF_PR_MultiSelectItem(bpy.types.PropertyGroup):
-	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
-	active: bpy.props.BoolProperty()
-
-class AF_PR_MultiSelectParameter(bpy.types.PropertyGroup):
-	title: bpy.props.StringProperty()
-	default: bpy.props.StringProperty()
-	delimiter: bpy.props.StringProperty()
-	values: bpy.props.CollectionProperty(type=AF_PR_MultiSelectItem)
-	mandatory: bpy.props.BoolProperty()
-
 class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	parameters_text: bpy.props.CollectionProperty(type=AF_PR_TextParameter)
 	parameters_boolean: bpy.props.CollectionProperty(type=AF_PR_BoolParameter)
-	parameters_float: bpy.props.CollectionProperty(type=AF_PR_FloatParameter)
-	parameters_int: bpy.props.CollectionProperty(type=AF_PR_IntegerParameter)
+	#parameters_float: bpy.props.CollectionProperty(type=AF_PR_FloatParameter)
+	#parameters_int: bpy.props.CollectionProperty(type=AF_PR_IntegerParameter)
 	parameters_fixed: bpy.props.CollectionProperty(type=AF_PR_FixedParameter)
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
-	parameters_multiselect: bpy.props.CollectionProperty(type=AF_PR_MultiSelectParameter)
 
 	def is_ready(self) -> bool:
 		"""Determines if the query is ready to be executed, meaning that all mandatory values are set."""
@@ -135,11 +123,10 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 
 		self.parameters_text.clear()
 		self.parameters_boolean.clear()
-		self.parameters_float.clear()
-		self.parameters_int.clear()
+		#self.parameters_float.clear()
+		#self.parameters_int.clear()
 		self.parameters_fixed.clear()
 		self.parameters_select.clear()
-		self.parameters_multiselect.clear()
 
 		self.uri = variable_query['uri']
 		self.method = variable_query['method']
@@ -182,19 +169,19 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 			parameters[par.name] = str(par.value)
 
 		# Float parameters
-		for par in self.parameters_float:
-			if par.mandatory and par.value is None:
-				raise Exception(f"Parameter {par.name} is mandatory but empty.")
-			parameters[par.name] = str(par.value)
+		#for par in self.parameters_float:
+		#	if par.mandatory and par.value is None:
+		#		raise Exception(f"Parameter {par.name} is mandatory but empty.")
+		#	parameters[par.name] = str(par.value)
 
 		# Integer parameters
-		for par in self.parameters_float:
-			if par.mandatory and par.value is None:
-				raise Exception(f"Parameter {par.name} is mandatory but empty.")
-			parameters[par.name] = str(par.value)
+		#for par in self.parameters_float:
+		#	if par.mandatory and par.value is None:
+		#		raise Exception(f"Parameter {par.name} is mandatory but empty.")
+		#	parameters[par.name] = str(par.value)
 
 		# Fixed Parameters
-		for par in self.parameters_float:
+		for par in self.parameters_fixed:
 			if par.mandatory and par.value is None:
 				raise Exception(f"Parameter {par.name} is mandatory but empty.")
 			parameters[par.name] = str(par.value)
