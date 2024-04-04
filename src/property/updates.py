@@ -2,7 +2,7 @@ from enum import Enum
 import logging
 import bpy
 
-LOGGER = logging.getLogger("af-prop")
+LOGGER = logging.getLogger("af.property.updates")
 LOGGER.setLevel(logging.DEBUG)
 
 class AF_VariableQueryUpdateTarget(Enum):

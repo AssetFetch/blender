@@ -1,7 +1,7 @@
 import bpy,logging
 from ..util import http
 
-LOGGER = logging.getLogger("af-connection-status")
+LOGGER = logging.getLogger("af.ops.connection_status")
 LOGGER.setLevel(logging.DEBUG)
 	
 class AF_OP_ConnectionStatus(bpy.types.Operator):

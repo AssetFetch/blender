@@ -4,7 +4,7 @@ import bpy
 from ..property.templates import AF_VariableQueryUpdateTarget
 from ..util import http
 
-LOGGER = logging.getLogger("af-init")
+LOGGER = logging.getLogger("af.ops.initialize_provider")
 LOGGER.setLevel(logging.DEBUG)
 
 class AF_OP_InitializeProvider(bpy.types.Operator):

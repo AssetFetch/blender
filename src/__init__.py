@@ -1,4 +1,8 @@
-import os,sys
+import os,sys,logging
+
+print("Loading AssetFetch for Blender v0.1.0")
+logging.basicConfig()
+logging.root.setLevel(logging.WARN)
 
 # Add the lib/ directory to sys.path to make it all the bundled libraries importable
 LIB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),"lib")

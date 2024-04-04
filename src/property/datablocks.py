@@ -4,7 +4,7 @@ import bpy
 from .updates import *
 from .templates import *
 
-LOGGER = logging.getLogger("af-prop")
+LOGGER = logging.getLogger("af.property.datablocks")
 LOGGER.setLevel(logging.DEBUG)
 
 class AF_PR_GenericBlock:

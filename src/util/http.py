@@ -8,7 +8,7 @@ import jsonschema
 
 from .. import SCHEMA_PATH
 
-LOGGER = logging.getLogger("af-http")
+LOGGER = logging.getLogger("af.util.http")
 LOGGER.setLevel(logging.DEBUG)
 
 class AF_HttpResponse:
@@ -18,13 +18,16 @@ class AF_HttpResponse:
 
 		self.content = raw_response.text
 		self.response_code = raw_response.status_code
-		self.parsed = json.loads(self.content)
+		try:
+			self.parsed = json.loads(self.content)
+		except Exception as e:
+			self.parsed = {}
 
 		raw_response.raise_for_status()
 		
-		try:
+		if "meta" in self.parsed and "kind" in self.parsed['meta']:
 			kind = self.parsed['meta']['kind']
-		except Exception as e:
+		else:
 			raise Exception("Could not resolve meta.kind for this request.")
 
 		target_schema_path = (SCHEMA_PATH+f"/endpoint/{kind}.json").replace("\\","/")
@@ -70,6 +73,8 @@ class AF_HttpQuery:
 			response = requests.post(self.uri,params=self.parameters,headers=headers)
 		else:
 			raise ValueError(f"Unsupported HTTP method: {self.method}")
+		
+		LOGGER.debug(f"Received http response: {response.content}")
 
 		# Create and return AF_HttpResponse
 		return AF_HttpResponse(response)

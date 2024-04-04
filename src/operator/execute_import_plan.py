@@ -4,7 +4,7 @@ import bpy,bpy_extras,uuid,tempfile,os,shutil
 import bpy_extras.image_utils
 from ..util import http
 
-LOGGER = logging.getLogger("af-exec-import")
+LOGGER = logging.getLogger("af.execute_import_plan")
 LOGGER.setLevel(logging.DEBUG)
 
 class AF_OP_ExecuteImportPlan(bpy.types.Operator):
