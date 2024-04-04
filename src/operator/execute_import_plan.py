@@ -1,7 +1,11 @@
+import logging
 from typing import List
 import bpy,bpy_extras,uuid,tempfile,os,shutil
 import bpy_extras.image_utils
 from ..util import http
+
+LOGGER = logging.getLogger("af-exec-import")
+LOGGER.setLevel(logging.DEBUG)
 
 class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	"""Executes the currently loaded import plan."""
@@ -84,7 +88,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				shutil.rmtree(implementation.local_directory)
 			os.makedirs(implementation.local_directory,exist_ok=True)
 		except Exception as e:
-			print(e)
+			LOGGER.error(f"Error while clearing local implementation directory: {e}")
 		
 		# Generate a namespace to use for loose materials
 		# This tells the plugin whether an existing material is
@@ -93,8 +97,12 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 				step_complete = False
 
+				conf_log = {}
+				for k in step.config.keys():
+					conf_log[k] = step.config[k].value
+				LOGGER.info(f"Running step {step.action} with config {conf_log}")
+
 				if step.action == "directory_create":
-					print(f"Creating directory {step.config['directory'].value}")
 					os.makedirs(step.config['directory'].value,exist_ok=True)
 					step_complete = True
 
@@ -139,7 +147,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					else:
 						raise Exception("Invalid behavior!")
 					
-					print(f"Downloading into {destination}")
 					query.execute_as_file(destination_path=destination)
 
 					step_complete = True
@@ -147,7 +154,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				if step.action == "import_usd_from_local_path":
 					usd_component = implementation.get_component_by_id(step.config['component_id'].value)
 					usd_target_path = os.path.join(implementation.local_directory,usd_component.file_info.local_path)
-					print(f"Importing USD from {usd_target_path}")
 					bpy.ops.wm.usd_import(filepath=usd_target_path,import_all_materials=True)
 
 					step_complete = True
@@ -156,8 +162,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					# The path where the obj file was downloaded in a previous step
 					obj_component = implementation.get_component_by_id(step.config['component_id'].value)
 					obj_target_path = os.path.join(implementation.local_directory,obj_component.file_info.local_path)
-
-					print(f"Importing OBJ from {obj_target_path}")
 
 					up_axis = 'Y'
 					if "format_obj" in obj_component:

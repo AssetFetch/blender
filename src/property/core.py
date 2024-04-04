@@ -1,8 +1,12 @@
+import logging
 import bpy,os
 
 from .updates import *
 from .templates import *
 from .datablocks import *
+
+LOGGER = logging.getLogger("af-prop")
+LOGGER.setLevel(logging.DEBUG)
 
 class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
 	# The built-in 'name' property takes care of the provider id
@@ -220,7 +224,6 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			# Configure datablocks
 			for key in recognized_datablock_names:
 				if key in pcd:
-					print(f"setting {blender_comp.name} -> {key}")
 					block = getattr(blender_comp,key.replace(".","_"))
 					block.is_set = True
 					block.configure(pcd[key])

@@ -1,5 +1,8 @@
-import bpy
+import bpy,logging
 from ..util import http
+
+LOGGER = logging.getLogger("af-connection-status")
+LOGGER.setLevel(logging.DEBUG)
 	
 class AF_OP_ConnectionStatus(bpy.types.Operator):
 	"""Performs a status query to the provider, if applicable."""
@@ -25,6 +28,7 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 
 		try:
 			# Contact initialization endpoint and get the response
+			LOGGER.info("Refreshing connection status.")
 			response : http.AF_HttpResponse = af.current_provider_initialization.provider_configuration.connection_status_query.to_http_query().execute()
 
 			af.current_connection_state.state = "connected"
@@ -40,10 +44,12 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 				af.current_connection_state.unlock_balance.configure(response.parsed['data']['unlock_balance'])
 			else:
 				af.current_connection_state['unlock_balance'].clear()
+			
+			LOGGER.info("Refreshed connection status.")
 
 		except Exception as e:
 			af.current_connection_state.state = "connection_error"
-			print(str(e))
+			LOGGER.error(e)
 
 		
 

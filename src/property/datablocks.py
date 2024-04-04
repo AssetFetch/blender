@@ -1,7 +1,11 @@
+import logging
 import bpy
 
 from .updates import *
 from .templates import *
+
+LOGGER = logging.getLogger("af-prop")
+LOGGER.setLevel(logging.DEBUG)
 
 class AF_PR_GenericBlock:
 	"""A class inheriting from AF_PR_GenericBlock means that its parameters
@@ -15,7 +19,7 @@ class AF_PR_GenericBlock:
 			try:
 				setattr(self,key,initial_data[key])
 			except Exception as e:
-				print(f"skipping {key} because {e}")
+				LOGGER.debug(f"skipping {key} because {e}")
 		self.is_set = True
 
 class AF_PR_TextBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):

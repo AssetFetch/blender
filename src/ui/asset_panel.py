@@ -21,16 +21,6 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 
 		# Send button
 		#layout.operator("af.update_asset_list",text="Search Assets")
-
-		# List of assets
-			# Image
-			# Title
-			# (selectable)
-		
-		# Temporary icon test code:
-		#icons_dict = bpy.utils.previews.new()
-		#icons_dict.load("CAT_1","E:/Git/assetfetch-blender/tmp_icons/CAT_1.jpeg",'IMAGE')
-		#layout.label(text="ASDF",icon_value=icons_dict['CAT_1'].icon_id)
 		
 		if len(af.current_asset_list.assets) > 0:
 			layout.separator()

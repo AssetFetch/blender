@@ -1,4 +1,5 @@
 import json,requests,tempfile,os
+import logging
 import pathlib
 from enum import Enum
 from typing import List,Dict
@@ -6,6 +7,9 @@ import bpy
 import jsonschema
 
 from .. import SCHEMA_PATH
+
+LOGGER = logging.getLogger("af-http")
+LOGGER.setLevel(logging.DEBUG)
 
 class AF_HttpResponse:
 
@@ -29,19 +33,16 @@ class AF_HttpResponse:
 		if not os.path.exists(target_schema_path):
 			raise Exception(f"Kind {kind} is not recognized as an endpoint kind because file {target_schema_path} could not be found.")
 		
-		print(f"Validating against {target_schema_path} with base path {target_base_path}...")
+		LOGGER.info(f"Validating against {target_schema_path} with base path {target_base_path}")
 		
 		with open(target_schema_path, 'r') as schema_file:
 			schema = json.load(schema_file)
 			jsonschema.validate(instance=self.parsed,schema=schema,
-					   resolver=jsonschema.RefResolver(
-						   referrer=f"file:///{target_schema_path}",
-						   base_uri=f"file:///{target_schema_path}"
+					resolver=jsonschema.RefResolver(
+						referrer=f"file:///{target_schema_path}",
+						base_uri=f"file:///{target_schema_path}"
 						)	   
 					)
-			
-		print("... Validation OK") 
-
 
 class AF_HttpQuery:
 
@@ -51,13 +52,13 @@ class AF_HttpQuery:
 		if(method in ['get','post']):
 			self.method = method
 		else:
-			raise Exception("Unsupported HTTP method detected.")
+			LOGGER.exception("unsupported HTTP method detected.")
 		self.parameters = parameters
 
 	def execute(self) -> AF_HttpResponse:
 		af  = bpy.context.window_manager.af
 
-		print(f"sending http {self.method} to {self.uri} with {self.parameters}")
+		LOGGER.debug(f"Sending http {self.method} to {self.uri} with {self.parameters}")
 
 		headers = {}
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
