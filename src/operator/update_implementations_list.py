@@ -29,7 +29,8 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 		response = current_asset.implementation_list_query.to_http_query().execute()
 
 		# Converting the json response into blender bpy data
-		af['current_implementation_list'].clear()
+		if "current_implementation_list" in af:
+			af['current_implementation_list'].clear()
 
 		# Load the data into the implementation_list
 		af.current_implementation_list.configure(response.parsed)

@@ -1,5 +1,6 @@
 import logging
 from typing import List
+import zipfile
 import bpy,bpy_extras,uuid,tempfile,os,shutil
 import bpy_extras.image_utils
 from ..util import http
@@ -102,10 +103,13 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					conf_log[k] = step.config[k].value
 				LOGGER.info(f"Running step {step.action} with config {conf_log}")
 
+				# Create a new directory
 				if step.action == "directory_create":
 					os.makedirs(step.config['directory'].value,exist_ok=True)
 					step_complete = True
 
+				# Perform an unlocking query
+				# This is the query that actually performs the purchase in the provider backend
 				if step.action == "unlock":
 					unlock_query  = implementation_list.get_unlock_query_by_id(step.config['query_id'].value)
 					query : http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
@@ -150,6 +154,44 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					query.execute_as_file(destination_path=destination)
 
 					step_complete = True
+
+				if step.action == "fetch_from_zip_archive":
+					
+					# Find the participating components
+					file_component = implementation.get_component_by_id(step.config['component_id'].value)
+					zip_component = implementation.get_component_by_id(file_component.file_fetch_from_archive.archive_component_id)
+
+					# Build the relevant paths
+	 				# Path to the source zip file. This is were the previous step has downloaded it to.
+					source_zip_file_path = os.path.join(temp_dir,zip_component.name)
+
+					# This is the path of the target file inside its parent zip
+					source_zip_sub_path = file_component.file_fetch_from_archive.component_path
+
+					# This is the final path where the file needs to end up
+					destination_file_path = os.path.join(implementation.local_directory,file_component.file_info.local_path)
+					
+					with zipfile.ZipFile(source_zip_file_path, 'r') as zip_ref:
+						# Check if the specified file exists in the zip archive
+						if source_zip_sub_path not in zip_ref.namelist():
+							raise Exception (f"File '{source_zip_sub_path}' not found in the zip archive.")
+						
+						# Prepare a temporary extraction dir
+						extraction_id = str(uuid.uuid4())
+						extraction_temp_dir = os.path.join(temp_dir,extraction_id)
+
+						# Path were the file will initially land after extraction
+						extraction_file_path = os.path.join(extraction_temp_dir,os.path.basename(source_zip_sub_path))
+						
+						# Actually run the extraction
+						zip_ref.extract(source_zip_sub_path, extraction_temp_dir)
+
+						# Move the file into the real destination path
+						shutil.move(src=extraction_file_path,dst=destination_file_path)
+						LOGGER.info(f"File '{source_zip_sub_path}' extracted successfully to '{destination_file_path}'.")
+
+					step_complete = True
+
 				
 				if step.action == "import_usd_from_local_path":
 					usd_component = implementation.get_component_by_id(step.config['component_id'].value)

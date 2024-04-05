@@ -73,7 +73,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 						if not target_comp:
 							raise Exception(f"Referenced component {comp.file_fetch_from_archive.archive_component_id} could not be found.")
 						recursive_fetching_datablock_handler(target_comp)
-						current_impl.import_steps.add().set_action("fetch_from_archive").set_config_value("component_id",comp.name)
+						current_impl.import_steps.add().set_action("fetch_from_zip_archive").set_config_value("component_id",comp.name)
 					elif comp.unlock_link.is_set:
 						current_impl.import_steps.add().set_action("fetch_download_unlocked").set_config_value("component_id",comp.name)
 					else:

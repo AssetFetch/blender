@@ -109,7 +109,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		# File actions
 		("fetch_download","Download File","Download a file."), # component_id
 		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."), # component_id
-		("fetch_from_archive","Load File From Archive","Load a file from an archive."),
+		("fetch_from_zip_archive","Load File From Archive","Load a file from an archive."),
 
 		# Import actions
 		("import_obj_from_local_path","Import OBJ","Imports obj file from local path."), # component_id
