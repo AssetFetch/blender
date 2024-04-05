@@ -9,7 +9,7 @@ import jsonschema
 from .. import SCHEMA_PATH
 
 LOGGER = logging.getLogger("af.util.http")
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel(logging.INFO)
 
 class AF_HttpResponse:
 
@@ -61,7 +61,7 @@ class AF_HttpQuery:
 	def execute(self) -> AF_HttpResponse:
 		af  = bpy.context.window_manager.af
 
-		LOGGER.debug(f"Sending http {self.method} to {self.uri} with {self.parameters}")
+		LOGGER.info(f"Sending http {self.method} to {self.uri} with payload {self.parameters}")
 
 		headers = {}
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
