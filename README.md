@@ -1,5 +1,6 @@
-# assetfetch-blender
-An AssetFetch client for Blender.
+# AssetFetch for Blender
+
+This addon is a client for the [AssetFetch protocol](https://assetfetch.org), an open system for 3D asset discovery and automated imports.
 
 ## Development Setup
 
