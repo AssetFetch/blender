@@ -2,6 +2,11 @@
 
 This addon is a client for the [AssetFetch protocol](https://assetfetch.org), an open system for 3D asset discovery and automated imports.
 
+# Installation
+
+**A user-friendly installation via ZIP file is not yet available, but it will be provided along with the first actual release in the near future.**
+Until then the addon can only be installed using the development setup, outlined below.
+
 ## Development Setup
 
 This is the setup for developing the addon.
@@ -9,7 +14,7 @@ This is the setup for developing the addon.
 1. Create a symlink in your filesystem that connects the `/src` folder in this repository with blender's addon directory, for example on Windows this would be `C:\Users\<User>\AppData\Roaming\Blender Foundation\Blender\4.0\scripts\addons\src`.
 2. Download the required python-dependencies:
 ```
-# Make sure that you are in the root of this directory (same directory as this readme file)
+# Make sure that you are in the root of this repository (same directory as this readme file)
 # Download the required packages into the src/lib directory
 pip install --target ./src/lib/ -r ./requirements.txt
 ```
