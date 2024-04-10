@@ -1,4 +1,5 @@
 import logging
+import uuid
 import bpy
 
 from .updates import *
@@ -217,11 +218,12 @@ class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	alt: bpy.props.StringProperty()
 	uris: bpy.props.CollectionProperty(type=AF_PR_GenericString)
-	chosen_resolution: bpy.props.IntProperty()
-	temp_file_id: bpy.props.StringProperty()
-	icon_id: bpy.props.IntProperty(default=-1)
+	temp_file_id: bpy.props.StringProperty(default="")
+	#icon_id: bpy.props.IntProperty(default=-1)
 
 	def configure(self, preview_image_thumbnail):
+		self.temp_file_id = str(uuid.uuid4())
+		LOGGER.debug(f"Configured PreviewImageThumbnail with temp_file_id {self.temp_file_id}")
 		self.is_set = True
 		if "alt" in preview_image_thumbnail:
 			self.alt = preview_image_thumbnail['alt']
@@ -229,3 +231,24 @@ class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,AF_PR_GenericBloc
 			new_res = self.uris.add()
 			new_res.name = resolution
 			new_res.value = preview_image_thumbnail['uris'][resolution]
+
+	def get_optimal_resolution_uri(self,target_resolution:int) -> str:
+		
+		current_optimal_resolution = None
+
+		for res in self.uris.keys():
+			
+			res = int(res)
+
+			if ( current_optimal_resolution is None ):
+				current_optimal_resolution = res
+
+			if (res > 0 and current_optimal_resolution == 0):
+				current_optimal_resolution = res
+			
+			if ( res > 0 and abs(current_optimal_resolution-target_resolution) > abs(res-target_resolution) ):
+				current_optimal_resolution = res
+
+		final_uri = self.uris[str(current_optimal_resolution)]
+		LOGGER.debug(f"Determined {final_uri} to be best thumbnail.")
+		return final_uri

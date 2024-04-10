@@ -133,4 +133,3 @@ class AF_HttpQuery:
 		finally:
 			stream_handle.close()
 			file_handle.close()
-		
