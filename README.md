@@ -2,6 +2,8 @@
 
 This addon is a client for the [AssetFetch protocol](https://assetfetch.org), an open system for 3D asset discovery and automated imports.
 
+![image](https://github.com/struffel/assetfetch-blender/assets/31403260/6f218e1a-2de1-4054-97f0-99655d513dad)
+
 # Installation
 
 **A user-friendly installation via ZIP file is not yet available, but it will be provided along with the first actual release in the near future.**
