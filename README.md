@@ -15,17 +15,17 @@ This is the setup for developing the addon.
 
 1. Create a symlink in your filesystem that connects the `/src` folder in this repository with blender's addon directory, for example on Windows this would be `C:\Users\<User>\AppData\Roaming\Blender Foundation\Blender\4.0\scripts\addons\src`.
 2. Download the required python-dependencies:
-```
+```bash
 # Make sure that you are in the root of this repository (same directory as this readme file)
 # Download the required packages into the src/lib directory
 pip install --target ./src/lib/ -r ./requirements.txt
 ```
 3. Download the JSON-Schema for AssetFetch
-```
+```bash
 # Download the latest json schema version for AssetFetch
 # Change the -b parameter to use a different branch/tag
 mkdir ./tmp
-git -C ./tmp/ clone -b main --single-branch https://github.com/AssetFetch/spec.git 
+git -C ./tmp/ clone -b '0.2' --single-branch https://github.com/AssetFetch/spec.git 
 cp -r ./tmp/spec/json-schema/ ./src/
 rm -rf ./tmp
 ```
