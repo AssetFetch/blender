@@ -31,8 +31,14 @@ def register():
 
 	from .ui import register
 	ui.register()
+
+	from .util.ui_images import reset_image_cache
+	reset_image_cache()
 	
 def unregister():
+
+	from .util.ui_images import reset_image_cache
+	reset_image_cache()
 	
 	from .ui import unregister
 	ui.unregister()

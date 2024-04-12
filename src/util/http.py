@@ -79,33 +79,6 @@ class AF_HttpQuery:
 		# Create and return AF_HttpResponse
 		return AF_HttpResponse(response)
 	
-	def execute_as_temporary_file(self) -> tempfile.NamedTemporaryFile:
-		"""This method is only used for small media files, such as thumbnails."""
-		af = bpy.context.window_manager.af
-
-		headers = {}
-		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
-			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
-
-		if self.method == 'get':
-			response = requests.get(self.uri, params=self.parameters,headers=headers)
-		elif self.method == 'post':
-			response = requests.post(self.uri, data=self.parameters,headers=headers)
-		else:
-			raise ValueError("Unsupported HTTP method.")
-
-		# Raise an exception for bad responses
-		response.raise_for_status()
-
-		# Create a temporary file to store the downloaded content
-		temp_file = tempfile.NamedTemporaryFile(delete=True)
-
-		# Write the downloaded content into the temporary file
-		temp_file.write(response.content)
-		temp_file.seek(0)  # Reset file pointer to the beginning
-
-		return temp_file
-	
 	def execute_as_file(self, destination_path: str) -> None:
 
 		af = bpy.context.window_manager.af

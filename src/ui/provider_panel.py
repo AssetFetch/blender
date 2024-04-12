@@ -16,7 +16,7 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 
 		info_box.label(text="AssetFetch for Blender v0.1.0-alpha.",icon="SETTINGS")
 		info_box.label(text=f"Download directory: {af.download_directory}")
-		info_box.label(text=f"Thumbnail directory: {af.thumbnail_directory}")
+		info_box.label(text=f"Icon directory: {af.ui_image_directory}")
 		info_box.label(text="Unstable & lacking numerous features, use with caution & patience!")
 
 		# Add a text box to enter the URL
