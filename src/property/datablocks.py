@@ -1,4 +1,5 @@
 import logging
+import uuid
 import bpy
 
 from .updates import *
@@ -217,9 +218,6 @@ class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	alt: bpy.props.StringProperty()
 	uris: bpy.props.CollectionProperty(type=AF_PR_GenericString)
-	chosen_resolution: bpy.props.IntProperty()
-	temp_file_id: bpy.props.StringProperty()
-	icon_id: bpy.props.IntProperty(default=-1)
 
 	def configure(self, preview_image_thumbnail):
 		self.is_set = True
@@ -229,3 +227,23 @@ class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,AF_PR_GenericBloc
 			new_res = self.uris.add()
 			new_res.name = resolution
 			new_res.value = preview_image_thumbnail['uris'][resolution]
+
+	def get_optimal_resolution_uri(self,target_resolution:int) -> str:
+		
+		current_optimal_resolution = None
+
+		for res in self.uris.keys():
+			
+			res = int(res)
+
+			if ( current_optimal_resolution is None ):
+				current_optimal_resolution = res
+
+			if (res > 0 and current_optimal_resolution == 0):
+				current_optimal_resolution = res
+			
+			if ( res > 0 and abs(current_optimal_resolution-target_resolution) > abs(res-target_resolution) ):
+				current_optimal_resolution = res
+
+		final_uri = self.uris[str(current_optimal_resolution)]
+		return final_uri

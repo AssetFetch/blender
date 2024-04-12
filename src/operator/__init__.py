@@ -17,11 +17,6 @@ def register():
 		bpy.utils.register_class(cl)
 
 def unregister():
-
-	# Clear thumbnail cache from memory to avoid leak
-	if AF_OP_UpdateAssetList.thumbnail_icons:
-		bpy.utils.previews.remove(AF_OP_UpdateAssetList.thumbnail_icons)
-
 	for cl in reversed(registration_targets):
 		bpy.utils.unregister_class(cl)
 
