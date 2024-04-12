@@ -38,7 +38,7 @@ The addon is split into multiple modules:
 - `operator` contains all the bpy operators, meaning all the distinct actions this addon can perform.
 - `property` contains all the bpy properties that are used to store and handle the incoming data from the provider. AF stores all its data in  `bpy.context.window_manager.af`.
 - `ui` contains the code for the individual panels, all of which are in the `VIEW_3D` section (meaning the window that you get by opening the right-side panel in the 3D view).
-- `util` is for miscellaneous functionality, currently that is only the http module that's being used to make all HTTP requests and validate them against the JSON schema.
+- `util` is for miscellaneous functionality.
 
 Every module's `__init__.py` imports all relevant classes and stores them in a `registration_targets` array from where the `register()` and `unregister()` functions read them when the addon is (un)loaded inside Blender.
 
