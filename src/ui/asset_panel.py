@@ -40,9 +40,9 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 			asset_box = row.box()
 			asset_box.label(text=current_asset.text.title,icon="PACKAGE")
 
-			thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(128)
+			thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(256)
 			thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
-			
+
 			asset_box.template_icon(icon_value=thumbnail_icon_id,scale=8.0)
 
 
