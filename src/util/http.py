@@ -63,7 +63,9 @@ class AF_HttpQuery:
 
 		LOGGER.info(f"Sending http {self.method} to {self.uri} with payload {self.parameters}")
 
-		headers = {}
+		headers = {
+			"User-Agent":f"blender/{bpy.app.version_string} assetfetch-blender/0.1"
+		}
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
 
