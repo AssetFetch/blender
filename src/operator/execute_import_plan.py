@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import Dict, List
 import zipfile
 import bpy,bpy_extras,uuid,tempfile,os,shutil
 import bpy_extras.image_utils
@@ -42,10 +42,13 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		# Add principled bsdf and tex coord
 		new_material.node_tree.nodes.clear()
 		output = new_material.node_tree.nodes.new(type='ShaderNodeOutputMaterial')
+		output.location.x = 1600
 		output.name = "OUTPUT"
 		bsdf_shader = new_material.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
+		bsdf_shader.location.x = 1200
 		bsdf_shader.name = "BSDF"
 		tex_coord = new_material.node_tree.nodes.new(type='ShaderNodeTexCoord')
+		tex_coord.location.x = -800
 		tex_coord.name = "TEX_COORD"
 
 		# Basic links
@@ -65,6 +68,13 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				for material_declaration in loose_material_apply_block.items:
 					target_material = self.get_or_create_material(material_name=material_declaration.material_name,af_namespace=af_namespace)
 					obj.data.materials.append(target_material)
+
+	def count_image_nodes(self,shader_tree:bpy.types.NodeTree):
+		image_node_count = 0
+		for node in shader_tree.nodes:
+			if node.type == 'TEX_IMAGE':
+				image_node_count += 1
+		return image_node_count
 
 	def execute(self,context):
 
@@ -145,8 +155,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					# Determine target path
 					if component.file_handle.behavior in ['single_active','single_passive']:
 						# Download directly into local dir
-						destination = os.path.join(implementation.local_directory,component.file_behavior.local_path)
-					elif component.file_handle.behavior in ['archive_referenced_only','archive_unpack_fully']:
+						destination = os.path.join(implementation.local_directory,component.file_handle.local_path)
+					elif component.file_handle.behavior in ['archive_unpack_referenced','archive_unpack_fully']:
 						destination = os.path.join(temp_dir,component.name)
 					else:
 						raise Exception("Invalid behavior!")
@@ -169,7 +179,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					source_zip_sub_path = file_component.file_fetch_from_archive.component_path
 
 					# This is the final path where the file needs to end up
-					destination_file_path = os.path.join(implementation.local_directory,file_component.file_behavior.local_path)
+					destination_file_path = os.path.join(implementation.local_directory,file_component.file_handle.local_path)
 					
 					with zipfile.ZipFile(source_zip_file_path, 'r') as zip_ref:
 						# Check if the specified file exists in the zip archive
@@ -225,7 +235,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				if step.action == "import_loose_material_map_from_local_path":
 
 					image_component  = implementation.get_component_by_id(step.config['component_id'].value)
-					image_target_path = os.path.join(implementation.local_directory,image_component.file_info.local_path)
+					image_target_path = os.path.join(implementation.local_directory,image_component.file_handle.local_path)
 					target_material = self.get_or_create_material(material_name=image_component.loose_material_define.material_name,af_namespace=af_namespace)
 
 					# Import the file from local_path into blender
@@ -242,6 +252,10 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					image_node = target_material.node_tree.nodes.new(type='ShaderNodeTexImage')
 					image_node.image = image
 
+					# Position the image node and related nodes based on how many image nodes are already in the material
+					current_vertical_node_position = ( self.count_image_nodes(target_material.node_tree) -1 ) * -300
+					image_node.location.y =  current_vertical_node_position
+
 					# Connect
 					target_material.node_tree.links.new(target_material.node_tree.nodes['TEX_COORD'].outputs['UV'],image_node.inputs['Vector'])
 					
@@ -257,6 +271,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					# Normal Map
 					if map in ['normal+y','normal-y']:
 						normal_map_node = target_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
+						normal_map_node.location.x = 800
+						normal_map_node.location.y = current_vertical_node_position
 						target_material.node_tree.links.new(normal_map_node.outputs['Normal'],target_material.node_tree.nodes['BSDF'].inputs['Normal'])
 						if map == "normal+y":
 							target_material.node_tree.links.new(image_node.outputs['Color'],normal_map_node.inputs['Color'])
@@ -264,12 +280,18 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 							# Green channel must be inverted
 							# Separate Color
 							separate_color_node = target_material.node_tree.nodes.new(type="ShaderNodeSeparateColor")
+							separate_color_node.location.y = current_vertical_node_position
+							separate_color_node.location.x = 250
 							target_material.node_tree.links.new(image_node.outputs['Color'],separate_color_node.inputs['Color'])
 							# Invert Green
 							invert_normal_y_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
+							invert_normal_y_node.location.y = current_vertical_node_position
+							invert_normal_y_node.location.x = 400
 							target_material.node_tree.links.new(separate_color_node.outputs['Green'],invert_normal_y_node.inputs['Color'])
 							# Combine again
 							combine_color_node = target_material.node_tree.nodes.new(type="ShaderNodeCombineColor")
+							combine_color_node.location.y = current_vertical_node_position
+							combine_color_node.location.x = 550
 							target_material.node_tree.links.new(invert_normal_y_node.outputs['Color'],combine_color_node.inputs['Green'])
 							target_material.node_tree.links.new(separate_color_node.outputs['Red'],combine_color_node.inputs['Red'])
 							target_material.node_tree.links.new(separate_color_node.outputs['Blue'],combine_color_node.inputs['Blue'])
@@ -284,6 +306,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					if map == "glossiness":
 						# Map needs to be inverted
 						invert_roughness_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
+						invert_roughness_node.location.y = current_vertical_node_position
+						invert_roughness_node.location.x = 400
 						target_material.node_tree.links.new(image_color_out,invert_roughness_node.inputs['Color'])
 						target_material.node_tree.links.new(invert_roughness_node.outputs['Color'],bsdf_inputs['Roughness'])
 
@@ -294,6 +318,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					# Height
 					if map == "height":
 						displacement_node = target_material.node_tree.nodes.new("ShaderNodeDisplacement")
+						displacement_node.location.x = 400
+						displacement_node.location.y = current_vertical_node_position
 						target_material.node_tree.links.new(image_color_out,displacement_node.inputs['Height'])
 						target_material.node_tree.links.new(displacement_node.outputs['Displacement'],target_material.node_tree.nodes['OUTPUT'].inputs['Displacement'])
 					
