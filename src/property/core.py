@@ -206,8 +206,8 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 				"file_fetch.from_archive",
 
 				"loose_environment",
-				"loose_material_define",
-				"loose_material_apply",
+				"loose_material.define",
+				"loose_material.apply",
 
 				"format.blend",
 				"format.usd",

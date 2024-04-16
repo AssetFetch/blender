@@ -20,7 +20,7 @@ class AF_PR_GenericBlock:
 			try:
 				setattr(self,key,initial_data[key])
 			except Exception as e:
-				LOGGER.debug(f"skipping {key} because {e}")
+				LOGGER.warn(f"skipping {key} because {e}")
 		self.is_set = True
 
 class AF_PR_TextBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
@@ -41,8 +41,8 @@ class AF_PR_FileHandleBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	behavior: bpy.props.EnumProperty(items = [
 		('single_active','single_active','single_active'),
 		('single_passive','single_passive','single_passive'),
-		('archive_fully_unpack','archive_fully_unpack','archive_fully_unpack'),
-		('archive_referenced_only','archive_referenced_only','archive_referenced_only')
+		('archive_unpack_fully','archive_unpack_fully','archive_unpack_fully'),
+		('archive_unpack_referenced','archive_unpack_referenced','archive_unpack_referenced')
 	])
 
 class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):

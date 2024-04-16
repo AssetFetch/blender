@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import Dict, List
 import zipfile
 import bpy,bpy_extras,uuid,tempfile,os,shutil
 import bpy_extras.image_utils
@@ -145,8 +145,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					# Determine target path
 					if component.file_handle.behavior in ['single_active','single_passive']:
 						# Download directly into local dir
-						destination = os.path.join(implementation.local_directory,component.file_behavior.local_path)
-					elif component.file_handle.behavior in ['archive_referenced_only','archive_unpack_fully']:
+						destination = os.path.join(implementation.local_directory,component.file_handle.local_path)
+					elif component.file_handle.behavior in ['archive_unpack_referenced','archive_unpack_fully']:
 						destination = os.path.join(temp_dir,component.name)
 					else:
 						raise Exception("Invalid behavior!")
@@ -169,7 +169,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					source_zip_sub_path = file_component.file_fetch_from_archive.component_path
 
 					# This is the final path where the file needs to end up
-					destination_file_path = os.path.join(implementation.local_directory,file_component.file_behavior.local_path)
+					destination_file_path = os.path.join(implementation.local_directory,file_component.file_handle.local_path)
 					
 					with zipfile.ZipFile(source_zip_file_path, 'r') as zip_ref:
 						# Check if the specified file exists in the zip archive
@@ -225,7 +225,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				if step.action == "import_loose_material_map_from_local_path":
 
 					image_component  = implementation.get_component_by_id(step.config['component_id'].value)
-					image_target_path = os.path.join(implementation.local_directory,image_component.file_info.local_path)
+					image_target_path = os.path.join(implementation.local_directory,image_component.file_handle.local_path)
 					target_material = self.get_or_create_material(material_name=image_component.loose_material_define.material_name,af_namespace=af_namespace)
 
 					# Import the file from local_path into blender
