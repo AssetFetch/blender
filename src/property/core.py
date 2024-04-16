@@ -83,6 +83,7 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
 
 	file_info:bpy.props.PointerProperty(type=AF_PR_FileInfoBlock)
+	file_handle:bpy.props.PointerProperty(type=AF_PR_FileHandleBlock)
 	file_fetch_download:bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_FileFetchFromArchiveBlock)
 	unlock_link: bpy.props.PointerProperty(type=AF_PR_UnlockLinkBlock)
@@ -199,7 +200,9 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			recognized_datablock_names = [
 
 				"file_info",
+				"file_handle",
 				"file_fetch.download",
+				"file_fetch.download_post_unlock",
 				"file_fetch.from_archive",
 
 				"loose_environment",
@@ -210,7 +213,6 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 				"format.usd",
 				"format.obj",
 
-				"unlock_link",
 				"text"
 				
 				]
@@ -228,7 +230,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 					block.configure(pcd[key])
 				else:
 					# Some datablocks are required and get tested for here.
-					if key in ['file_info']:
+					if key in ['file_info','file_handle']:
 						raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
 		return self
 

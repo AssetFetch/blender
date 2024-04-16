@@ -87,7 +87,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				# "Importing" includes loading the file using the software's native format handler
 				# and creating or applying loose materials referenced in loose_material datablocks
 				for comp in current_impl.components:
-					if comp.file_info.behavior == "file_active":
+					if comp.file_handle.behavior == "single_active":
 						if comp.file_info.extension == ".obj":
 							current_impl.import_steps.add().set_action("import_obj_from_local_path").set_config_value("component_id",comp.name)
 						if comp.file_info.extension in [".usd",".usda",".usdc",".usdz"]:

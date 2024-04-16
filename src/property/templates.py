@@ -44,21 +44,18 @@ update_target_enum = AF_VariableQueryUpdateTarget.to_property_enum()
 
 class AF_PR_TextParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
-	mandatory: bpy.props.BoolProperty()
 	default: bpy.props.StringProperty()
 	value: bpy.props.StringProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 #class AF_PR_IntegerParameter(bpy.types.PropertyGroup):
 #	title: bpy.props.StringProperty()
-#	mandatory: bpy.props.BoolProperty()
 #	default: bpy.props.StringProperty()
 #	value: bpy.props.IntProperty(update=update_variable_query_parameter)
 #	update_target: bpy.props.EnumProperty(items=update_target_enum)
 #
 #class AF_PR_FloatParameter(bpy.types.PropertyGroup):
 #	title: bpy.props.StringProperty()
-#	mandatory: bpy.props.BoolProperty()
 #	default: bpy.props.StringProperty()
 #	value: bpy.props.FloatProperty(update=update_variable_query_parameter)
 #	update_target: bpy.props.EnumProperty(items=update_target_enum)
@@ -66,7 +63,6 @@ class AF_PR_TextParameter(bpy.types.PropertyGroup):
 class AF_PR_BoolParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.BoolProperty()
-	mandatory: bpy.props.BoolProperty()
 	value: bpy.props.BoolProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
@@ -76,10 +72,6 @@ class AF_PR_FixedParameter(bpy.types.PropertyGroup):
 
 def select_property_enum_items(property,context):
 	out = []
-	if not property.mandatory:
-		out.append(
-			("<none>","<none>","<none>")
-		)
 	for c in property.choices:
 		out.append(
 			(c.value,c.title,c.title)
@@ -93,7 +85,6 @@ class AF_PR_SelectParameterChoice(bpy.types.PropertyGroup):
 class AF_PR_SelectParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.StringProperty()
-	mandatory: bpy.props.BoolProperty()
 	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
 	value: bpy.props.EnumProperty(items=select_property_enum_items,update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
@@ -107,14 +98,6 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	#parameters_int: bpy.props.CollectionProperty(type=AF_PR_IntegerParameter)
 	parameters_fixed: bpy.props.CollectionProperty(type=AF_PR_FixedParameter)
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
-
-	def is_ready(self) -> bool:
-		"""Determines if the query is ready to be executed, meaning that all mandatory values are set."""
-		
-		for p in self.parameters_text:
-			if p.mandatory and p.value == "":
-				return False
-		return True
 				
 
 	def configure(self,variable_query,update_target:AF_VariableQueryUpdateTarget = AF_VariableQueryUpdateTarget.update_nothing):
@@ -142,8 +125,6 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 				new_parameter.update_target = update_target
 				if p['default']:
 					new_parameter.value = p['default']
-				if p['mandatory']:
-					new_parameter.mandatory = p['mandatory']
 			
 			if p['type'] == "fixed":
 				new_parameter = self.parameters_fixed.add()
@@ -159,8 +140,6 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 				new_parameter.title = p['title']
 				new_parameter.name = p['id']
 				new_parameter.update_target = update_target
-				if p['mandatory']:
-					new_parameter.mandatory = p['mandatory']
 				for c in p['choices']:
 					new_choice = new_parameter.choices.add()
 					new_choice.value = c['value']
@@ -173,20 +152,14 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 
 		# Text parameters
 		for par in self.parameters_text:
-			if par.mandatory and par.value is None:
-				raise Exception(f"Parameter {par.name} is mandatory but empty.")
 			parameters[par.name] = str(par.value)
 
 		# Float parameters
 		#for par in self.parameters_float:
-		#	if par.mandatory and par.value is None:
-		#		raise Exception(f"Parameter {par.name} is mandatory but empty.")
 		#	parameters[par.name] = str(par.value)
 
 		# Integer parameters
 		#for par in self.parameters_float:
-		#	if par.mandatory and par.value is None:
-		#		raise Exception(f"Parameter {par.name} is mandatory but empty.")
 		#	parameters[par.name] = str(par.value)
 
 		# Fixed Parameters
@@ -206,12 +179,12 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		
 		# Text parameters
 		for asset_list_parameter in self.parameters_text:
-			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"]+("","*")[asset_list_parameter.mandatory])
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
 
 		
 		# Select parameters
 		for asset_list_parameter in self.parameters_select:
-			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"]+("","*")[asset_list_parameter.mandatory])
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
 
 		# Fixed parameters
 		for asset_list_parameter in self.parameters_fixed:

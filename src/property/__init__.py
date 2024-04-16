@@ -36,6 +36,7 @@ registration_targets = [
 	AF_PR_TextBlock,
 	AF_PR_UserBlock,
 	AF_PR_FileInfoBlock,
+	AF_PR_FileHandleBlock,
 	AF_PR_ProviderConfigurationBlock,
 	AF_PR_ProviderReconfigurationBlock,
 	AF_PR_UnlockBalanceBlock,

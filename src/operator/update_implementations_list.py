@@ -19,7 +19,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 	@classmethod
 	def poll(self, context: Context) -> bool:
 		af = bpy.context.window_manager.af
-		return len(af.current_asset_list.assets) > 0 and af.current_asset_list.assets[af.current_asset_list_index].implementation_list_query.is_ready()
+		return len(af.current_asset_list.assets) > 0
 
 	def execute(self,context):
 		af  = bpy.context.window_manager.af

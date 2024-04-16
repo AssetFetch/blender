@@ -143,10 +143,10 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					query = component.file_fetch_download.to_http_query()
 
 					# Determine target path
-					if component.file_info.behavior in ['file_passive','file_active']:
+					if component.file_handle.behavior in ['single_active','single_passive']:
 						# Download directly into local dir
-						destination = os.path.join(implementation.local_directory,component.file_info.local_path)
-					elif component.file_info.behavior == "archive":
+						destination = os.path.join(implementation.local_directory,component.file_behavior.local_path)
+					elif component.file_handle.behavior in ['archive_referenced_only','archive_unpack_fully']:
 						destination = os.path.join(temp_dir,component.name)
 					else:
 						raise Exception("Invalid behavior!")
@@ -169,7 +169,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					source_zip_sub_path = file_component.file_fetch_from_archive.component_path
 
 					# This is the final path where the file needs to end up
-					destination_file_path = os.path.join(implementation.local_directory,file_component.file_info.local_path)
+					destination_file_path = os.path.join(implementation.local_directory,file_component.file_behavior.local_path)
 					
 					with zipfile.ZipFile(source_zip_file_path, 'r') as zip_ref:
 						# Check if the specified file exists in the zip archive
@@ -195,7 +195,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				
 				if step.action == "import_usd_from_local_path":
 					usd_component = implementation.get_component_by_id(step.config['component_id'].value)
-					usd_target_path = os.path.join(implementation.local_directory,usd_component.file_info.local_path)
+					usd_target_path = os.path.join(implementation.local_directory,usd_component.file_handle.local_path)
 					bpy.ops.wm.usd_import(filepath=usd_target_path,import_all_materials=True)
 
 					step_complete = True
@@ -203,7 +203,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				if step.action == "import_obj_from_local_path":
 					# The path where the obj file was downloaded in a previous step
 					obj_component = implementation.get_component_by_id(step.config['component_id'].value)
-					obj_target_path = os.path.join(implementation.local_directory,obj_component.file_info.local_path)
+					obj_target_path = os.path.join(implementation.local_directory,obj_component.file_handle.local_path)
 
 					up_axis = 'Y'
 					if "format_obj" in obj_component:

@@ -33,13 +33,16 @@ class AF_PR_UserBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	display_icon_uri: bpy.props.StringProperty()
 
 class AF_PR_FileInfoBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
-	local_path: bpy.props.StringProperty()
 	length: bpy.props.IntProperty()
 	extension: bpy.props.StringProperty()
+
+class AF_PR_FileHandleBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
+	local_path: bpy.props.StringProperty()
 	behavior: bpy.props.EnumProperty(items = [
-		('file_active','file_active','file_active'),
-		('file_passive','file_passive','file_passive'),
-		('archive','archive','archive')
+		('single_active','single_active','single_active'),
+		('single_passive','single_passive','single_passive'),
+		('archive_fully_unpack','archive_fully_unpack','archive_fully_unpack'),
+		('archive_referenced_only','archive_referenced_only','archive_referenced_only')
 	])
 
 class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
