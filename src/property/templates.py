@@ -126,6 +126,15 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 				if p['default']:
 					new_parameter.value = p['default']
 			
+			# Bool parameters
+			if p['type'] == "boolean":
+				new_parameter = self.parameters_text.add()
+				new_parameter.title = p['title']
+				new_parameter.name = p['id']
+				new_parameter.update_target = update_target
+				if p['default']:
+					new_parameter.value = p['default'] == "1"
+			# Fixed parameters
 			if p['type'] == "fixed":
 				new_parameter = self.parameters_fixed.add()
 				new_parameter.title = p['title']
@@ -154,6 +163,12 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		for par in self.parameters_text:
 			parameters[par.name] = str(par.value)
 
+		for par in self.parameters_boolean:
+			val = "0"
+			if par.value:
+				val = "1"
+			parameters[par.name] = val
+
 		# Float parameters
 		#for par in self.parameters_float:
 		#	parameters[par.name] = str(par.value)
@@ -181,6 +196,9 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		for asset_list_parameter in self.parameters_text:
 			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
 
+		# Bool parameters
+		for asset_list_parameter in self.parameters_boolean:
+			layout.prop(asset_list_parameter,"value",text=asset_list_parameter["title"])
 		
 		# Select parameters
 		for asset_list_parameter in self.parameters_select:
