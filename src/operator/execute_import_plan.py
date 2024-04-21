@@ -13,7 +13,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	
 	bl_idname = "af.execute_import_plan"
 	bl_label = "Execute Import Plan"
-	bl_options = {"REGISTER","UNDO"}
+	bl_options = {"REGISTER","UNDO","INTERNAL"}
 
 	#url: StringProperty(name="URL")
 
