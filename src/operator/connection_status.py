@@ -9,7 +9,7 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 
 	bl_idname = "af.connection_status"
 	bl_label = "Get Connection Status"
-	bl_options = {"REGISTER"}
+	bl_options = {"REGISTER","INTERNAL"}
 
 	@classmethod
 	def poll(self,context):

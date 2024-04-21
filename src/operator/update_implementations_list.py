@@ -7,7 +7,7 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 	
 	bl_idname = "af.update_implementations_list"
 	bl_label = "Update Implementations List"
-	bl_options = {"REGISTER","UNDO"}
+	bl_options = {"REGISTER","INTERNAL"}
 
 	#url: StringProperty(name="URL")
 

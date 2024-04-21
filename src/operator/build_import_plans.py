@@ -5,7 +5,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 	
 	bl_idname = "af.build_import_plans"
 	bl_label = "Build Import Plans"
-	bl_options = {"REGISTER"}
+	bl_options = {"REGISTER","INTERNAL"}
 
 	def execute(self,context):
 		af  = bpy.context.window_manager.af

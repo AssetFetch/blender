@@ -12,7 +12,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 	
 	bl_idname = "af.initialize_provider"
 	bl_label = "Initialize Provider"
-	bl_options = {"REGISTER"}
+	bl_options = {"REGISTER","INTERNAL"}
 
 	#url: StringProperty(name="URL")
 

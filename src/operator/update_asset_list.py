@@ -12,7 +12,7 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 	
 	bl_idname = "af.update_asset_list"
 	bl_label = "Update Asset List"
-	bl_options = {"REGISTER","UNDO"}
+	bl_options = {"REGISTER","INTERNAL"}
 
 	def draw(self,context):
 		pass
