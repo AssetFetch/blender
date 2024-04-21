@@ -274,3 +274,5 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))
 	ui_image_directory: bpy.props.StringProperty(default=os.path.join(tempfile.gettempdir(),"af-ui-img"))
+
+	current_import_execution_progress : bpy.props.FloatProperty(max=1.0,min=0.0)

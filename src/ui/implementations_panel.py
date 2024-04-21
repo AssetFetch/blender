@@ -1,3 +1,4 @@
+import random
 import bpy
 
 class AF_PT_ImplementationsPanel(bpy.types.Panel):
@@ -48,3 +49,6 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 		# Import button
 		layout.operator("af.execute_import_plan",text=import_button_label)
+
+		# Import progress
+		layout.progress(type = 'BAR', text = "Updating",factor=af.current_import_execution_progress)

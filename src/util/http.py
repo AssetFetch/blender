@@ -1,4 +1,5 @@
 import json,requests,tempfile,os
+import random
 import logging
 import pathlib
 from enum import Enum
@@ -6,10 +7,16 @@ from typing import List,Dict
 import bpy
 import jsonschema
 
+from functools import partial
+
 from .. import SCHEMA_PATH
 
 LOGGER = logging.getLogger("af.util.http")
 LOGGER.setLevel(logging.INFO)
+
+default_headers = {
+			"User-Agent":f"blender/{bpy.app.version_string} assetfetch-blender/0.1"
+		}
 
 class AF_HttpResponse:
 
@@ -63,9 +70,7 @@ class AF_HttpQuery:
 
 		LOGGER.info(f"Sending http {self.method} to {self.uri} with payload {self.parameters}")
 
-		headers = {
-			"User-Agent":f"blender/{bpy.app.version_string} assetfetch-blender/0.1"
-		}
+		headers = default_headers
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
 
@@ -81,14 +86,25 @@ class AF_HttpQuery:
 		# Create and return AF_HttpResponse
 		return AF_HttpResponse(response)
 	
-	def execute_as_file(self, destination_path: str) -> None:
+	def execute_as_file(self, destination_path: str,chunk_size:int = 4096) -> None:
 
+		# Create helpful variables
 		af = bpy.context.window_manager.af
 
-		headers = {}
+		# Prepare headers for request
+		headers = default_headers
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
 
+		# Make a HEAD request to get the content length
+		head_request = requests.head(url=self.uri, data=self.parameters, headers=headers,allow_redirects=True)
+		head_request.raise_for_status()
+
+		# Try to get the expected bytes
+		expected_bytes = int(head_request.headers.get('Content-Length', 1))
+		LOGGER.info(f"Expecting {expected_bytes} bytes")
+
+		# Perform the actual download
 		try:
 			file_handle = open(destination_path,'wb')
 
@@ -100,11 +116,17 @@ class AF_HttpQuery:
 				raise ValueError("Unsupported HTTP method.")
 		
 			stream_handle.raise_for_status()
-
-			for chunk in stream_handle.iter_content(4096):
+			
+			bpy.context.window_manager.progress_begin(0,10000)
+			downloaded_chunks = 0
+			for chunk in stream_handle.iter_content(chunk_size=chunk_size):
 				if chunk:
 					file_handle.write(chunk)
+					downloaded_chunks += 1
+					af.current_import_execution_progress = min(1.0, (downloaded_chunks * chunk_size) / expected_bytes )
+					bpy.context.window_manager.progress_update(af.current_import_execution_progress)
 			
 		finally:
 			stream_handle.close()
 			file_handle.close()
+			bpy.context.window_manager.progress_end()
