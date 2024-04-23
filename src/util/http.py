@@ -59,7 +59,7 @@ class AF_HttpQuery:
 		}
 
 	"""Represents a query that the client sends to the provider"""
-	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int = 8192):
+	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int = 32768):
 		self.uri = uri
 		if(method in ['get','post']):
 			self.method = method
@@ -111,14 +111,6 @@ class AF_HttpQuery:
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
 
-		# Make a HEAD request to get the content length
-		head_request = requests.head(url=self.uri, data=self.parameters, headers=headers,allow_redirects=True)
-		head_request.raise_for_status()
-
-		# Try to get the expected bytes
-		expected_bytes = int(head_request.headers.get('Content-Length', 1))
-		LOGGER.info(f"Expecting {expected_bytes} bytes")
-
 		# Open the file handle
 		self.file_handle = open(destination_path,'wb')
 
@@ -131,6 +123,10 @@ class AF_HttpQuery:
 			raise ValueError("Unsupported HTTP method.")
 	
 		self.stream_handle.raise_for_status()
+		
+		# Try to get the expected bytes
+		expected_bytes = int(self.stream_handle.headers.get('Content-Length', 1))
+		LOGGER.info(f"Opened stream, expecting {expected_bytes} bytes.")
 
 		self.downloaded_bytes = 0
 		self.stream_handle_iter = self.stream_handle.iter_content(chunk_size=self.chunk_size)

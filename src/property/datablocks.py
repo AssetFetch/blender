@@ -4,6 +4,7 @@ import bpy
 
 from .updates import *
 from .templates import *
+from ..util import af_constants,addon_constants
 
 LOGGER = logging.getLogger("af.property.datablocks")
 LOGGER.setLevel(logging.DEBUG)
@@ -94,24 +95,8 @@ class AF_PR_LooseEnvironmentBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 
 class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 	material_name: bpy.props.StringProperty()
-	map: bpy.props.EnumProperty(items=[
-		("albedo", "Albedo", "Albedo"),
-		("roughness", "Roughness", "Roughness"),
-		("metallic", "Metallic", "Metallic"),
-		("diffuse", "Diffuse", "Diffuse"),
-		("glossiness", "Glossiness", "Glossiness"),
-		("specular", "Specular", "Specular"),
-		("height", "Height", "Height"),
-		("normal+y", "Normal +Y", "Normal +Y"),
-		("normal-y", "Normal -Y", "Normal -Y"),
-		("opacity", "Opacity", "Opacity"),
-		("ambient_occlusion", "Ambient Occlusion", "Ambient Occlusion"),
-		("emission", "Emission", "Emission"),
-	])
-	colorspace: bpy.props.EnumProperty(items=[
-		("srgb","sRGB","sRGB"),
-		("linear","linear","linear")
-	])
+	map: bpy.props.EnumProperty(items=af_constants.AF_MaterialMap.property_items())
+	colorspace: bpy.props.EnumProperty(items=af_constants.AF_Colorspace.property_items())
 
 class AF_PR_LooseMaterialApplyElement(bpy.types.PropertyGroup):
 	material_name: bpy.props.StringProperty()
@@ -129,44 +114,7 @@ class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup,AF_PR_GenericBlock):
 
 class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup):
 	names: bpy.props.CollectionProperty(type=AF_PR_GenericString)
-	kind: bpy.props.EnumProperty(items=[
-		("actions", "Actions", "Actions"),
-		("armatures", "Armatures", "Armatures"),
-		("brushes", "Brushes", "Brushes"),
-		("cache_files", "Cache Files", "Cache Files"),
-		("cameras", "Cameras", "Cameras"),
-		("collections", "Collections", "Collections"),
-		("curves", "Curves", "Curves"),
-		("fonts", "Fonts", "Fonts"),
-		("grease_pencils", "Grease Pencils", "Grease Pencils"),
-		("hair_curves", "Hair Curves", "Hair Curves"),
-		("images", "Images", "Images"),
-		("lattices", "Lattices", "Lattices"),
-		("lightprobes", "Lightprobes", "Lightprobes"),
-		("lights", "Lights", "Lights"),
-		("linestyles", "Linestyles", "Linestyles"),
-		("masks", "Masks", "Masks"),
-		("materials", "Materials", "Materials"),
-		("meshes", "Meshes", "Meshes"),
-		("metaballs", "Metaballs", "Metaballs"),
-		("movieclips", "Movieclips", "Movieclips"),
-		("node_groups", "Node Groups", "Node Groups"),
-		("objects", "Objects", "Objects"),
-		("paint_curves", "Paint Curves", "Paint Curves"),
-		("palettes", "Palettes", "Palettes"),
-		("particles", "Particles", "Particles"),
-		("pointclouds", "Pointclouds", "Pointclouds"),
-		("scenes", "Scenes", "Scenes"),
-		("screens", "Screens", "Screens"),
-		("simulations", "Simulations", "Simulations"),
-		("sounds", "Sounds", "Sounds"),
-		("speakers", "Speakers", "Speakers"),
-		("texts", "Texts", "Texts"),
-		("textures", "Textures", "Textures"),
-		("volumes", "Volumes", "Volumes"),
-		("workspaces", "Workspaces", "Workspaces"),
-		("worlds", "Worlds", "Worlds"),
-	])
+	kind: bpy.props.EnumProperty(items=addon_constants.AF_BlenderDataTypes.property_items())
 
 class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
 	version: bpy.props.StringProperty()

@@ -4,6 +4,7 @@ import bpy,os
 from .updates import *
 from .templates import *
 from .datablocks import *
+from ..util import addon_constants
 
 LOGGER = logging.getLogger("af.property.core")
 LOGGER.setLevel(logging.DEBUG)
@@ -20,12 +21,7 @@ class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
 class AF_PR_ConnectionStatus(bpy.types.PropertyGroup):
 	user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
 	unlock_balance: bpy.props.PointerProperty(type=AF_PR_UnlockBalanceBlock)
-	state:bpy.props.EnumProperty(default="pending",items=[
-		("pending","Pending","No connection attempt has been made yet"),
-		("awaiting_input","Awaiting Input","Configuration values are required in order to connect"),
-		("connected","Connected","The connection has been established"),
-		("connection_error","Connection Error","An error occured while connecting to the provider")
-	])
+	state:bpy.props.EnumProperty(default="pending",items=addon_constants.AF_ConnectionState.property_items())
 
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
@@ -99,28 +95,8 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	def configure(self,component):
 		pass
 
-
-
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
-	action: bpy.props.EnumProperty(items=[
-
-		# The comments behind each item describe the config keys used for it.
-
-		# File actions
-		("fetch_download","Download File","Download a file."), # component_id
-		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."), # component_id
-		("fetch_from_zip_archive","Load File From Archive","Load a file from an archive."),
-
-		# Import actions
-		("import_obj_from_local_path","Import OBJ","Imports obj file from local path."), # component_id
-		("import_usd_from_local_path","Import USD","Imports USDA/C/Z file from a local path."), # component_id
-		("import_loose_material_map_from_local_path","Import loose material map","Adds a loose material map from a local path to a material."), # component_id
-		("import_loose_environment_from_local_path","Import a loose environment","Imports a loose HDR/EXR/... file and creates a world from it."), # component_id
-
-		# Misc actions
-		("directory_create","Create Directory","Create a directory."), # directory
-		("unlock","Unlock Resource","") # query_id
-	])
+	action: bpy.props.EnumProperty(items=addon_constants.AF_ImportAction.property_items())
 	config:bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
 	def set_action(self,action:str):
@@ -171,7 +147,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		raise Exception(f"No component with id {component_id} could be found.")
 	
 	def configure(self,incoming_impl):
-		# -------------------------------------------------------------------------------
+
 		# Fill the implementation with data from the HTTP endpoint
 
 		# Implementation id
@@ -189,7 +165,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			# For clarity:
 			# provider_comp -> the component data sent by the provider
 			# blender_comp -> the blender bpy property this component gets turned into
-			# pcd -> shorthand for "provider component data" (This will appear a lot)
+			# pcd -> shorthand for "provider component data"
 			pcd = provider_comp['data']
 			
 			# Component id

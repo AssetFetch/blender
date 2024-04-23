@@ -3,7 +3,7 @@ from typing import Dict, List
 import zipfile
 import bpy,bpy_extras,uuid,tempfile,os,shutil
 import bpy_extras.image_utils
-from ..util import http
+from ..util import http,material,af_constants
 
 LOGGER = logging.getLogger("af.execute_import_plan")
 LOGGER.setLevel(logging.DEBUG)
@@ -28,53 +28,14 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		implementation_list = af.current_implementation_list
 		return len(implementation_list.implementations) > 0 and implementation_list.implementations[af.current_implementation_list_index].is_valid
 	
-	
-	def get_or_create_material(self,material_name:str,af_namespace:str):
-		
-		for existing_material in bpy.data.materials:
-			if ("af_name" in existing_material) and ("af_namespace" in existing_material):
-				if existing_material['af_name'] == material_name and existing_material['af_namespace'] == af_namespace:
-					return existing_material
-
-		new_material= bpy.data.materials.new(name=material_name)
-		new_material.use_nodes = True
-
-		# Add principled bsdf and tex coord
-		new_material.node_tree.nodes.clear()
-		output = new_material.node_tree.nodes.new(type='ShaderNodeOutputMaterial')
-		output.location.x = 1600
-		output.name = "OUTPUT"
-		bsdf_shader = new_material.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
-		bsdf_shader.location.x = 1200
-		bsdf_shader.name = "BSDF"
-		tex_coord = new_material.node_tree.nodes.new(type='ShaderNodeTexCoord')
-		tex_coord.location.x = -800
-		tex_coord.name = "TEX_COORD"
-
-		# Basic links
-		new_material.node_tree.links.new(bsdf_shader.outputs['BSDF'],output.inputs['Surface'])
-
-		# Mark as AssetFetch-managed
-		new_material['af_namespace'] = af_namespace
-		new_material['af_name'] = material_name
-
-		return new_material	
-	
 	#AF_PR_LooseMaterialApplyBlock
 	def assign_loose_materials(self,loose_material_apply_block,target_blender_objects:List[bpy.types.Object],af_namespace:str):
 		if loose_material_apply_block.is_set:
 			for obj in target_blender_objects:
 				obj.data.materials.clear()
 				for material_declaration in loose_material_apply_block.items:
-					target_material = self.get_or_create_material(material_name=material_declaration.material_name,af_namespace=af_namespace)
+					target_material = material.get_or_create_material(material_name=material_declaration.material_name,af_namespace=af_namespace)
 					obj.data.materials.append(target_material)
-
-	def count_image_nodes(self,shader_tree:bpy.types.NodeTree):
-		image_node_count = 0
-		for node in shader_tree.nodes:
-			if node.type == 'TEX_IMAGE':
-				image_node_count += 1
-		return image_node_count
 
 	def execute(self,context):
 
@@ -236,100 +197,17 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 					image_component  = implementation.get_component_by_id(step.config['component_id'].value)
 					image_target_path = os.path.join(implementation.local_directory,image_component.file_handle.local_path)
-					target_material = self.get_or_create_material(material_name=image_component.loose_material_define.material_name,af_namespace=af_namespace)
+					target_material = material.get_or_create_material(material_name=image_component.loose_material_define.material_name,af_namespace=af_namespace)
 
-					# Import the file from local_path into blender
-					image = bpy_extras.image_utils.load_image(imagepath=image_target_path)
+					colorspace = af_constants.AF_Colorspace[image_component.loose_material_define.colorspace]
+					map = af_constants.AF_MaterialMap.from_string_by_value(image_component.loose_material_define.map)
 
-					# Set color space
-					if image_component.loose_material_define.colorspace == "linear":
-						image.colorspace_settings.name = "Non-Color"
-					else:
-						image.colorspace_settings.name = "sRGB"
-
-					# Assign the map to the material
-					#bsdf_shader = target_material.node_tree.nodes
-					image_node = target_material.node_tree.nodes.new(type='ShaderNodeTexImage')
-					image_node.image = image
-
-					# Position the image node and related nodes based on how many image nodes are already in the material
-					current_vertical_node_position = ( self.count_image_nodes(target_material.node_tree) -1 ) * -300
-					image_node.location.y =  current_vertical_node_position
-
-					# Connect
-					target_material.node_tree.links.new(target_material.node_tree.nodes['TEX_COORD'].outputs['UV'],image_node.inputs['Vector'])
+					material.add_map_to_material(
+						colorspace=colorspace,
+						image_target_path=image_target_path,
+						target_material=target_material,
+						map=map)
 					
-					# Make connection into bsdf shader
-					map = image_component.loose_material_define.map
-					image_color_out = image_node.outputs['Color']
-					bsdf_inputs = target_material.node_tree.nodes['BSDF'].inputs
-
-					# Color Map
-					if map in ['albedo','diffuse']:
-						color_image_node = target_material.node_tree.links.new(image_color_out,bsdf_inputs['Base Color'])
-
-					# Normal Map
-					if map in ['normal+y','normal-y']:
-						normal_map_node = target_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
-						normal_map_node.location.x = 800
-						normal_map_node.location.y = current_vertical_node_position
-						target_material.node_tree.links.new(normal_map_node.outputs['Normal'],target_material.node_tree.nodes['BSDF'].inputs['Normal'])
-						if map == "normal+y":
-							target_material.node_tree.links.new(image_node.outputs['Color'],normal_map_node.inputs['Color'])
-						if map == "normal-y":
-							# Green channel must be inverted
-							# Separate Color
-							separate_color_node = target_material.node_tree.nodes.new(type="ShaderNodeSeparateColor")
-							separate_color_node.location.y = current_vertical_node_position
-							separate_color_node.location.x = 250
-							target_material.node_tree.links.new(image_node.outputs['Color'],separate_color_node.inputs['Color'])
-							# Invert Green
-							invert_normal_y_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
-							invert_normal_y_node.location.y = current_vertical_node_position
-							invert_normal_y_node.location.x = 400
-							target_material.node_tree.links.new(separate_color_node.outputs['Green'],invert_normal_y_node.inputs['Color'])
-							# Combine again
-							combine_color_node = target_material.node_tree.nodes.new(type="ShaderNodeCombineColor")
-							combine_color_node.location.y = current_vertical_node_position
-							combine_color_node.location.x = 550
-							target_material.node_tree.links.new(invert_normal_y_node.outputs['Color'],combine_color_node.inputs['Green'])
-							target_material.node_tree.links.new(separate_color_node.outputs['Red'],combine_color_node.inputs['Red'])
-							target_material.node_tree.links.new(separate_color_node.outputs['Blue'],combine_color_node.inputs['Blue'])
-							# Connect to normal node
-							target_material.node_tree.links.new(combine_color_node.outputs['Color'],normal_map_node.inputs['Color'])
-
-					# Roughness Map
-					if map == "roughness":
-						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Roughness'])
-
-					# Glossiness
-					if map == "glossiness":
-						# Map needs to be inverted
-						invert_roughness_node = target_material.node_tree.nodes.new(type="ShaderNodeInvert")
-						invert_roughness_node.location.y = current_vertical_node_position
-						invert_roughness_node.location.x = 400
-						target_material.node_tree.links.new(image_color_out,invert_roughness_node.inputs['Color'])
-						target_material.node_tree.links.new(invert_roughness_node.outputs['Color'],bsdf_inputs['Roughness'])
-
-					# Metalness Map
-					if map == "metallic":
-						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Metallic'])
-
-					# Height
-					if map == "height":
-						displacement_node = target_material.node_tree.nodes.new("ShaderNodeDisplacement")
-						displacement_node.location.x = 400
-						displacement_node.location.y = current_vertical_node_position
-						target_material.node_tree.links.new(image_color_out,displacement_node.inputs['Height'])
-						target_material.node_tree.links.new(displacement_node.outputs['Displacement'],target_material.node_tree.nodes['OUTPUT'].inputs['Displacement'])
-					
-					# Opacity
-					if map == "opacity":
-						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Alpha'])
-
-					if map == "emission":
-						target_material.node_tree.links.new(image_color_out,bsdf_inputs['Emission Color'])
-
 					step_complete = True
 
 				if not step_complete:
