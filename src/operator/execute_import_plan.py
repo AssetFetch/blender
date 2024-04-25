@@ -1,8 +1,12 @@
 import logging
-from typing import Dict, List
+import random
+from typing import Dict, List, Set
 import zipfile
+from bpy.types import Context, Event
 import bpy,bpy_extras,uuid,tempfile,os,shutil
 import bpy_extras.image_utils
+
+from ..property.core import *
 from ..util import http,material,af_constants
 
 LOGGER = logging.getLogger("af.execute_import_plan")
@@ -37,33 +41,100 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 					target_material = material.get_or_create_material(material_name=material_declaration.material_name,af_namespace=af_namespace)
 					obj.data.materials.append(target_material)
 
-	def execute(self,context):
+	def __init__(self):
+		print("INIT")
 
-		# Prepare helpful variables
-		af = bpy.context.window_manager.af
-		implementation_list = af.current_implementation_list
-		implementation = implementation_list.implementations[af.current_implementation_list_index]
-		asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
+		# INITIALIZE VARIABLES
+  
+		self.af : AF_PR_AssetFetch = bpy.context.window_manager.af
+		self.implementation_list : AF_PR_ImplementationList = self.af.current_implementation_list
+		self.implementation : AF_PR_Implementation = self.implementation_list.implementations[self.af.current_implementation_list_index]
+		self.asset_id : str = self.af.current_asset_list.assets[self.af.current_asset_list_index].name
 
 		# Namespace for this import execution (used for loose material linking)
-		af_namespace = str(uuid.uuid4())
+		self.af_namespace : str = str(uuid.uuid4())
+
+		# Ensure that temp directory exists
+		self.temp_dir : str = os.path.join(tempfile.gettempdir(),"assetfetch-blender-temp-dl")
+
+		# Variable to keep track of ongoing downloads
+		self.ongoing_downloads = Dict[str,AF_HttpQuery]
+
+	def modal(self, context: Context, event: Event):
+		print("MODAL")
+
+		
+
+		# Schedule a GUI redrawing to run after this modal
+		for a in context.screen.areas:
+			a.tag_redraw()
+
+		# Find the next step that needs work
+		current_step : AF_PR_ImplementationImportStep = self.implementation.get_current_step()
+
+		if current_step is not None:
+			
+			# Cancel the ongoing import process if ESC is pressed
+			if event.type in {'ESC'}: 
+				current_step.state = addon_constants.AF_ImportActionState.canceled.value
+				print("USER_CANCEL")
+				return {'CANCELLED'}
+			
+			# Cancel the ongoing import if the current step is already marked as canceled or failed
+			# This mostly exists as a fallback because ideally the error would already be detected during execution and
+			# then canceled immediately.
+			if current_step.state in [addon_constants.AF_ImportActionState.failed.value,addon_constants.AF_ImportActionState.canceled.value]:
+				print("AUTO_CANCEL")
+				return {'CANCELED'}
+			
+			# directory_create - Create a new directory
+			if current_step.action == addon_constants.AF_ImportAction.directory_create.value:
+				os.makedirs(current_step.config['directory'].value,exist_ok=True)
+				current_step.state = addon_constants.AF_ImportActionState.completed.value
+				return {'RUNNING_MODAL'}
+			
+
+			
+
+
+		else:
+			return {'FINISHED'}
+
+
+		context.window_manager.af.current_import_execution_progress = random.uniform(0,1)
+		
+		
+		
+		if context.window_manager.af.current_import_execution_progress  > 0.95:
+			print("FINISHED")
+			return {'FINISHED'}
+
+		return {'PASS_THROUGH'}
+
+	def execute(self,context):
+		print("EXECUTE")
 
 		# Ensure that an empty temp directory is available
-		temp_dir = os.path.join(tempfile.gettempdir(),"assetfetch-blender-temp-dl")
-		if os.path.exists(temp_dir):
-			shutil.rmtree(temp_dir)
-		os.makedirs(temp_dir,exist_ok=True)
+		if os.path.exists(self.temp_dir):
+			shutil.rmtree(self.temp_dir)
+		os.makedirs(self.temp_dir,exist_ok=True)
 
 		# Clear the local implementation_directory
 		try:
-			if os.path.exists(implementation.local_directory):
-				shutil.rmtree(implementation.local_directory)
-			os.makedirs(implementation.local_directory,exist_ok=True)
+			if os.path.exists(self.implementation.local_directory):
+				shutil.rmtree(self.implementation.local_directory)
+			os.makedirs(self.implementation.local_directory,exist_ok=True)
 		except Exception as e:
 			LOGGER.error(f"Error while clearing local implementation directory: {e}")
-		
-		# Generate a namespace to use for loose materials
-		# This tells the plugin whether an existing material is
+
+		# Set up modal operation
+		self._timer = context.window_manager.event_timer_add(1, window=context.window)
+		context.window_manager.modal_handler_add(self)
+
+		# Return and hand of the real work to the modal function
+		return {'RUNNING_MODAL'}
+
+
 		try:
 			for step in implementation.import_steps:
 

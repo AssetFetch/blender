@@ -98,6 +98,7 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	action: bpy.props.EnumProperty(items=addon_constants.AF_ImportAction.property_items())
 	config:bpy.props.CollectionProperty(type=AF_PR_GenericString)
+	state: bpy.props.EnumProperty(items=addon_constants.AF_ImportActionState.property_items())
 
 	def set_action(self,action:str):
 		self.action = action
@@ -139,6 +140,22 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImplementationImportStep)
 	expected_charges: bpy.props.FloatProperty(default=0)
 	local_directory: bpy.props.StringProperty()
+
+
+	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
+		"""Finds the first non-completed step in the implementation and returns it."""
+		for s in self.import_steps:
+			if s.state != addon_constants.AF_ImportActionState.completed.value:
+				return s
+		return None
+			
+	def reset_state(self):
+		"""Resets all steps back to 'pending'."""
+		for s in self.import_steps:
+			s.state = addon_constants.AF_ImportActionState.pending.value
+
+	def mark_canceled(self):
+		"""Marks the implementation and all steps as canceled"""
 
 	def get_component_by_id(self,component_id:str) -> AF_PR_Component:
 		for c in self.components:

@@ -17,6 +17,23 @@ class AF_ConnectionState(Enum):
 		("connection_error","Connection Error","An error occured while connecting to the provider")
 	]
 
+class AF_ImportActionState(Enum):
+	pending="pending"
+	running="running"
+	completed="completed"
+	failed="failed"
+	canceled="canceled"
+
+	@staticmethod
+	def property_items():
+		return [
+		("pending","Pending",""),
+		("running","Running",""),
+		("completed","Completed",""),
+		("failed","Failed",""),
+		("canceled","Canceled","")
+	]
+
 class AF_ImportAction(Enum):
 	fetch_download = "fetch_download"
 	fetch_download_unlocked = "fetch_download_unlocked"
