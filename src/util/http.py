@@ -76,7 +76,7 @@ class AF_HttpQuery:
 		self.downloaded_bytes = 0
 
 
-	def execute(self) -> AF_HttpResponse:
+	def execute(self,raise_for_status : bool = False) -> AF_HttpResponse:
 		af  = bpy.context.window_manager.af
 
 		LOGGER.info(f"Sending http {self.method} to {self.uri} with payload {self.parameters}")
@@ -93,6 +93,9 @@ class AF_HttpQuery:
 			raise ValueError(f"Unsupported HTTP method: {self.method}")
 		
 		LOGGER.debug(f"Received http response: {response.content}")
+
+		if raise_for_status:
+			response.raise_for_status()
 
 		# Create and return AF_HttpResponse
 		return AF_HttpResponse(response)
@@ -142,7 +145,6 @@ class AF_HttpQuery:
 				self.downloaded_bytes += len(chunk)
 				return True
 			else:
-				self.execute_as_file_piecewise_finish()
 				return False
 		except Exception as e:
 			self.execute_as_file_piecewise_finish()

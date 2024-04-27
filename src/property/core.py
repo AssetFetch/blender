@@ -4,7 +4,7 @@ import bpy,os
 from .updates import *
 from .templates import *
 from .datablocks import *
-from ..util import addon_constants
+from ..util.addon_constants import *
 
 LOGGER = logging.getLogger("af.property.core")
 LOGGER.setLevel(logging.DEBUG)
@@ -21,7 +21,7 @@ class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
 class AF_PR_ConnectionStatus(bpy.types.PropertyGroup):
 	user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
 	unlock_balance: bpy.props.PointerProperty(type=AF_PR_UnlockBalanceBlock)
-	state:bpy.props.EnumProperty(default="pending",items=addon_constants.AF_ConnectionState.property_items())
+	state:bpy.props.EnumProperty(default="pending",items=AF_ConnectionState.property_items())
 
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
@@ -96,12 +96,12 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 		pass
 
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
-	action: bpy.props.EnumProperty(items=addon_constants.AF_ImportAction.property_items())
+	action: bpy.props.EnumProperty(items=AF_ImportAction.property_items())
 	config:bpy.props.CollectionProperty(type=AF_PR_GenericString)
-	state: bpy.props.EnumProperty(items=addon_constants.AF_ImportActionState.property_items())
+	state: bpy.props.EnumProperty(items=AF_ImportActionState.property_items())
 
-	def set_action(self,action:str):
-		self.action = action
+	def set_action(self,action:AF_ImportAction):
+		self.action = action.value
 		return self
 
 	def set_config_value(self,key:str,value:str):
@@ -117,6 +117,13 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		out = ""
 		for c in self.config:
 			out += f"{c.name}={c.value} "
+		return out
+	
+	def get_config_as_function_parameters(self):
+		out = {}
+		for c in self.config:
+			out[c.name] = str(c.value)
+		LOGGER.debug(out)
 		return out
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
@@ -145,14 +152,14 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
 		"""Finds the first non-completed step in the implementation and returns it."""
 		for s in self.import_steps:
-			if s.state != addon_constants.AF_ImportActionState.completed.value:
+			if s.state != AF_ImportActionState.completed.value:
 				return s
 		return None
 			
 	def reset_state(self):
 		"""Resets all steps back to 'pending'."""
 		for s in self.import_steps:
-			s.state = addon_constants.AF_ImportActionState.pending.value
+			s.state = AF_ImportActionState.pending.value
 
 	def mark_canceled(self):
 		"""Marks the implementation and all steps as canceled"""

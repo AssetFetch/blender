@@ -1,4 +1,5 @@
 import bpy,os
+from ..util.addon_constants import AF_ImportAction
 
 class AF_OP_BuildImportPlans(bpy.types.Operator):
 	"""Populates every currently loaded implementation with a plan for how to import them, if possible."""
@@ -42,7 +43,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				current_impl.local_directory = os.path.join(current_impl.local_directory,asset_id)
 				current_impl.local_directory = os.path.join(current_impl.local_directory,implementation_id)
 
-				current_impl.import_steps.add().set_action("directory_create").set_config_value("directory",current_impl.local_directory)
+				current_impl.import_steps.add().set_action(AF_ImportAction.directory_create).set_config_value("directory",current_impl.local_directory)
 
 				# Step 2: Find the relevant unlocking queries
 				already_scheduled_unlocking_query_ids = []
@@ -50,7 +51,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 					if comp.unlock_link.is_set:
 						referenced_query  = af.current_implementation_list.get_unlock_query_by_id(comp.unlock_link.unlock_query_id)
 						if (not referenced_query.unlocked) and (referenced_query.name not in already_scheduled_unlocking_query_ids):
-							current_impl.import_steps.add().set_action("unlock").set_config_value("query_id",comp.unlock_link.unlock_query_id)
+							current_impl.import_steps.add().set_action(AF_ImportAction.unlock).set_config_value("query_id",comp.unlock_link.unlock_query_id)
 							already_scheduled_unlocking_query_ids.append(comp.unlock_link.unlock_query_id)		
 							current_impl.expected_charges += referenced_query.price
 
@@ -67,15 +68,16 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 					
 					# Decide how to handle this component (recursively if it references an archive)
 					if comp.file_fetch_download.is_set:
-						current_impl.import_steps.add().set_action("fetch_download").set_config_value("component_id",comp.name)
+						current_impl.import_steps.add().set_action(AF_ImportAction.fetch_download).set_config_value("component_id",comp.name)
 					elif comp.file_fetch_from_archive.is_set:
 						target_comp = next(c for c in current_impl.components if c.name == comp.file_fetch_from_archive.archive_component_id)
 						if not target_comp:
 							raise Exception(f"Referenced component {comp.file_fetch_from_archive.archive_component_id} could not be found.")
 						recursive_fetching_datablock_handler(target_comp)
-						current_impl.import_steps.add().set_action("fetch_from_zip_archive").set_config_value("component_id",comp.name)
+						current_impl.import_steps.add().set_action(AF_ImportAction.fetch_from_zip_archive).set_config_value("component_id",comp.name)
 					elif comp.unlock_link.is_set:
-						current_impl.import_steps.add().set_action("fetch_download_unlocked").set_config_value("component_id",comp.name)
+						current_impl.import_steps.add().set_action(AF_ImportAction.fetch_from_zip_archive).set_config_value("component_id",comp.name)
+						current_impl.import_steps.add().set_action(AF_ImportAction.fetch_download).set_config_value("component_id",comp.name)
 					else:
 						raise Exception(f"{comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
 
@@ -89,14 +91,14 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				for comp in current_impl.components:
 					if comp.file_handle.behavior == "single_active":
 						if comp.file_info.extension == ".obj":
-							current_impl.import_steps.add().set_action("import_obj_from_local_path").set_config_value("component_id",comp.name)
+							current_impl.import_steps.add().set_action(AF_ImportAction.import_obj_from_local_path).set_config_value("component_id",comp.name)
 						if comp.file_info.extension in [".usd",".usda",".usdc",".usdz"]:
-							current_impl.import_steps.add().set_action("import_usd_from_local_path").set_config_value("component_id",comp.name)
+							current_impl.import_steps.add().set_action(AF_ImportAction.import_usd_from_local_path).set_config_value("component_id",comp.name)
 
 				# Step 5: Plan how to import other files, such as loose materials
 				for comp in current_impl.components:
 					if comp.loose_material_define.is_set:
-						current_impl.import_steps.add().set_action("import_loose_material_map_from_local_path").set_config_value("component_id",comp.name)
+						current_impl.import_steps.add().set_action(AF_ImportAction.import_loose_material_map_from_local_path).set_config_value("component_id",comp.name)
 
 
 			except Exception as e:

@@ -35,16 +35,19 @@ class AF_ImportActionState(Enum):
 	]
 
 class AF_ImportAction(Enum):
+	
 	fetch_download = "fetch_download"
-	fetch_download_unlocked = "fetch_download_unlocked"
 	fetch_from_zip_archive = "fetch_from_zip_archive"
+	
 	import_obj_from_local_path = "import_obj_from_local_path"
 	import_usd_from_local_path = "import_usd_from_local_path"
 	import_loose_material_map_from_local_path = "import_loose_material_map_from_local_path"
 	import_loose_environment_from_local_path = "import_loose_environment_from_local_path"
-	directory_create = "directory_create"
+	
 	unlock = "unlock"
+	unlock_get_download_data = "unlock_get_download_data"
 
+	directory_create = "directory_create"
 	@staticmethod
 	def property_items():
 		return [
@@ -53,7 +56,6 @@ class AF_ImportAction(Enum):
 
 		# File actions
 		("fetch_download","Download File","Download a file."), # component_id
-		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."), # component_id
 		("fetch_from_zip_archive","Load File From Archive","Load a file from an archive."),
 
 		# Import actions
@@ -62,9 +64,13 @@ class AF_ImportAction(Enum):
 		("import_loose_material_map_from_local_path","Import loose material map","Adds a loose material map from a local path to a material."), # component_id
 		("import_loose_environment_from_local_path","Import a loose environment","Imports a loose HDR/EXR/... file and creates a world from it."), # component_id
 
+		# Unlock actions
+  		("unlock","Unlock Resource",""), # query_id
+		("unlock_get_download_data","Prepare Download","Prepare a download of a file after it has been unlocked."), # component_id
+
 		# Misc actions
 		("directory_create","Create Directory","Create a directory."), # directory
-		("unlock","Unlock Resource","") # query_id
+		
 	]
 
 class AF_BlenderDataTypes(Enum):
