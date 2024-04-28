@@ -21,5 +21,6 @@ class AF_PT_ImportStepsPanel(bpy.types.Panel):
 			step_box = layout.box()
 			step_box.label(text=step.get_action_title())
 			step_box.label(text=step.get_action_config())
+			step_box.label(text=step.state)
 		for m in current_impl.validation_messages:
 			layout.label(text=m.text)
