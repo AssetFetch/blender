@@ -59,7 +59,7 @@ class AF_HttpQuery:
 		}
 
 	"""Represents a query that the client sends to the provider"""
-	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int = 32768):
+	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int = 4 * 1024 * 1024, auto_chunk_size:bool = True):
 		self.uri = uri
 		if(method in ['get','post']):
 			self.method = method
@@ -74,6 +74,20 @@ class AF_HttpQuery:
 		self.chunk_size = chunk_size
 		self.expected_bytes = None
 		self.downloaded_bytes = 0
+		self.auto_chunk_size = auto_chunk_size
+
+	def get_download_completeness(self) -> float:
+
+		if self.expected_bytes is None:
+			return 0.0
+		if self.expected_bytes == 0:
+			return 0.0
+
+		progress = min(1.0,float(self.downloaded_bytes) / float(self.expected_bytes))
+
+	
+
+		return progress
 
 
 	def execute(self,raise_for_status : bool = False) -> AF_HttpResponse:
@@ -128,8 +142,8 @@ class AF_HttpQuery:
 		self.stream_handle.raise_for_status()
 		
 		# Try to get the expected bytes
-		expected_bytes = int(self.stream_handle.headers.get('Content-Length', 1))
-		LOGGER.info(f"Opened stream, expecting {expected_bytes} bytes.")
+		self.expected_bytes = int(self.stream_handle.headers.get('Content-Length', 0))
+		LOGGER.info(f"Opened stream, expecting {self.expected_bytes} bytes.")
 
 		self.downloaded_bytes = 0
 		self.stream_handle_iter = self.stream_handle.iter_content(chunk_size=self.chunk_size)

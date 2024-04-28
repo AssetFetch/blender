@@ -1,5 +1,6 @@
 import random
 import bpy
+from ..property.core import *
 
 class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_label = "Implementations"
@@ -32,7 +33,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			# Selection of implementations (if applicable)
 			layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")
 
-			current_impl  = af.current_implementation_list.implementations[af.current_implementation_list_index]
+			current_impl : AF_PR_Implementation = af.get_current_implementation()
+			current_step : AF_PR_ImplementationImportStep = current_impl.get_current_step()
 
 			# Confirm readability
 			if current_impl.is_valid:
@@ -41,14 +43,36 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 					import_button_label = f"Import ({current_impl.expected_charges} {af.current_connection_state.unlock_balance.balance_unit})"
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
+
+			# Import button
+			layout.operator("af.execute_import_plan",text=import_button_label)
+
+			# Import progress:
+	
+			# Prepare layout box
+			progress_box = layout.box()
+
+			# Show current step and decide whether the progress box is active at all
+			
+			if (current_step is not None) and (current_step.state != AF_ImportActionState.pending.value):
+				progress_box.enabled = True
+				text = current_step.get_action_title()
+				factor=current_step.completion
+			else:
+				progress_box.enabled = False
+				text = ""
+				factor = 0.0
+			progress_box.progress(type = 'BAR', text = text,factor=factor)
+
+			# Show the total number of completed steps
+			completion_ratio = current_impl.get_completion_ratio()
+			if completion_ratio > 0.0:
+				text = "Importing..."
+			else:
+				text = ""
+			progress_box.progress(type = 'BAR', text = text,factor=completion_ratio)
 		
 		# We have already queried and found that there are no results...
 		elif af.current_implementation_list.already_queried:
 			no_results_box = layout.box()
 			no_results_box.label(text="No implementations found for this query.",icon="ORPHAN_DATA")
-
-		# Import button
-		layout.operator("af.execute_import_plan",text=import_button_label)
-
-		# Import progress
-		layout.progress(type = 'BAR', text = "Updating",factor=af.current_import_execution_progress)

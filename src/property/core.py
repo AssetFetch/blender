@@ -99,6 +99,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	action: bpy.props.EnumProperty(items=AF_ImportAction.property_items())
 	config:bpy.props.CollectionProperty(type=AF_PR_GenericString)
 	state: bpy.props.EnumProperty(items=AF_ImportActionState.property_items())
+	completion: bpy.props.FloatProperty(default=0.0,max=1.0,min=0.0)
 
 	def set_action(self,action:AF_ImportAction):
 		self.action = action.value
@@ -123,7 +124,6 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		out = {}
 		for c in self.config:
 			out[c.name] = str(c.value)
-		LOGGER.debug(out)
 		return out
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
@@ -147,6 +147,14 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImplementationImportStep)
 	expected_charges: bpy.props.FloatProperty(default=0)
 	local_directory: bpy.props.StringProperty()
+
+	def get_completion_ratio(self) -> float:
+		"""Returns number between 0 and 1 to indicate the import progress of this implementation."""
+		completed_steps = 0
+		for s in self.import_steps:
+			if s.state == AF_ImportActionState.completed.value:
+				completed_steps +=1
+		return completed_steps / len(self.import_steps)
 
 
 	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
@@ -275,4 +283,22 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))
 	ui_image_directory: bpy.props.StringProperty(default=os.path.join(tempfile.gettempdir(),"af-ui-img"))
 
-	current_import_execution_progress : bpy.props.FloatProperty(max=1.0,min=0.0)
+	#current_import_execution_progress : bpy.props.FloatProperty(max=1.0,min=0.0)
+
+	#progress_all_steps : bpy.props.FloatProperty(max=1,min=0)
+	#progress_current_step : bpy.props.FloatProperty(max=1,min=1)
+
+	def get_current_asset(self) -> AF_PR_Asset | None:
+		
+		if self.current_asset_list_index < 0 | self.current_asset_list_index >= len(self.current_asset_list):
+			raise Exception("Invalid index for current asset list.")
+
+		return self.current_asset_list.assets[self.current_asset_list_index]
+	
+	def get_current_implementation(self) -> AF_PR_Implementation:
+
+		if self.current_implementation_list_index < 0 | self.current_implementation_list_index >= len(self.current_implementation_list):
+			raise Exception("Invalid index for current implementation list.")
+
+		return self.current_implementation_list.implementations[self.current_implementation_list_index]
+	

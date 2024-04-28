@@ -28,7 +28,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		#layout.prop(self,'radius')
 	
 	def __init__(self):
-		print("INIT")
 
 		# INITIALIZE VARIABLES
   
@@ -115,11 +114,13 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
   
 		# The download is ongoing and may or may not finish during this iteration
 		if(component_id in self.ongoing_queries ):
-			download_ongoing = self.ongoing_queries[component_id].execute_as_file_piecewise_next_chunk()
-			if download_ongoing:
+			current_query = self.ongoing_queries[component_id]
+			ongoing = current_query.execute_as_file_piecewise_next_chunk()
+			if ongoing:
+				self.implementation.get_current_step().completion = current_query.get_download_completeness()
 				return AF_ImportActionState.running
 			else:
-				self.ongoing_queries[component_id].execute_as_file_piecewise_finish()
+				current_query.execute_as_file_piecewise_finish()
 				return AF_ImportActionState.completed
 			
 		# The download hasn't been started yet and must be started
@@ -239,7 +240,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return len(implementation_list.implementations) > 0 and implementation_list.implementations[af.current_implementation_list_index].is_valid
 
 	def modal(self, context: Context, event: Event):
-		print("MODAL")
 
 		# Schedule a GUI redrawing to run after this modal function
 		for a in context.screen.areas:
@@ -257,10 +257,10 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				return {'CANCELLED'}
 			
 			# Log current step
-			conf_log = {}
-			for k in current_step.config.keys():
-				conf_log[k] = current_step.config[k].value
-			LOGGER.debug(f"Running step {current_step.action} with config {conf_log}")
+			#conf_log = {}
+			#for k in current_step.config.keys():
+			#	conf_log[k] = current_step.config[k].value
+			#LOGGER.debug(f"Running step {current_step.action} with config {conf_log}")
 			
 			# Cancel the ongoing import if the current step is already marked as canceled or failed
 			# This mostly exists as a fallback because ideally the error would already be detected during execution and
@@ -279,21 +279,15 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			if current_step.state not in [AF_ImportActionState.running.value,AF_ImportActionState.completed.value,AF_ImportActionState.failed.value,AF_ImportActionState.canceled.value]:
 				raise Exception(f"Unexpected state during current step: {current_step.state}")
 			
-			context.window_manager.af.current_import_execution_progress = random.uniform(0,1)
+			context.window_manager.af.progress_all_steps = random.uniform(0,1)
 			return {'RUNNING_MODAL'}
 
 		else:
 			# Nothing left to do. Finish.
 			return {'FINISHED'}
-		
 
-		
-
-
-		return {'PASS_THROUGH'}
 
 	def execute(self,context):
-		print("EXECUTE")
 
 		# Ensure that an empty temp directory is available
 		if os.path.exists(self.temp_dir):
@@ -312,7 +306,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		self.implementation.reset_state()
 
 		# Set up modal operation
-		self._timer = context.window_manager.event_timer_add(1, window=context.window)
+		self._timer = context.window_manager.event_timer_add(0.025, window=context.window)
 		context.window_manager.modal_handler_add(self)
 
 		# Return and hand of the real work to the modal function
