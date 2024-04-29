@@ -24,6 +24,19 @@ class AF_ImportActionState(Enum):
 	failed="failed"
 	canceled="canceled"
 
+	def icon_string(self):
+		if self.value == "pending":
+			return "CHECKBOX_DEHLT"
+		if self.value == "running":
+			return "ARMATURE_DATA"
+		if self.value == "completed":
+			return "CHECKBOX_HLT"
+		if self.value == "failed":
+			return "ERROR"
+		if self.value == "canceled":
+			return "CANCEL"
+		return "ERROR"
+
 	@staticmethod
 	def property_items():
 		return [

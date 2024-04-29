@@ -14,7 +14,7 @@ from functools import partial
 from .. import SCHEMA_PATH
 
 LOGGER = logging.getLogger("af.util.http")
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel(logging.INFO)
 
 class AF_HttpResponse:
 
@@ -59,7 +59,7 @@ class AF_HttpQuery:
 		}
 
 	"""Represents a query that the client sends to the provider"""
-	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int = 4 * 1024 * 1024, auto_chunk_size:bool = True):
+	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int =  1024 * 1024, auto_chunk_size:bool = True):
 		self.uri = uri
 		if(method in ['get','post']):
 			self.method = method

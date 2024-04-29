@@ -47,30 +47,30 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			# Import button
 			layout.operator("af.execute_import_plan",text=import_button_label)
 
+			layout.separator()
+
 			# Import progress:
-	
-			# Prepare layout box
-			progress_box = layout.box()
 
-			# Show current step and decide whether the progress box is active at all
+			for step in current_impl.import_steps:
+				step : AF_PR_ImplementationImportStep = step
+				step_entry_row = layout.row()
+				step_icon =  AF_ImportActionState[step.state].icon_string()
+				step_entry_row.label(text="",icon=step_icon)
+				step_entry_col = step_entry_row.column()
+
+				step_entry_title = step.get_action_title()
+
+				if step.completion > 0.0 and step.completion < 1.0:
+					step_entry_title += f" ({int(step.completion*100)}%)"
+
+				step_entry_col.label(text=step_entry_title)
+				step_entry_col.label(text=step.get_action_config())
+			for m in current_impl.validation_messages:
+				layout.label(text=m.text)
 			
-			if (current_step is not None) and (current_step.state != AF_ImportActionState.pending.value):
-				progress_box.enabled = True
-				text = current_step.get_action_title()
-				factor=current_step.completion
-			else:
-				progress_box.enabled = False
-				text = ""
-				factor = 0.0
-			progress_box.progress(type = 'BAR', text = text,factor=factor)
 
-			# Show the total number of completed steps
-			completion_ratio = current_impl.get_completion_ratio()
-			if completion_ratio > 0.0:
-				text = "Importing..."
-			else:
-				text = ""
-			progress_box.progress(type = 'BAR', text = text,factor=completion_ratio)
+			
+			
 		
 		# We have already queried and found that there are no results...
 		elif af.current_implementation_list.already_queried:
