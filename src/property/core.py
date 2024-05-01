@@ -144,13 +144,13 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		self.config.clear()
 		self.set_config_value("component_id",component_id)
 
+	# Import Actions
+
 	def configure_import_obj_from_local_path(self, component_id):
 		"""Configures this step as an import_obj_from_local_path step."""
 		self.action = AF_ImportAction.import_obj_from_local_path.value
 		self.config.clear()
 		self.set_config_value("component_id", component_id)
-
-	# Import Actions
 
 	def configure_import_usd_from_local_path(self, component_id):
 		"""Configures this step as an import_usd_from_local_path step."""
