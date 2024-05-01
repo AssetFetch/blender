@@ -101,9 +101,9 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	state: bpy.props.EnumProperty(items=AF_ImportActionState.property_items())
 	completion: bpy.props.FloatProperty(default=0.0,max=1.0,min=0.0)
 
-	def set_action(self,action:AF_ImportAction):
-		self.action = action.value
-		return self
+	#def set_action(self,action:AF_ImportAction):
+	#	self.action = action.value
+	#	return self
 
 	def set_config_value(self,key:str,value:str):
 		new_conf = self.config.add()
@@ -111,6 +111,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		new_conf.value = value
 		return self
 	
+	### TODO: Remove old functions and replace with draw_ui
 	def get_action_title(self):
 		return self.bl_rna.properties['action'].enum_items[self.action].name
 	
@@ -125,6 +126,72 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		for c in self.config:
 			out[c.name] = str(c.value)
 		return out
+	
+	def draw_ui(self,layout):
+		pass
+
+	# File Actions
+ 
+	def configure_fetch_download(self,component_id):
+		"""Configures this step as a fetch_download step."""
+		self.action = AF_ImportAction.fetch_download.value
+		self.config.clear()
+		self.set_config_value("component_id",component_id)
+ 
+	def configure_fetch_from_zip_archive(self,component_id):
+		"""Configures this step as a fetch_from_zip_archive step."""
+		self.action = AF_ImportAction.fetch_from_zip_archive.value
+		self.config.clear()
+		self.set_config_value("component_id",component_id)
+
+	def configure_import_obj_from_local_path(self, component_id):
+		"""Configures this step as an import_obj_from_local_path step."""
+		self.action = AF_ImportAction.import_obj_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	# Import Actions
+
+	def configure_import_usd_from_local_path(self, component_id):
+		"""Configures this step as an import_usd_from_local_path step."""
+		self.action = AF_ImportAction.import_usd_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_import_loose_material_map_from_local_path(self, component_id):
+		"""Configures this step as an import_loose_material_map_from_local_path step."""
+		self.action = AF_ImportAction.import_loose_material_map_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_import_loose_environment_from_local_path(self, component_id):
+		"""Configures this step as an import_loose_environment_from_local_path step."""
+		self.action = AF_ImportAction.import_loose_environment_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	# Unlock Actions
+
+	def configure_unlock(self, query_id):
+		"""Configures this step as an unlock step."""
+		self.action = AF_ImportAction.unlock.value
+		self.config.clear()
+		self.set_config_value("query_id", query_id)
+
+	def configure_unlock_get_download_data(self, component_id):
+		"""Configures this step as an unlock_get_download_data step."""
+		self.action = AF_ImportAction.unlock_get_download_data.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	# Misc Actions
+
+	def configure_create_directory(self,directory):
+		"""Configures this step as a create_directory step."""
+		self.action = AF_ImportAction.create_directory.value
+		self.config.clear()
+		self.set_config_value("directory",directory)
+		
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
 	text : bpy.props.StringProperty()

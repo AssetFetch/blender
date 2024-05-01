@@ -60,7 +60,7 @@ class AF_ImportAction(Enum):
 	unlock = "unlock"
 	unlock_get_download_data = "unlock_get_download_data"
 
-	directory_create = "directory_create"
+	create_directory = "create_directory"
 	@staticmethod
 	def property_items():
 		return [
@@ -82,7 +82,7 @@ class AF_ImportAction(Enum):
 		("unlock_get_download_data","Prepare Download","Prepare a download of a file after it has been unlocked."), # component_id
 
 		# Misc actions
-		("directory_create","Create Directory","Create a directory."), # directory
+		("create_directory","Create Directory","Create a directory."), # directory
 		
 	]
 

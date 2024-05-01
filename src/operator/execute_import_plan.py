@@ -57,7 +57,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			AF_ImportAction.unlock.value:self.step_unlock,
 			AF_ImportAction.unlock_get_download_data.value:self.step_unlock_get_download_data,
 			
-			AF_ImportAction.directory_create.value:self.step_directory_create
+			AF_ImportAction.create_directory.value:self.step_create_directory
 		}
 
 	# HELPER FUNCTIONS
@@ -82,7 +82,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return AF_ImportActionState.completed
 	
 
-	def step_directory_create(self,directory:str) -> AF_ImportActionState:
+	def step_create_directory(self,directory:str) -> AF_ImportActionState:
 		"""Simply create a new directory"""
 		os.makedirs(directory,exist_ok=True)
 		return AF_ImportActionState.completed
