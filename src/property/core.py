@@ -150,12 +150,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 
 	def get_completion_ratio(self) -> float:
 		"""Returns number between 0 and 1 to indicate the import progress of this implementation."""
-		completed_steps = 0
-		for s in self.import_steps:
-			if s.state == AF_ImportActionState.completed.value:
-				completed_steps +=1
-		return completed_steps / len(self.import_steps)
-
+		return float(self.get_step_count()) / float(self.get_completed_step_count())
 
 	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
 		"""Finds the first non-completed step in the implementation and returns it."""
@@ -169,8 +164,16 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		for s in self.import_steps:
 			s.state = AF_ImportActionState.pending.value
 
-	def mark_canceled(self):
-		"""Marks the implementation and all steps as canceled"""
+	def get_step_count(self) -> int:
+		return len(self.import_steps)
+
+	def get_completed_step_count(self) -> int:
+		completed_steps = 0
+		for s in self.import_steps:
+			if s.state == AF_ImportActionState.completed.value:
+				completed_steps +=1
+		return completed_steps
+		
 
 	def get_component_by_id(self,component_id:str) -> AF_PR_Component:
 		for c in self.components:

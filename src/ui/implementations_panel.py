@@ -36,6 +36,9 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			current_impl : AF_PR_Implementation = af.get_current_implementation()
 			current_step : AF_PR_ImplementationImportStep = current_impl.get_current_step()
 
+			# Import button
+			layout.operator("af.execute_import_plan",text=import_button_label)
+
 			# Confirm readability
 			if current_impl.is_valid:
 				layout.label(text="Implementation is readable. Ready to import.",icon="SEQUENCE_COLOR_04")
@@ -44,10 +47,11 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			else:
 				layout.label(text="Implementation is not readable.",icon="SEQUENCE_COLOR_01")
 
-			# Import button
-			layout.operator("af.execute_import_plan",text=import_button_label)
-
 			layout.separator()
+
+			#layout.label(text=f"{current_impl.get_completed_step_count()} / {current_impl.get_step_count()} steps completed.")
+
+			#layout.separator()
 
 			# Import progress:
 
