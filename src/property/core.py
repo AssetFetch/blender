@@ -126,9 +126,6 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		for c in self.config:
 			out[c.name] = str(c.value)
 		return out
-	
-	def draw_ui(self,layout):
-		pass
 
 	# File Actions
  

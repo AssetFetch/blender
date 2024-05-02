@@ -16,7 +16,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 	def draw(self, context):
 		layout = self.layout
-		af = bpy.context.window_manager.af
+		af : AF_PR_AssetFetch = bpy.context.window_manager.af
 		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Query properties
@@ -57,18 +57,25 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 			for step in current_impl.import_steps:
 				step : AF_PR_ImplementationImportStep = step
-				step_entry_row = layout.row()
-				step_icon =  AF_ImportActionState[step.state].icon_string()
-				step_entry_row.label(text="",icon=step_icon)
-				step_entry_col = step_entry_row.column()
+				box = layout.box()
+				row = box.row()
+				#row.scale_x = 0.5
 
-				step_entry_title = step.get_action_title()
+				step_title = step.bl_rna.properties['action'].enum_items[step.action].name
+				step_state_icon =  AF_ImportActionState[step.state].icon_string()
 
-				if step.completion > 0.0 and step.completion < 1.0:
-					step_entry_title += f" ({int(step.completion*100)}%)"
+				if step.action == AF_ImportAction.fetch_download.value:
+					target_component : AF_PR_Component = current_impl.get_component_by_id(step.config['component_id'].value)
+					step_title = f"Download {target_component.file_handle.local_path}"
+					row.label(text="",icon=step_icon)
+					row.label(text=step_title,icon="DOWNARROW_HLT")
+					row.progress(text="",factor=step.completion,type="RING")
 
-				step_entry_col.label(text=step_entry_title)
-				step_entry_col.label(text=step.get_action_config())
+				else:
+					step_icon =  AF_ImportActionState[step.state].icon_string()
+					row.label(text=step_title,icon=step_icon)
+
+
 			for m in current_impl.validation_messages:
 				layout.label(text=m.text)
 			
