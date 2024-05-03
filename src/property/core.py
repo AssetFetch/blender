@@ -111,16 +111,6 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		new_conf.value = value
 		return self
 	
-	### TODO: Remove old functions and replace with draw_ui
-	def get_action_title(self):
-		return self.bl_rna.properties['action'].enum_items[self.action].name
-	
-	def get_action_config(self) -> str:
-		out = ""
-		for c in self.config:
-			out += f"{c.name}={c.value} "
-		return out
-	
 	def get_config_as_function_parameters(self):
 		out = {}
 		for c in self.config:

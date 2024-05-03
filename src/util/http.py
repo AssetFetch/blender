@@ -59,7 +59,7 @@ class AF_HttpQuery:
 		}
 
 	"""Represents a query that the client sends to the provider"""
-	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int =  1024 * 1024, auto_chunk_size:bool = True):
+	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int = 128 * 1024 * 8):
 		self.uri = uri
 		if(method in ['get','post']):
 			self.method = method
@@ -74,7 +74,6 @@ class AF_HttpQuery:
 		self.chunk_size = chunk_size
 		self.expected_bytes = None
 		self.downloaded_bytes = 0
-		self.auto_chunk_size = auto_chunk_size
 
 	def get_download_completeness(self) -> float:
 
@@ -84,8 +83,6 @@ class AF_HttpQuery:
 			return 0.0
 
 		progress = min(1.0,float(self.downloaded_bytes) / float(self.expected_bytes))
-
-	
 
 		return progress
 

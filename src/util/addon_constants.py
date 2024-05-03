@@ -28,7 +28,7 @@ class AF_ImportActionState(Enum):
 		if self.value == "pending":
 			return "CHECKBOX_DEHLT"
 		if self.value == "running":
-			return "ARMATURE_DATA"
+			return "SORTTIME"
 		if self.value == "completed":
 			return "CHECKBOX_HLT"
 		if self.value == "failed":
@@ -61,6 +61,26 @@ class AF_ImportAction(Enum):
 	unlock_get_download_data = "unlock_get_download_data"
 
 	create_directory = "create_directory"
+
+	def icon_string(self):
+
+		icons = {
+			AF_ImportAction.fetch_download : "IMPORT",
+			AF_ImportAction.fetch_from_zip_archive : "FILE_ARCHIVE",
+			AF_ImportAction.import_obj_from_local_path: "MESH_CUBE",
+			AF_ImportAction.import_usd_from_local_path: "MESH_CUBE",
+			AF_ImportAction.import_loose_material_map_from_local_path: "MATERIAL",
+			AF_ImportAction.import_loose_environment_from_local_path: "WORLD",
+			AF_ImportAction.unlock : "UNLOCKED",
+			AF_ImportAction.unlock_get_download_data : "FILE_REFRESH",
+			AF_ImportAction.create_directory : "NEWFOLDER"
+		}
+
+		if self in icons.keys():
+			return icons[self]
+
+		return "PREFERENCES"
+
 	@staticmethod
 	def property_items():
 		return [
@@ -69,7 +89,7 @@ class AF_ImportAction(Enum):
 
 		# File actions
 		("fetch_download","Download File","Download a file."), # component_id
-		("fetch_from_zip_archive","Load File From Archive","Load a file from an archive."),
+		("fetch_from_zip_archive","Extract File From ZIP Archive","Extract a file from a zip archive."),
 
 		# Import actions
 		("import_obj_from_local_path","Import OBJ","Imports obj file from local path."), # component_id

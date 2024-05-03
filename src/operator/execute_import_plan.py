@@ -104,7 +104,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		
 		return AF_ImportActionState.completed
 		
-	def step_fetch_download(self,component_id:str) -> AF_ImportActionState:
+	def step_fetch_download(self,component_id:str,max_runtime:float = 2.0) -> AF_ImportActionState:
 		# Actually download the asset file.
 		# The data was either there already or has been fetched using the code above (action=unlock_get_download_data)
 		# In both cases, this code below actually downloads the asset and places it in its desired place
@@ -115,6 +115,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		# The download is ongoing and may or may not finish during this iteration
 		if(component_id in self.ongoing_queries ):
 			current_query = self.ongoing_queries[component_id]
+			#start_time = time.time()
 			ongoing = current_query.execute_as_file_piecewise_next_chunk()
 			if ongoing:
 				self.implementation.get_current_step().completion = current_query.get_download_completeness()
@@ -274,6 +275,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				current_step.state = (self.step_functions[current_step.action](**current_step.get_config_as_function_parameters())).value
 			except Exception as e:
 				current_step.state = AF_ImportActionState.failed.value
+				for q in self.ongoing_queries.values():
+					q.execute_as_file_piecewise_finish()
 				raise e
 			
 			if current_step.state not in [AF_ImportActionState.running.value,AF_ImportActionState.completed.value,AF_ImportActionState.failed.value,AF_ImportActionState.canceled.value]:
@@ -306,7 +309,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		self.implementation.reset_state()
 
 		# Set up modal operation
-		self._timer = context.window_manager.event_timer_add(0.025, window=context.window)
+		self._timer = context.window_manager.event_timer_add(0.125, window=context.window)
 		context.window_manager.modal_handler_add(self)
 
 		# Return and hand of the real work to the modal function

@@ -9,6 +9,13 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_region_type = 'UI'
 	bl_category = 'AssetFetch'
 
+
+	def format_bytes(self,num:int):
+		for x in ['B','KB','MB','GB','TB']:
+			if num < 1000.0:
+				return "%3.1f %s" % (num, x)
+			num /= 1000.0
+
 	@classmethod
 	def poll(self, context) -> bool:
 		af  = bpy.context.window_manager.af 
@@ -55,26 +62,57 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 			# Import progress:
 
+			previous_step_action = None
 			for step in current_impl.import_steps:
+				
+				# Prepare variables for rendering the UI
 				step : AF_PR_ImplementationImportStep = step
-				box = layout.box()
-				row = box.row()
-				#row.scale_x = 0.5
-
 				step_title = step.bl_rna.properties['action'].enum_items[step.action].name
+				step_action_icon = AF_ImportAction[step.action].icon_string()
 				step_state_icon =  AF_ImportActionState[step.state].icon_string()
 
+				# Check whether a new box must be drawn
+				if step.action != previous_step_action:
+					box = layout.box()
+					box.label(text=step_title,icon=step_action_icon)
+
+				# Create a new row in the current box
+				row = box.row()
+
+				if step.state in [AF_ImportActionState.canceled.value,AF_ImportActionState.failed.value]:
+					row.alert = True
+
+				# Display details about the current step
+				step_details = "<No Details> "
+
+				# Download
 				if step.action == AF_ImportAction.fetch_download.value:
-					target_component : AF_PR_Component = current_impl.get_component_by_id(step.config['component_id'].value)
-					step_title = f"Download {target_component.file_handle.local_path}"
-					row.label(text="",icon=step_icon)
-					row.label(text=step_title,icon="DOWNARROW_HLT")
-					row.progress(text="",factor=step.completion,type="RING")
+					target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+					step_details = target_component.file_handle.local_path
+					target_length = target_component.file_info.length
+					if target_length > 0:
+						step_details += f" - {self.format_bytes(target_length)}"
+				if step.action in [AF_ImportAction.fetch_from_zip_archive.value,AF_ImportAction.import_obj_from_local_path.value,AF_ImportAction.import_usd_from_local_path.value]:
+					target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+					step_details = target_component.file_handle.local_path
+				if step.action == AF_ImportAction.import_loose_material_map_from_local_path.value:
+					target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+					target_path = target_component.file_handle.local_path
+					target_material = target_component.loose_material_define.material_name
+					target_map = target_component.loose_material_define.map
+					step_details = f"{target_path} → {target_material}/{target_map}"
+				if step.action == AF_ImportAction.create_directory.value:
+					step_details = step.config['directory'].value
 
+
+				# Display a static icon or a progress indicator for the current step
+				if step.completion > 0.0 and step.completion < 1.0 and step.state not in [AF_ImportActionState.canceled.value,AF_ImportActionState.failed.value]:
+					row.progress(text=step_details,factor=step.completion,type="RING")
 				else:
-					step_icon =  AF_ImportActionState[step.state].icon_string()
-					row.label(text=step_title,icon=step_icon)
+					row.label(text=step_details,icon=step_state_icon)
 
+				# Remember the action type of this step
+				previous_step_action = step.action
 
 			for m in current_impl.validation_messages:
 				layout.label(text=m.text)
