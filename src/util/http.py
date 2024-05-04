@@ -1,10 +1,15 @@
+import datetime
 import json,requests,tempfile,os
+import time
+import random
 import logging
 import pathlib
 from enum import Enum
 from typing import List,Dict
 import bpy
 import jsonschema
+
+from functools import partial
 
 from .. import SCHEMA_PATH
 
@@ -49,8 +54,12 @@ class AF_HttpResponse:
 
 class AF_HttpQuery:
 
+	default_headers = {
+			"User-Agent":f"blender/{bpy.app.version_string} assetfetch-blender/0.1"
+		}
+
 	"""Represents a query that the client sends to the provider"""
-	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None):
+	def __init__(self,uri:str,method:str,parameters:Dict[str,str] = None, chunk_size:int = 128 * 1024 * 8):
 		self.uri = uri
 		if(method in ['get','post']):
 			self.method = method
@@ -58,14 +67,32 @@ class AF_HttpQuery:
 			LOGGER.exception("unsupported HTTP method detected.")
 		self.parameters = parameters
 
-	def execute(self) -> AF_HttpResponse:
+		# Variables for modal operation
+		self.stream_handle = None
+		self.stream_handle_iter = None
+		self.file_handle = None
+		self.chunk_size = chunk_size
+		self.expected_bytes = None
+		self.downloaded_bytes = 0
+
+	def get_download_completeness(self) -> float:
+
+		if self.expected_bytes is None:
+			return 0.0
+		if self.expected_bytes == 0:
+			return 0.0
+
+		progress = min(1.0,float(self.downloaded_bytes) / float(self.expected_bytes))
+
+		return progress
+
+
+	def execute(self,raise_for_status : bool = False) -> AF_HttpResponse:
 		af  = bpy.context.window_manager.af
 
 		LOGGER.info(f"Sending http {self.method} to {self.uri} with payload {self.parameters}")
 
-		headers = {
-			"User-Agent":f"blender/{bpy.app.version_string} assetfetch-blender/0.1"
-		}
+		headers = AF_HttpQuery.default_headers.copy()
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
 
@@ -78,33 +105,75 @@ class AF_HttpQuery:
 		
 		LOGGER.debug(f"Received http response: {response.content}")
 
+		if raise_for_status:
+			response.raise_for_status()
+
 		# Create and return AF_HttpResponse
 		return AF_HttpResponse(response)
 	
-	def execute_as_file(self, destination_path: str) -> None:
+	def execute_as_file_piecewise_start(self,destination_path : str):
 
+		# Check for existing initialization
+		if self.stream_handle is not None or self.file_handle is not None:
+			raise Exception("Download has already been started.")
+		
+		# Create helpful variables
 		af = bpy.context.window_manager.af
 
-		headers = {}
+		# Prepare headers for request
+		headers = AF_HttpQuery.default_headers.copy()
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
 
-		try:
-			file_handle = open(destination_path,'wb')
+		# Open the file handle
+		self.file_handle = open(destination_path,'wb')
 
-			if self.method == "get":
-				stream_handle = requests.get(url=self.uri,data=self.parameters,headers=headers,stream=True)
-			elif self.method == "post":
-				stream_handle = requests.post(url=self.uri,data=self.parameters,headers=headers,stream=True)
-			else:
-				raise ValueError("Unsupported HTTP method.")
+		# Open the http stream handle
+		if self.method == "get":
+			self.stream_handle = requests.get(url=self.uri,data=self.parameters,headers=headers,stream=True)
+		elif self.method == "post":
+			self.stream_handle = requests.post(url=self.uri,data=self.parameters,headers=headers,stream=True)
+		else:
+			raise ValueError("Unsupported HTTP method.")
+	
+		self.stream_handle.raise_for_status()
 		
-			stream_handle.raise_for_status()
+		# Try to get the expected bytes
+		self.expected_bytes = int(self.stream_handle.headers.get('Content-Length', 0))
+		LOGGER.info(f"Opened stream, expecting {self.expected_bytes} bytes.")
 
-			for chunk in stream_handle.iter_content(4096):
-				if chunk:
-					file_handle.write(chunk)
-			
-		finally:
-			stream_handle.close()
-			file_handle.close()
+		self.downloaded_bytes = 0
+		self.stream_handle_iter = self.stream_handle.iter_content(chunk_size=self.chunk_size)
+
+	def execute_as_file_piecewise_next_chunk(self) -> bool:
+		if self.stream_handle is None or self.file_handle is None:
+			raise Exception("Download has not been initialized")
+		
+		try:
+			chunk = next(self.stream_handle_iter,False)
+			if chunk:
+				self.file_handle.write(chunk)
+				self.downloaded_bytes += len(chunk)
+				return True
+			else:
+				return False
+		except Exception as e:
+			self.execute_as_file_piecewise_finish()
+			raise e
+
+	def execute_as_file_piecewise_finish(self):
+		if self.stream_handle is None or self.file_handle is None:
+			raise Exception("Download has not been initialized")
+		
+		self.stream_handle.close()
+		self.file_handle.close()
+		LOGGER.debug("Closed streams.")
+
+	def execute_as_file(self, destination_path: str) -> None:
+
+		self.execute_as_file_piecewise_start(destination_path)
+		
+		# Pull all data in one loop
+		data_remaining = True
+		while data_remaining:
+			data_remaining = self.execute_as_file_piecewise_next_chunk()

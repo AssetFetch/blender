@@ -4,6 +4,7 @@ import bpy,os
 from .updates import *
 from .templates import *
 from .datablocks import *
+from ..util.addon_constants import *
 
 LOGGER = logging.getLogger("af.property.core")
 LOGGER.setLevel(logging.DEBUG)
@@ -20,12 +21,7 @@ class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
 class AF_PR_ConnectionStatus(bpy.types.PropertyGroup):
 	user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
 	unlock_balance: bpy.props.PointerProperty(type=AF_PR_UnlockBalanceBlock)
-	state:bpy.props.EnumProperty(default="pending",items=[
-		("pending","Pending","No connection attempt has been made yet"),
-		("awaiting_input","Awaiting Input","Configuration values are required in order to connect"),
-		("connected","Connected","The connection has been established"),
-		("connection_error","Connection Error","An error occured while connecting to the provider")
-	])
+	state:bpy.props.EnumProperty(default="pending",items=AF_ConnectionState.property_items())
 
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
@@ -99,33 +95,15 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	def configure(self,component):
 		pass
 
-
-
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
-	action: bpy.props.EnumProperty(items=[
-
-		# The comments behind each item describe the config keys used for it.
-
-		# File actions
-		("fetch_download","Download File","Download a file."), # component_id
-		("fetch_download_unlocked","Download Unlocked File","Download a file after it has been unlocked."), # component_id
-		("fetch_from_zip_archive","Load File From Archive","Load a file from an archive."),
-
-		# Import actions
-		("import_obj_from_local_path","Import OBJ","Imports obj file from local path."), # component_id
-		("import_usd_from_local_path","Import USD","Imports USDA/C/Z file from a local path."), # component_id
-		("import_loose_material_map_from_local_path","Import loose material map","Adds a loose material map from a local path to a material."), # component_id
-		("import_loose_environment_from_local_path","Import a loose environment","Imports a loose HDR/EXR/... file and creates a world from it."), # component_id
-
-		# Misc actions
-		("directory_create","Create Directory","Create a directory."), # directory
-		("unlock","Unlock Resource","") # query_id
-	])
+	action: bpy.props.EnumProperty(items=AF_ImportAction.property_items())
 	config:bpy.props.CollectionProperty(type=AF_PR_GenericString)
+	state: bpy.props.EnumProperty(items=AF_ImportActionState.property_items())
+	completion: bpy.props.FloatProperty(default=0.0,max=1.0,min=0.0)
 
-	def set_action(self,action:str):
-		self.action = action
-		return self
+	#def set_action(self,action:AF_ImportAction):
+	#	self.action = action.value
+	#	return self
 
 	def set_config_value(self,key:str,value:str):
 		new_conf = self.config.add()
@@ -133,14 +111,74 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		new_conf.value = value
 		return self
 	
-	def get_action_title(self):
-		return self.bl_rna.properties['action'].enum_items[self.action].name
-	
-	def get_action_config(self) -> str:
-		out = ""
+	def get_config_as_function_parameters(self):
+		out = {}
 		for c in self.config:
-			out += f"{c.name}={c.value} "
+			out[c.name] = str(c.value)
 		return out
+
+	# File Actions
+ 
+	def configure_fetch_download(self,component_id):
+		"""Configures this step as a fetch_download step."""
+		self.action = AF_ImportAction.fetch_download.value
+		self.config.clear()
+		self.set_config_value("component_id",component_id)
+ 
+	def configure_fetch_from_zip_archive(self,component_id):
+		"""Configures this step as a fetch_from_zip_archive step."""
+		self.action = AF_ImportAction.fetch_from_zip_archive.value
+		self.config.clear()
+		self.set_config_value("component_id",component_id)
+
+	# Import Actions
+
+	def configure_import_obj_from_local_path(self, component_id):
+		"""Configures this step as an import_obj_from_local_path step."""
+		self.action = AF_ImportAction.import_obj_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_import_usd_from_local_path(self, component_id):
+		"""Configures this step as an import_usd_from_local_path step."""
+		self.action = AF_ImportAction.import_usd_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_import_loose_material_map_from_local_path(self, component_id):
+		"""Configures this step as an import_loose_material_map_from_local_path step."""
+		self.action = AF_ImportAction.import_loose_material_map_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_import_loose_environment_from_local_path(self, component_id):
+		"""Configures this step as an import_loose_environment_from_local_path step."""
+		self.action = AF_ImportAction.import_loose_environment_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	# Unlock Actions
+
+	def configure_unlock(self, query_id):
+		"""Configures this step as an unlock step."""
+		self.action = AF_ImportAction.unlock.value
+		self.config.clear()
+		self.set_config_value("query_id", query_id)
+
+	def configure_unlock_get_download_data(self, component_id):
+		"""Configures this step as an unlock_get_download_data step."""
+		self.action = AF_ImportAction.unlock_get_download_data.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	# Misc Actions
+
+	def configure_create_directory(self,directory):
+		"""Configures this step as a create_directory step."""
+		self.action = AF_ImportAction.create_directory.value
+		self.config.clear()
+		self.set_config_value("directory",directory)
+		
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
 	text : bpy.props.StringProperty()
@@ -164,6 +202,33 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	expected_charges: bpy.props.FloatProperty(default=0)
 	local_directory: bpy.props.StringProperty()
 
+	def get_completion_ratio(self) -> float:
+		"""Returns number between 0 and 1 to indicate the import progress of this implementation."""
+		return float(self.get_step_count()) / float(self.get_completed_step_count())
+
+	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
+		"""Finds the first non-completed step in the implementation and returns it."""
+		for s in self.import_steps:
+			if s.state != AF_ImportActionState.completed.value:
+				return s
+		return None
+			
+	def reset_state(self):
+		"""Resets all steps back to 'pending'."""
+		for s in self.import_steps:
+			s.state = AF_ImportActionState.pending.value
+
+	def get_step_count(self) -> int:
+		return len(self.import_steps)
+
+	def get_completed_step_count(self) -> int:
+		completed_steps = 0
+		for s in self.import_steps:
+			if s.state == AF_ImportActionState.completed.value:
+				completed_steps +=1
+		return completed_steps
+		
+
 	def get_component_by_id(self,component_id:str) -> AF_PR_Component:
 		for c in self.components:
 			if c.name == component_id:
@@ -171,7 +236,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		raise Exception(f"No component with id {component_id} could be found.")
 	
 	def configure(self,incoming_impl):
-		# -------------------------------------------------------------------------------
+
 		# Fill the implementation with data from the HTTP endpoint
 
 		# Implementation id
@@ -189,7 +254,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			# For clarity:
 			# provider_comp -> the component data sent by the provider
 			# blender_comp -> the blender bpy property this component gets turned into
-			# pcd -> shorthand for "provider component data" (This will appear a lot)
+			# pcd -> shorthand for "provider component data"
 			pcd = provider_comp['data']
 			
 			# Component id
@@ -274,3 +339,23 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'),"AssetFetch"))
 	ui_image_directory: bpy.props.StringProperty(default=os.path.join(tempfile.gettempdir(),"af-ui-img"))
+
+	#current_import_execution_progress : bpy.props.FloatProperty(max=1.0,min=0.0)
+
+	#progress_all_steps : bpy.props.FloatProperty(max=1,min=0)
+	#progress_current_step : bpy.props.FloatProperty(max=1,min=1)
+
+	def get_current_asset(self) -> AF_PR_Asset | None:
+		
+		if self.current_asset_list_index < 0 | self.current_asset_list_index >= len(self.current_asset_list):
+			raise Exception("Invalid index for current asset list.")
+
+		return self.current_asset_list.assets[self.current_asset_list_index]
+	
+	def get_current_implementation(self) -> AF_PR_Implementation:
+
+		if self.current_implementation_list_index < 0 | self.current_implementation_list_index >= len(self.current_implementation_list):
+			raise Exception("Invalid index for current implementation list.")
+
+		return self.current_implementation_list.implementations[self.current_implementation_list_index]
+	
