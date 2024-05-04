@@ -29,8 +29,7 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 		af = bpy.context.window_manager.af
 
 		# Contact asset list endpoint
-		response = af.current_provider_initialization.asset_list_query.to_http_query(
-		).execute()
+		response = af.current_provider_initialization.asset_list_query.to_http_query().execute()
 
 		# Save assets in blender properties
 		af.current_asset_list.configure(response.parsed)

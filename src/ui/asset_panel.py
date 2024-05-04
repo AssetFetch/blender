@@ -36,25 +36,22 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 			layout.separator()
 			row = layout.row()
 			row.template_list(listtype_name="UI_UL_list",
-			                  list_id="asset_list",
-			                  dataptr=af.current_asset_list,
-			                  propname="assets",
-			                  active_dataptr=af,
-			                  active_propname="current_asset_list_index",
-			                  maxrows=9)
-			current_asset = af.current_asset_list.assets[
-			    af.current_asset_list_index]
+				list_id="asset_list",
+				dataptr=af.current_asset_list,
+				propname="assets",
+				active_dataptr=af,
+				active_propname="current_asset_list_index",
+				maxrows=9)
+			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 			asset_box = row.box()
 			asset_box.label(text=current_asset.text.title, icon="PACKAGE")
 
-			thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(
-			    256)
+			thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(256)
 			thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
 
 			asset_box.template_icon(icon_value=thumbnail_icon_id, scale=8.0)
 
 		elif af.current_asset_list.already_queried:
 			no_results_box = layout.box()
-			no_results_box.label(text="No assets found for this query.",
-			                     icon="ORPHAN_DATA")
+			no_results_box.label(text="No assets found for this query.", icon="ORPHAN_DATA")

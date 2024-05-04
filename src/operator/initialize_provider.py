@@ -59,40 +59,33 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 
 			# Get the provider text (title and description)
 			if "text" in response.parsed['data']:
-				af.current_provider_initialization.text.configure(
-				    response.parsed['data']['text'])
+				af.current_provider_initialization.text.configure(response.parsed['data']['text'])
 
 			# Provider configuration
-			af.current_provider_initialization.provider_configuration.headers.clear(
-			)
+			af.current_provider_initialization.provider_configuration.headers.clear()
 			if "provider_configuration" in response.parsed['data']:
 
-				provider_config = response.parsed['data'][
-				    'provider_configuration']
+				provider_config = response.parsed['data']['provider_configuration']
 
 				# Headers
 				if len(provider_config['headers']) > 0:
 					af.current_connection_state.state = "awaiting_input"
 					for header_info in provider_config['headers']:
-						current_header = af.current_provider_initialization.provider_configuration.headers.add(
-						)
+						current_header = af.current_provider_initialization.provider_configuration.headers.add()
 						current_header.configure(header_info)
 				else:
 					af.current_connection_state.state = "connected"
 
 				# Status endpoint
-				af.current_provider_initialization.provider_configuration.connection_status_query.configure(
-				    provider_config['connection_status_query'])
+				af.current_provider_initialization.provider_configuration.connection_status_query.configure(provider_config['connection_status_query'])
 			else:
 				# No configuration required, we can immediately start getting the asset list (assuming the operator polling succeeded)
 				af.current_connection_state.state = "connected"
 
 			# asset_list_query
 			if "asset_list_query" in response.parsed['data']:
-				af.current_provider_initialization.asset_list_query.configure(
-				    response.parsed['data']['asset_list_query'],
-				    update_target=AF_VariableQueryUpdateTarget.
-				    update_asset_list_parameter)
+				af.current_provider_initialization.asset_list_query.configure(response.parsed['data']['asset_list_query'],
+					update_target=AF_VariableQueryUpdateTarget.update_asset_list_parameter)
 				af.current_asset_list.already_queried = False
 			else:
 				raise Exception("No Asset List Query!")

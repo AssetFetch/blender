@@ -40,16 +40,16 @@ class AF_MaterialMap(Enum):
 	@staticmethod
 	def property_items():
 		return [
-		    ("albedo", "Albedo", "Albedo"),
-		    ("roughness", "Roughness", "Roughness"),
-		    ("metallic", "Metallic", "Metallic"),
-		    ("diffuse", "Diffuse", "Diffuse"),
-		    ("glossiness", "Glossiness", "Glossiness"),
-		    ("specular", "Specular", "Specular"),
-		    ("height", "Height", "Height"),
-		    ("normal+y", "Normal +Y", "Normal +Y"),
-		    ("normal-y", "Normal -Y", "Normal -Y"),
-		    ("opacity", "Opacity", "Opacity"),
-		    ("ambient_occlusion", "Ambient Occlusion", "Ambient Occlusion"),
-		    ("emission", "Emission", "Emission"),
+			("albedo", "Albedo", "Albedo"),
+			("roughness", "Roughness", "Roughness"),
+			("metallic", "Metallic", "Metallic"),
+			("diffuse", "Diffuse", "Diffuse"),
+			("glossiness", "Glossiness", "Glossiness"),
+			("specular", "Specular", "Specular"),
+			("height", "Height", "Height"),
+			("normal+y", "Normal +Y", "Normal +Y"),
+			("normal-y", "Normal -Y", "Normal -Y"),
+			("opacity", "Opacity", "Opacity"),
+			("ambient_occlusion", "Ambient Occlusion", "Ambient Occlusion"),
+			("emission", "Emission", "Emission"),
 		]

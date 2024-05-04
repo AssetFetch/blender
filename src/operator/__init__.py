@@ -23,8 +23,4 @@ def unregister():
 		bpy.utils.unregister_class(cl)
 
 
-registration_targets = [
-    AF_OP_InitializeProvider, AF_OP_UpdateAssetList,
-    AF_OP_UpdateImplementationsList, AF_OP_BuildImportPlans,
-    AF_OP_ExecuteImportPlan, AF_OP_ConnectionStatus
-]
+registration_targets = [AF_OP_InitializeProvider, AF_OP_UpdateAssetList, AF_OP_UpdateImplementationsList, AF_OP_BuildImportPlans, AF_OP_ExecuteImportPlan, AF_OP_ConnectionStatus]

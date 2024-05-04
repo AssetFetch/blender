@@ -37,9 +37,7 @@ class AF_PR_FixedQuery(bpy.types.PropertyGroup):
 		parameters = {}
 		for p in self.payload:
 			parameters[p.name] = p.value
-		return AF_HttpQuery(uri=self.uri,
-		                    method=self.method,
-		                    parameters=parameters)
+		return AF_HttpQuery(uri=self.uri, method=self.method, parameters=parameters)
 
 
 update_target_enum = AF_VariableQueryUpdateTarget.to_property_enum()
@@ -93,8 +91,7 @@ class AF_PR_SelectParameter(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty()
 	default: bpy.props.StringProperty()
 	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
-	value: bpy.props.EnumProperty(items=select_property_enum_items,
-	                              update=update_variable_query_parameter)
+	value: bpy.props.EnumProperty(items=select_property_enum_items, update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 
@@ -108,11 +105,7 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 	parameters_fixed: bpy.props.CollectionProperty(type=AF_PR_FixedParameter)
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
 
-	def configure(self,
-	              variable_query,
-	              update_target:
-	              AF_VariableQueryUpdateTarget = AF_VariableQueryUpdateTarget.
-	              update_nothing):
+	def configure(self, variable_query, update_target: AF_VariableQueryUpdateTarget = AF_VariableQueryUpdateTarget.update_nothing):
 
 		self.uri = ""
 		update_target = update_target.value
@@ -200,35 +193,25 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 
 		# Ignoring multi-select for now
 
-		return AF_HttpQuery(uri=self.uri,
-		                    method=self.method,
-		                    parameters=parameters)
+		return AF_HttpQuery(uri=self.uri, method=self.method, parameters=parameters)
 
 	def draw_ui(self, layout) -> None:
 
 		# Text parameters
 		for asset_list_parameter in self.parameters_text:
-			layout.prop(asset_list_parameter,
-			            "value",
-			            text=asset_list_parameter["title"])
+			layout.prop(asset_list_parameter, "value", text=asset_list_parameter["title"])
 
 		# Bool parameters
 		for asset_list_parameter in self.parameters_boolean:
-			layout.prop(asset_list_parameter,
-			            "value",
-			            text=asset_list_parameter["title"])
+			layout.prop(asset_list_parameter, "value", text=asset_list_parameter["title"])
 
 		# Select parameters
 		for asset_list_parameter in self.parameters_select:
-			layout.prop(asset_list_parameter,
-			            "value",
-			            text=asset_list_parameter["title"])
+			layout.prop(asset_list_parameter, "value", text=asset_list_parameter["title"])
 
 		# Fixed parameters
 		for asset_list_parameter in self.parameters_fixed:
-			layout.label(
-			    text=
-			    f"{asset_list_parameter.name}: {asset_list_parameter.value}")
+			layout.label(text=f"{asset_list_parameter.name}: {asset_list_parameter.value}")
 
 
 class AF_PR_Header(bpy.types.PropertyGroup):
@@ -239,17 +222,13 @@ class AF_PR_Header(bpy.types.PropertyGroup):
 	prefix: bpy.props.StringProperty()
 	suffix: bpy.props.StringProperty()
 	title: bpy.props.StringProperty()
-	encoding: bpy.props.EnumProperty(
-	    items=[("plain", "plain", "plain"), ("base64", "base64", "base64")])
+	encoding: bpy.props.EnumProperty(items=[("plain", "plain", "plain"), ("base64", "base64", "base64")])
 
 	# The actual value entered by the user
 	value: bpy.props.StringProperty(update=update_provider_header)
 
 	def configure(self, header):
-		for key in [
-		    'name', 'default', 'is_required', 'is_sensitive', 'prefix',
-		    'suffix', 'title', 'encoding'
-		]:
+		for key in ['name', 'default', 'is_required', 'is_sensitive', 'prefix', 'suffix', 'title', 'encoding']:
 			if key in header:
 				setattr(self, key, header[key])
 		self.value = self.default

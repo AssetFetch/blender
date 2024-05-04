@@ -16,25 +16,21 @@ class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
 	# I would have loved to create a class that inherits from the template instead of using it directly.
 	# However, inherited properties are not considered, so I have to use the template directly here.
 	asset_list_query: bpy.props.PointerProperty(type=AF_PR_VariableQuery)
-	provider_configuration: bpy.props.PointerProperty(
-	    type=AF_PR_ProviderConfigurationBlock)
+	provider_configuration: bpy.props.PointerProperty(type=AF_PR_ProviderConfigurationBlock)
 	user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
 
 
 class AF_PR_ConnectionStatus(bpy.types.PropertyGroup):
 	user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
 	unlock_balance: bpy.props.PointerProperty(type=AF_PR_UnlockBalanceBlock)
-	state: bpy.props.EnumProperty(default="pending",
-	                              items=AF_ConnectionState.property_items())
+	state: bpy.props.EnumProperty(default="pending", items=AF_ConnectionState.property_items())
 
 
 class AF_PR_Asset(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
-	implementation_list_query: bpy.props.PointerProperty(
-	    type=AF_PR_VariableQuery)
-	preview_image_thumbnail: bpy.props.PointerProperty(
-	    type=AF_PR_PreviewImageThumbnailBlock)
+	implementation_list_query: bpy.props.PointerProperty(type=AF_PR_VariableQuery)
+	preview_image_thumbnail: bpy.props.PointerProperty(type=AF_PR_PreviewImageThumbnailBlock)
 
 
 class AF_PR_AssetList(bpy.types.PropertyGroup):
@@ -59,14 +55,11 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 
 			# Implementations Query
 			if "implementation_list_query" in asset['data']:
-				asset_entry.implementation_list_query.configure(
-				    asset['data']['implementation_list_query'],
-				    update_target=AF_VariableQueryUpdateTarget.
-				    update_implementation_list_parameter)
+				asset_entry.implementation_list_query.configure(asset['data']['implementation_list_query'],
+					update_target=AF_VariableQueryUpdateTarget.update_implementation_list_parameter)
 
 			if "preview_image_thumbnail" in asset['data']:
-				asset_entry.preview_image_thumbnail.configure(
-				    asset['data']['preview_image_thumbnail'])
+				asset_entry.preview_image_thumbnail.configure(asset['data']['preview_image_thumbnail'])
 
 		af.current_asset_list_index = 0
 
@@ -82,9 +75,7 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 
 class AF_PR_BlenderResource(bpy.types.PropertyGroup):
 	# object name is handled by name property
-	kind: bpy.props.EnumProperty(
-	    items=[("material", "material",
-	            "material"), ("object", "object", "object")])
+	kind: bpy.props.EnumProperty(items=[("material", "material", "material"), ("object", "object", "object")])
 
 
 class AF_PR_Component(bpy.types.PropertyGroup):
@@ -94,16 +85,12 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	file_info: bpy.props.PointerProperty(type=AF_PR_FileInfoBlock)
 	file_handle: bpy.props.PointerProperty(type=AF_PR_FileHandleBlock)
 	file_fetch_download: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
-	file_fetch_from_archive: bpy.props.PointerProperty(
-	    type=AF_PR_FileFetchFromArchiveBlock)
+	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_FileFetchFromArchiveBlock)
 	unlock_link: bpy.props.PointerProperty(type=AF_PR_UnlockLinkBlock)
 
-	loose_environment: bpy.props.PointerProperty(
-	    type=AF_PR_LooseEnvironmentBlock)
-	loose_material_define: bpy.props.PointerProperty(
-	    type=AF_PR_LooseMaterialDefineBlock)
-	loose_material_apply: bpy.props.PointerProperty(
-	    type=AF_PR_LooseMaterialApplyBlock)
+	loose_environment: bpy.props.PointerProperty(type=AF_PR_LooseEnvironmentBlock)
+	loose_material_define: bpy.props.PointerProperty(type=AF_PR_LooseMaterialDefineBlock)
+	loose_material_apply: bpy.props.PointerProperty(type=AF_PR_LooseMaterialApplyBlock)
 
 	format_blend: bpy.props.PointerProperty(type=AF_PR_FormatBlendBlock)
 	format_obj: bpy.props.PointerProperty(type=AF_PR_FormatObjBlock)
@@ -163,8 +150,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		self.config.clear()
 		self.set_config_value("component_id", component_id)
 
-	def configure_import_loose_material_map_from_local_path(
-	        self, component_id):
+	def configure_import_loose_material_map_from_local_path(self, component_id):
 		"""Configures this step as an import_loose_material_map_from_local_path step."""
 		self.action = AF_ImportAction.import_loose_material_map_from_local_path.value
 		self.config.clear()
@@ -201,10 +187,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
 	text: bpy.props.StringProperty()
-	kind: bpy.props.EnumProperty(
-	    items=[("info", "info",
-	            "info"), ("warn", "warning",
-	                      "warning"), ("crit", "critical", "critical")])
+	kind: bpy.props.EnumProperty(items=[("info", "info", "info"), ("warn", "warning", "warning"), ("crit", "critical", "critical")])
 
 	def set(self, kind: str, text: str):
 		self.text = text
@@ -216,17 +199,14 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	# No id field, blender's property name takes care of that
 	components: bpy.props.CollectionProperty(type=AF_PR_Component)
 	is_valid: bpy.props.BoolProperty()
-	validation_messages: bpy.props.CollectionProperty(
-	    type=AF_PR_ImplementationValidationMessage)
-	import_steps: bpy.props.CollectionProperty(
-	    type=AF_PR_ImplementationImportStep)
+	validation_messages: bpy.props.CollectionProperty(type=AF_PR_ImplementationValidationMessage)
+	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImplementationImportStep)
 	expected_charges: bpy.props.FloatProperty(default=0)
 	local_directory: bpy.props.StringProperty()
 
 	def get_completion_ratio(self) -> float:
 		"""Returns number between 0 and 1 to indicate the import progress of this implementation."""
-		return float(self.get_step_count()) / float(
-		    self.get_completed_step_count())
+		return float(self.get_step_count()) / float(self.get_completed_step_count())
 
 	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
 		"""Finds the first non-completed step in the implementation and returns it."""
@@ -284,20 +264,14 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			blender_comp.name = provider_comp['id']
 
 			recognized_datablock_names = [
-			    "file_info", "file_handle", "file_fetch.download",
-			    "file_fetch.download_post_unlock", "file_fetch.from_archive",
-			    "loose_environment", "loose_material.define",
-			    "loose_material.apply", "format.blend", "format.usd",
-			    "format.obj", "text"
+				"file_info", "file_handle", "file_fetch.download", "file_fetch.download_post_unlock", "file_fetch.from_archive", "loose_environment", "loose_material.define",
+				"loose_material.apply", "format.blend", "format.usd", "format.obj", "text"
 			]
 
 			# Unsupported datablocks which lead to a warning
 			for key in pcd.keys():
 				if key not in recognized_datablock_names:
-					self.validation_messages.add().set(
-					    "warn",
-					    f"Datablock {key} in {blender_comp.name} has not been recognized and will be ignored."
-					)
+					self.validation_messages.add().set("warn", f"Datablock {key} in {blender_comp.name} has not been recognized and will be ignored.")
 
 			# Configure datablocks
 			for key in recognized_datablock_names:
@@ -308,9 +282,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 				else:
 					# Some datablocks are required and get tested for here.
 					if key in ['file_info', 'file_handle']:
-						raise Exception(
-						    f"{blender_comp.name} is missing a {key} datablock."
-						)
+						raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
 		return self
 
 
@@ -327,8 +299,7 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 			if q.name == query_id:
 				return q
 
-		raise Exception(
-		    f"No unlocking query with id {query_id} could be found.")
+		raise Exception(f"No unlocking query with id {query_id} could be found.")
 
 	def configure(self, implementation_list):
 		# Parse the datablocks for the ImplementationList itself
@@ -347,24 +318,16 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 
 
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
-	current_init_url: bpy.props.StringProperty(description="Init",
-	                                           update=update_init_url)
-	current_connection_state: bpy.props.PointerProperty(
-	    type=AF_PR_ConnectionStatus)
-	current_provider_initialization: bpy.props.PointerProperty(
-	    type=AF_PR_ProviderInitialization)
+	current_init_url: bpy.props.StringProperty(description="Init", update=update_init_url)
+	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
+	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)
-	current_asset_list_index: bpy.props.IntProperty(
-	    update=update_asset_list_index)
-	current_implementation_list: bpy.props.PointerProperty(
-	    type=AF_PR_ImplementationList)
-	current_implementation_list_index: bpy.props.IntProperty(
-	    update=update_implementation_list_index)
+	current_asset_list_index: bpy.props.IntProperty(update=update_asset_list_index)
+	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
+	current_implementation_list_index: bpy.props.IntProperty(update=update_implementation_list_index)
 
-	download_directory: bpy.props.StringProperty(
-	    default=os.path.join(os.path.expanduser('~'), "AssetFetch"))
-	ui_image_directory: bpy.props.StringProperty(
-	    default=os.path.join(tempfile.gettempdir(), "af-ui-img"))
+	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'), "AssetFetch"))
+	ui_image_directory: bpy.props.StringProperty(default=os.path.join(tempfile.gettempdir(), "af-ui-img"))
 
 	#current_import_execution_progress : bpy.props.FloatProperty(max=1.0,min=0.0)
 
@@ -373,17 +336,14 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 
 	def get_current_asset(self) -> AF_PR_Asset | None:
 
-		if self.current_asset_list_index < 0 | self.current_asset_list_index >= len(
-		    self.current_asset_list):
+		if self.current_asset_list_index < 0 | self.current_asset_list_index >= len(self.current_asset_list):
 			raise Exception("Invalid index for current asset list.")
 
 		return self.current_asset_list.assets[self.current_asset_list_index]
 
 	def get_current_implementation(self) -> AF_PR_Implementation:
 
-		if self.current_implementation_list_index < 0 | self.current_implementation_list_index >= len(
-		    self.current_implementation_list):
+		if self.current_implementation_list_index < 0 | self.current_implementation_list_index >= len(self.current_implementation_list):
 			raise Exception("Invalid index for current implementation list.")
 
-		return self.current_implementation_list.implementations[
-		    self.current_implementation_list_index]
+		return self.current_implementation_list.implementations[self.current_implementation_list_index]

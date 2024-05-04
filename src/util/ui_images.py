@@ -13,8 +13,7 @@ def reset_image_cache():
 	# Empty temp directory
 	if os.path.exists(bpy.context.window_manager.af.ui_image_directory):
 		shutil.rmtree(bpy.context.window_manager.af.ui_image_directory)
-	os.makedirs(bpy.context.window_manager.af.ui_image_directory,
-	            exist_ok=True)
+	os.makedirs(bpy.context.window_manager.af.ui_image_directory, exist_ok=True)
 
 	# Clear icons from memory
 	if registry:
@@ -49,17 +48,12 @@ def get_ui_image_icon_id(uri: str) -> int:
 		# Image must be downloaded
 		image_query = http.AF_HttpQuery(uri, "get", None)
 		image_query.execute_as_file(target_file_location)
-		LOGGER.debug(
-		    f"Downloaded ui image from {uri} into {target_file_location}")
+		LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
 
 	# Load image into blender, if needed
 	if uri_hash not in registry.keys():
-		registry.load(name=uri_hash,
-		              path=target_file_location,
-		              path_type='IMAGE')
-		LOGGER.debug(
-		    f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}"
-		)
+		registry.load(name=uri_hash, path=target_file_location, path_type='IMAGE')
+		LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
 	#else:
 	#	LOGGER.debug(f"Requested ui image {uri} is already loaded with ID {registry[uri_hash].icon_id}")
 

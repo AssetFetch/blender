@@ -23,12 +23,10 @@ class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 
 	def execute(self, context):
 		af = bpy.context.window_manager.af
-		current_asset = af.current_asset_list.assets[
-		    af.current_asset_list_index]
+		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Contact implementations endpoint
-		response = current_asset.implementation_list_query.to_http_query(
-		).execute()
+		response = current_asset.implementation_list_query.to_http_query().execute()
 
 		# Converting the json response into blender bpy data
 		if "current_implementation_list" in af:

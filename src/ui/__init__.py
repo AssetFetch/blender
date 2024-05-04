@@ -17,8 +17,8 @@ def unregister():
 
 
 registration_targets = [
-    AF_PT_ProviderPanel,
-    AF_PT_AssetPanel,
-    AF_PT_ImplementationsPanel,
-    #AF_PT_ImportStepsPanel
+	AF_PT_ProviderPanel,
+	AF_PT_AssetPanel,
+	AF_PT_ImplementationsPanel,
+	#AF_PT_ImportStepsPanel
 ]

@@ -44,20 +44,12 @@ class AF_PR_FileInfoBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 
 class AF_PR_FileHandleBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	local_path: bpy.props.StringProperty()
-	behavior: bpy.props.EnumProperty(items=[(
-	    'single_active', 'single_active',
-	    'single_active'), ('single_passive', 'single_passive',
-	                       'single_passive'),
-	                                        ('archive_unpack_fully',
-	                                         'archive_unpack_fully',
-	                                         'archive_unpack_fully'),
-	                                        ('archive_unpack_referenced',
-	                                         'archive_unpack_referenced',
-	                                         'archive_unpack_referenced')])
+	behavior: bpy.props.EnumProperty(items=[('single_active', 'single_active', 'single_active'), ('single_passive', 'single_passive',
+		'single_passive'), ('archive_unpack_fully', 'archive_unpack_fully',
+		'archive_unpack_fully'), ('archive_unpack_referenced', 'archive_unpack_referenced', 'archive_unpack_referenced')])
 
 
-class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup,
-                                       AF_PR_GenericBlock):
+class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	headers: bpy.props.CollectionProperty(type=AF_PR_Header)
 	connection_status_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	header_acquisition_uri: bpy.props.StringProperty()
@@ -66,12 +58,9 @@ class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup,
 	def configure(self, provider_configuration):
 		for h in provider_configuration['headers']:
 			self.headers.add().configure(h)
-		self.connection_status_query.configure(
-		    provider_configuration['connection_status_query'])
-		self.header_acquisition_uri = provider_configuration[
-		    'header_acquisition_uri']
-		self.header_acquisition_uri_title = provider_configuration[
-		    'header_acquisition_uri_title']
+		self.connection_status_query.configure(provider_configuration['connection_status_query'])
+		self.header_acquisition_uri = provider_configuration['header_acquisition_uri']
+		self.header_acquisition_uri_title = provider_configuration['header_acquisition_uri_title']
 
 		self.is_set = True
 
@@ -82,13 +71,11 @@ class AF_PR_UnlockBalanceBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	balance_refill_uri: bpy.props.StringProperty()
 
 
-class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup,
-                                         AF_PR_GenericBlock):
+class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	headers: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
 
-class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup,
-                                      AF_PR_GenericBlock):
+class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	archive_component_id: bpy.props.StringProperty()
 	component_path: bpy.props.StringProperty()
 
@@ -106,23 +93,17 @@ class AF_PR_UnlockLinkBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 
 	def configure(self, unlock_link):
 		self.unlock_query_id = unlock_link['unlock_query_id']
-		self.unlocked_datablocks_query.configure(
-		    unlock_link['unlocked_datablocks_query'])
+		self.unlocked_datablocks_query.configure(unlock_link['unlocked_datablocks_query'])
 
 
 class AF_PR_LooseEnvironmentBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	projection: bpy.props.EnumProperty(items=[(
-	    "equirectangular", "equirectangular",
-	    "equirectangular"), ("mirror_ball", "mirror_ball", "mirror_ball")])
+	projection: bpy.props.EnumProperty(items=[("equirectangular", "equirectangular", "equirectangular"), ("mirror_ball", "mirror_ball", "mirror_ball")])
 
 
-class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup,
-                                     AF_PR_GenericBlock):
+class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	material_name: bpy.props.StringProperty()
-	map: bpy.props.EnumProperty(
-	    items=af_constants.AF_MaterialMap.property_items())
-	colorspace: bpy.props.EnumProperty(
-	    items=af_constants.AF_Colorspace.property_items())
+	map: bpy.props.EnumProperty(items=af_constants.AF_MaterialMap.property_items())
+	colorspace: bpy.props.EnumProperty(items=af_constants.AF_Colorspace.property_items())
 
 
 class AF_PR_LooseMaterialApplyElement(bpy.types.PropertyGroup):
@@ -130,23 +111,20 @@ class AF_PR_LooseMaterialApplyElement(bpy.types.PropertyGroup):
 	apply_selectively_to: bpy.props.StringProperty()
 
 
-class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup,
-                                    AF_PR_GenericBlock):
+class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	items: bpy.props.CollectionProperty(type=AF_PR_LooseMaterialApplyElement)
 
 	def configure(self, loose_material_apply):
 		for elem in loose_material_apply:
 			new_item = self.items.add()
 			new_item.material_name = elem['material_name']
-			if "apply_selectively_to" in elem and elem[
-			    'apply_selectively_to'] != None:
+			if "apply_selectively_to" in elem and elem['apply_selectively_to'] != None:
 				new_item.apply_selectively_to = elem['apply_selectively_to']
 
 
 class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup):
 	names: bpy.props.CollectionProperty(type=AF_PR_GenericString)
-	kind: bpy.props.EnumProperty(
-	    items=addon_constants.AF_BlenderDataTypes.property_items())
+	kind: bpy.props.EnumProperty(items=addon_constants.AF_BlenderDataTypes.property_items())
 
 
 class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
@@ -192,10 +170,8 @@ class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
 			self.price = unlock_query['price']
 		if "unlock_query" in unlock_query:
 			self.unlock_query.configure(unlock_query['unlock_query'])
-		if "unlock_query_fallback_uri" in unlock_query and unlock_query[
-		    'unlock_query_fallback_uri']:
-			self.unlock_query_fallback_uri = unlock_query[
-			    'unlock_query_fallback_uri']
+		if "unlock_query_fallback_uri" in unlock_query and unlock_query['unlock_query_fallback_uri']:
+			self.unlock_query_fallback_uri = unlock_query['unlock_query_fallback_uri']
 
 
 class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
@@ -206,8 +182,7 @@ class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 			self.items.add().configure(q)
 
 
-class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,
-                                       AF_PR_GenericBlock):
+class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	alt: bpy.props.StringProperty()
 	uris: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
@@ -234,8 +209,7 @@ class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup,
 			if (res > 0 and current_optimal_resolution == 0):
 				current_optimal_resolution = res
 
-			if (res > 0 and abs(current_optimal_resolution - target_resolution)
-			    > abs(res - target_resolution)):
+			if (res > 0 and abs(current_optimal_resolution - target_resolution) > abs(res - target_resolution)):
 				current_optimal_resolution = res
 
 		final_uri = self.uris[str(current_optimal_resolution)]

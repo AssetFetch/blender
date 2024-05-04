@@ -31,8 +31,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				self.already_processed_component_ids = set()
 
 				provider_id = af.current_provider_initialization.name
-				asset_id = af.current_asset_list.assets[
-				    af.current_asset_list_index].name
+				asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
 				implementation_id = self.current_impl.name
 
 				# We start by assuming that the implementation is valid, has no existing steps and costs nothing.
@@ -42,40 +41,26 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 
 				# Step 1: Find the implementation directory
 				if provider_id == "":
-					raise Exception(
-					    "No provider ID to create implementation directory.")
+					raise Exception("No provider ID to create implementation directory.")
 				if asset_id == "":
-					raise Exception(
-					    "No asset ID to create implementation directory.")
+					raise Exception("No asset ID to create implementation directory.")
 				if implementation_id == "":
-					raise Exception(
-					    "No implementation ID to create implementation directory."
-					)
+					raise Exception("No implementation ID to create implementation directory.")
 
-				self.current_impl.local_directory = os.path.join(
-				    af.download_directory, provider_id)
-				self.current_impl.local_directory = os.path.join(
-				    self.current_impl.local_directory, asset_id)
-				self.current_impl.local_directory = os.path.join(
-				    self.current_impl.local_directory, implementation_id)
+				self.current_impl.local_directory = os.path.join(af.download_directory, provider_id)
+				self.current_impl.local_directory = os.path.join(self.current_impl.local_directory, asset_id)
+				self.current_impl.local_directory = os.path.join(self.current_impl.local_directory, implementation_id)
 
-				self.current_impl.import_steps.add(
-				).configure_create_directory(self.current_impl.local_directory)
+				self.current_impl.import_steps.add().configure_create_directory(self.current_impl.local_directory)
 
 				# Step 2: Find the relevant unlocking queries
 				already_scheduled_unlocking_query_ids = []
 				for comp in self.current_impl.components:
 					if comp.unlock_link.is_set:
-						referenced_query = af.self.current_implementation_list.get_unlock_query_by_id(
-						    comp.unlock_link.unlock_query_id)
-						if (not referenced_query.unlocked) and (
-						    referenced_query.name
-						    not in already_scheduled_unlocking_query_ids):
-							self.current_impl.import_steps.add(
-							).configure_unlock(
-							    comp.unlock_link.unlock_query_id)
-							already_scheduled_unlocking_query_ids.append(
-							    comp.unlock_link.unlock_query_id)
+						referenced_query = af.self.current_implementation_list.get_unlock_query_by_id(comp.unlock_link.unlock_query_id)
+						if (not referenced_query.unlocked) and (referenced_query.name not in already_scheduled_unlocking_query_ids):
+							self.current_impl.import_steps.add().configure_unlock(comp.unlock_link.unlock_query_id)
+							already_scheduled_unlocking_query_ids.append(comp.unlock_link.unlock_query_id)
 							self.current_impl.expected_charges += referenced_query.price
 
 				# Step 3: Plan how to acquire and arrange all files in the asset directory
@@ -92,26 +77,18 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 
 						# OBJ Model
 						if comp.file_info.extension == ".obj":
-							self.current_impl.import_steps.add(
-							).configure_import_obj_from_local_path(comp.name)
+							self.current_impl.import_steps.add().configure_import_obj_from_local_path(comp.name)
 
 						# USD Files
-						elif comp.file_info.extension in [
-						    ".usd", ".usda", ".usdc", ".usdz"
-						]:
-							self.current_impl.import_steps.add(
-							).configure_import_usd_from_local_path(comp.name)
+						elif comp.file_info.extension in [".usd", ".usda", ".usdc", ".usdz"]:
+							self.current_impl.import_steps.add().configure_import_usd_from_local_path(comp.name)
 
 						# Material maps
-						elif comp.file_info.extension in [
-						    ".png", ".jpg", ".tiff"
-						]:
+						elif comp.file_info.extension in [".png", ".jpg", ".tiff"]:
 							self.material_map_handler(comp)
 
 						else:
-							raise Exception(
-							    f"The addon does not know how to actively handle files with the extension '{comp.file_info.extension}'."
-							)
+							raise Exception(f"The addon does not know how to actively handle files with the extension '{comp.file_info.extension}'.")
 
 			except Exception as e:
 				self.current_impl.is_valid = False
@@ -123,8 +100,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 		if comp.loose_material_define.is_set and comp.file_handle.behavior == "single_active":
 			# The component has the material definition datablock AND is marked as active, so it certainly needs
 			# to be imported.
-			self.current_impl.import_steps.add(
-			).configure_import_loose_material_map_from_local_path(comp.name)
+			self.current_impl.import_steps.add().configure_import_loose_material_map_from_local_path(comp.name)
 
 		elif comp.loose_material_define.is_set:
 			# The component does have the material definition datablock but is marked as passive.
@@ -137,14 +113,10 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 							import_map = True
 
 			if import_map:
-				self.current_impl.import_steps.add(
-				).configure_import_loose_material_map_from_local_path(
-				    comp.name)
+				self.current_impl.import_steps.add().configure_import_loose_material_map_from_local_path(comp.name)
 
 		else:
-			raise Exception(
-			    f"This {comp.file_info.extension} image file does not have the required metadata to be readable."
-			)
+			raise Exception(f"This {comp.file_info.extension} image file does not have the required metadata to be readable.")
 
 	def recursive_fetching_datablock_handler(self, comp):
 
@@ -158,8 +130,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 
 			# Case 1
 			# Simplest case: It's a single file download and the download information is already there. Done!
-			self.current_impl.import_steps.add().configure_fetch_download(
-			    comp.name)
+			self.current_impl.import_steps.add().configure_fetch_download(comp.name)
 
 		elif comp.file_fetch_from_archive.is_set:
 
@@ -168,19 +139,15 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 			# so that all files from archives are only loaded AFTER the archive itself has been downloaded.
 
 			# Get the target archive component ...
-			target_archive_comp = self.current_impl.get_component_by_id(
-			    comp.file_fetch_from_archive.archive_component_id)
+			target_archive_comp = self.current_impl.get_component_by_id(comp.file_fetch_from_archive.archive_component_id)
 			if not target_archive_comp:
-				raise Exception(
-				    f"Referenced component {comp.file_fetch_from_archive.archive_component_id} could not be found."
-				)
+				raise Exception(f"Referenced component {comp.file_fetch_from_archive.archive_component_id} could not be found.")
 
 			# ...and handle it through the dedicated function which inserts the required import steps.
 			self.recursive_fetching_datablock_handler(target_archive_comp)
 
 			# Then add the step that loads the actual file we want from the archive
-			self.current_impl.import_steps.add(
-			).configure_fetch_from_zip_archive(comp.name)
+			self.current_impl.import_steps.add().configure_fetch_from_zip_archive(comp.name)
 
 		elif comp.unlock_link.is_set:
 
@@ -188,11 +155,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 			# The component is not quite ready for an immediate download
 			# We first need to get the real fetch_download block from the provider
 
-			self.current_impl.import_steps.add(
-			).configure_unlock_get_download_data(comp.name)
-			self.current_impl.import_steps.add().configure_fetch_download(
-			    comp.name)
+			self.current_impl.import_steps.add().configure_unlock_get_download_data(comp.name)
+			self.current_impl.import_steps.add().configure_fetch_download(comp.name)
 		else:
-			raise Exception(
-			    f"{comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock."
-			)
+			raise Exception(f"{comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
