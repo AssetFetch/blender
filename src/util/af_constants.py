@@ -1,21 +1,20 @@
 from enum import Enum
 
+
 class AF_Colorspace(Enum):
 	srgb = "srgb"
 	linear = "linear"
 
 	@staticmethod
 	def property_items():
-		return [
-			("srgb","sRGB","sRGB"),
-			("linear","linear","linear")
-		]
-		
+		return [("srgb", "sRGB", "sRGB"), ("linear", "linear", "linear")]
+
 	def blender_value(self):
 		if self.value == "linear":
 			return "Non-Color"
 		else:
 			return "sRGB"
+
 
 class AF_MaterialMap(Enum):
 	albedo = "albedo"
@@ -31,7 +30,7 @@ class AF_MaterialMap(Enum):
 	ambient_occlusion = "ambient_occlusion"
 	emission = "emission"
 
-	@staticmethod 
+	@staticmethod
 	def from_string_by_value(value: str):
 		for material_map in AF_MaterialMap:
 			if material_map.value == value:
@@ -41,16 +40,16 @@ class AF_MaterialMap(Enum):
 	@staticmethod
 	def property_items():
 		return [
-		("albedo", "Albedo", "Albedo"),
-		("roughness", "Roughness", "Roughness"),
-		("metallic", "Metallic", "Metallic"),
-		("diffuse", "Diffuse", "Diffuse"),
-		("glossiness", "Glossiness", "Glossiness"),
-		("specular", "Specular", "Specular"),
-		("height", "Height", "Height"),
-		("normal+y", "Normal +Y", "Normal +Y"),
-		("normal-y", "Normal -Y", "Normal -Y"),
-		("opacity", "Opacity", "Opacity"),
-		("ambient_occlusion", "Ambient Occlusion", "Ambient Occlusion"),
-		("emission", "Emission", "Emission"),
-	]
+			("albedo", "Albedo", "Albedo"),
+			("roughness", "Roughness", "Roughness"),
+			("metallic", "Metallic", "Metallic"),
+			("diffuse", "Diffuse", "Diffuse"),
+			("glossiness", "Glossiness", "Glossiness"),
+			("specular", "Specular", "Specular"),
+			("height", "Height", "Height"),
+			("normal+y", "Normal +Y", "Normal +Y"),
+			("normal-y", "Normal -Y", "Normal -Y"),
+			("opacity", "Opacity", "Opacity"),
+			("ambient_occlusion", "Ambient Occlusion", "Ambient Occlusion"),
+			("emission", "Emission", "Emission"),
+		]

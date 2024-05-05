@@ -4,25 +4,25 @@ from bpy.types import Context
 
 class AF_OP_UpdateImplementationsList(bpy.types.Operator):
 	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
-	
+
 	bl_idname = "af.update_implementations_list"
 	bl_label = "Update Implementations List"
-	bl_options = {"REGISTER","INTERNAL"}
+	bl_options = {"REGISTER", "INTERNAL"}
 
 	#url: StringProperty(name="URL")
 
-	def draw(self,context):
+	def draw(self, context):
 		pass
 		#layout = self.layout
 		#layout.prop(self,'radius')
-	
+
 	@classmethod
 	def poll(self, context: Context) -> bool:
 		af = bpy.context.window_manager.af
 		return len(af.current_asset_list.assets) > 0
 
-	def execute(self,context):
-		af  = bpy.context.window_manager.af
+	def execute(self, context):
+		af = bpy.context.window_manager.af
 		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 		# Contact implementations endpoint

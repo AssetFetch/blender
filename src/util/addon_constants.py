@@ -1,4 +1,3 @@
-
 from enum import Enum
 
 
@@ -10,19 +9,16 @@ class AF_ConnectionState(Enum):
 
 	@staticmethod
 	def property_items():
-		return [
-		("pending","Pending","No connection attempt has been made yet"),
-		("awaiting_input","Awaiting Input","Configuration values are required in order to connect"),
-		("connected","Connected","The connection has been established"),
-		("connection_error","Connection Error","An error occured while connecting to the provider")
-	]
+		return [("pending", "Pending", "No connection attempt has been made yet"), ("awaiting_input", "Awaiting Input", "Configuration values are required in order to connect"),
+			("connected", "Connected", "The connection has been established"), ("connection_error", "Connection Error", "An error occured while connecting to the provider")]
+
 
 class AF_ImportActionState(Enum):
-	pending="pending"
-	running="running"
-	completed="completed"
-	failed="failed"
-	canceled="canceled"
+	pending = "pending"
+	running = "running"
+	completed = "completed"
+	failed = "failed"
+	canceled = "canceled"
 
 	def icon_string(self):
 		if self.value == "pending":
@@ -39,24 +35,19 @@ class AF_ImportActionState(Enum):
 
 	@staticmethod
 	def property_items():
-		return [
-		("pending","Pending",""),
-		("running","Running",""),
-		("completed","Completed",""),
-		("failed","Failed",""),
-		("canceled","Canceled","")
-	]
+		return [("pending", "Pending", ""), ("running", "Running", ""), ("completed", "Completed", ""), ("failed", "Failed", ""), ("canceled", "Canceled", "")]
+
 
 class AF_ImportAction(Enum):
-	
+
 	fetch_download = "fetch_download"
 	fetch_from_zip_archive = "fetch_from_zip_archive"
-	
+
 	import_obj_from_local_path = "import_obj_from_local_path"
 	import_usd_from_local_path = "import_usd_from_local_path"
 	import_loose_material_map_from_local_path = "import_loose_material_map_from_local_path"
 	import_loose_environment_from_local_path = "import_loose_environment_from_local_path"
-	
+
 	unlock = "unlock"
 	unlock_get_download_data = "unlock_get_download_data"
 
@@ -65,15 +56,15 @@ class AF_ImportAction(Enum):
 	def icon_string(self):
 
 		icons = {
-			AF_ImportAction.fetch_download : "IMPORT",
-			AF_ImportAction.fetch_from_zip_archive : "FILE_ARCHIVE",
+			AF_ImportAction.fetch_download: "IMPORT",
+			AF_ImportAction.fetch_from_zip_archive: "FILE_ARCHIVE",
 			AF_ImportAction.import_obj_from_local_path: "MESH_CUBE",
 			AF_ImportAction.import_usd_from_local_path: "MESH_CUBE",
 			AF_ImportAction.import_loose_material_map_from_local_path: "MATERIAL",
 			AF_ImportAction.import_loose_environment_from_local_path: "WORLD",
-			AF_ImportAction.unlock : "UNLOCKED",
-			AF_ImportAction.unlock_get_download_data : "FILE_REFRESH",
-			AF_ImportAction.create_directory : "NEWFOLDER"
+			AF_ImportAction.unlock: "UNLOCKED",
+			AF_ImportAction.unlock_get_download_data: "FILE_REFRESH",
+			AF_ImportAction.create_directory: "NEWFOLDER"
 		}
 
 		if self in icons.keys():
@@ -85,26 +76,26 @@ class AF_ImportAction(Enum):
 	def property_items():
 		return [
 
-		# The comments behind each item describe the config keys used for it.
+			# The comments behind each item describe the config keys used for it.
 
-		# File actions
-		("fetch_download","Download File","Download a file."), # component_id
-		("fetch_from_zip_archive","Extract File From ZIP Archive","Extract a file from a zip archive."),
+			# File actions
+			("fetch_download", "Download File", "Download a file."),  # component_id
+			("fetch_from_zip_archive", "Extract File From ZIP Archive", "Extract a file from a zip archive."),
 
-		# Import actions
-		("import_obj_from_local_path","Import OBJ","Imports obj file from local path."), # component_id
-		("import_usd_from_local_path","Import USD","Imports USDA/C/Z file from a local path."), # component_id
-		("import_loose_material_map_from_local_path","Import loose material map","Adds a loose material map from a local path to a material."), # component_id
-		("import_loose_environment_from_local_path","Import a loose environment","Imports a loose HDR/EXR/... file and creates a world from it."), # component_id
+			# Import actions
+			("import_obj_from_local_path", "Import OBJ", "Imports obj file from local path."),  # component_id
+			("import_usd_from_local_path", "Import USD", "Imports USDA/C/Z file from a local path."),  # component_id
+			("import_loose_material_map_from_local_path", "Import loose material map", "Adds a loose material map from a local path to a material."),  # component_id
+			("import_loose_environment_from_local_path", "Import a loose environment", "Imports a loose HDR/EXR/... file and creates a world from it."),  # component_id
 
-		# Unlock actions
-  		("unlock","Unlock Resource",""), # query_id
-		("unlock_get_download_data","Prepare Download","Prepare a download of a file after it has been unlocked."), # component_id
+			# Unlock actions
+			("unlock", "Unlock Resource", ""),  # query_id
+			("unlock_get_download_data", "Prepare Download", "Prepare a download of a file after it has been unlocked."),  # component_id
 
-		# Misc actions
-		("create_directory","Create Directory","Create a directory."), # directory
-		
-	]
+			# Misc actions
+			("create_directory", "Create Directory", "Create a directory."),  # directory
+		]
+
 
 class AF_BlenderDataTypes(Enum):
 	actions = "actions"
@@ -147,40 +138,40 @@ class AF_BlenderDataTypes(Enum):
 	@staticmethod
 	def property_items():
 		return [
-		("actions", "Actions", "Actions"),
-		("armatures", "Armatures", "Armatures"),
-		("brushes", "Brushes", "Brushes"),
-		("cache_files", "Cache Files", "Cache Files"),
-		("cameras", "Cameras", "Cameras"),
-		("collections", "Collections", "Collections"),
-		("curves", "Curves", "Curves"),
-		("fonts", "Fonts", "Fonts"),
-		("grease_pencils", "Grease Pencils", "Grease Pencils"),
-		("hair_curves", "Hair Curves", "Hair Curves"),
-		("images", "Images", "Images"),
-		("lattices", "Lattices", "Lattices"),
-		("lightprobes", "Lightprobes", "Lightprobes"),
-		("lights", "Lights", "Lights"),
-		("linestyles", "Linestyles", "Linestyles"),
-		("masks", "Masks", "Masks"),
-		("materials", "Materials", "Materials"),
-		("meshes", "Meshes", "Meshes"),
-		("metaballs", "Metaballs", "Metaballs"),
-		("movieclips", "Movieclips", "Movieclips"),
-		("node_groups", "Node Groups", "Node Groups"),
-		("objects", "Objects", "Objects"),
-		("paint_curves", "Paint Curves", "Paint Curves"),
-		("palettes", "Palettes", "Palettes"),
-		("particles", "Particles", "Particles"),
-		("pointclouds", "Pointclouds", "Pointclouds"),
-		("scenes", "Scenes", "Scenes"),
-		("screens", "Screens", "Screens"),
-		("simulations", "Simulations", "Simulations"),
-		("sounds", "Sounds", "Sounds"),
-		("speakers", "Speakers", "Speakers"),
-		("texts", "Texts", "Texts"),
-		("textures", "Textures", "Textures"),
-		("volumes", "Volumes", "Volumes"),
-		("workspaces", "Workspaces", "Workspaces"),
-		("worlds", "Worlds", "Worlds"),
-	]
+			("actions", "Actions", "Actions"),
+			("armatures", "Armatures", "Armatures"),
+			("brushes", "Brushes", "Brushes"),
+			("cache_files", "Cache Files", "Cache Files"),
+			("cameras", "Cameras", "Cameras"),
+			("collections", "Collections", "Collections"),
+			("curves", "Curves", "Curves"),
+			("fonts", "Fonts", "Fonts"),
+			("grease_pencils", "Grease Pencils", "Grease Pencils"),
+			("hair_curves", "Hair Curves", "Hair Curves"),
+			("images", "Images", "Images"),
+			("lattices", "Lattices", "Lattices"),
+			("lightprobes", "Lightprobes", "Lightprobes"),
+			("lights", "Lights", "Lights"),
+			("linestyles", "Linestyles", "Linestyles"),
+			("masks", "Masks", "Masks"),
+			("materials", "Materials", "Materials"),
+			("meshes", "Meshes", "Meshes"),
+			("metaballs", "Metaballs", "Metaballs"),
+			("movieclips", "Movieclips", "Movieclips"),
+			("node_groups", "Node Groups", "Node Groups"),
+			("objects", "Objects", "Objects"),
+			("paint_curves", "Paint Curves", "Paint Curves"),
+			("palettes", "Palettes", "Palettes"),
+			("particles", "Particles", "Particles"),
+			("pointclouds", "Pointclouds", "Pointclouds"),
+			("scenes", "Scenes", "Scenes"),
+			("screens", "Screens", "Screens"),
+			("simulations", "Simulations", "Simulations"),
+			("sounds", "Sounds", "Sounds"),
+			("speakers", "Speakers", "Speakers"),
+			("texts", "Texts", "Texts"),
+			("textures", "Textures", "Textures"),
+			("volumes", "Volumes", "Volumes"),
+			("workspaces", "Workspaces", "Workspaces"),
+			("worlds", "Worlds", "Worlds"),
+		]

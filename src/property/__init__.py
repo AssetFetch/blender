@@ -6,12 +6,14 @@ from .core import *
 from .datablocks import *
 from .templates import *
 
+
 def register():
 
 	for cl in registration_targets:
-		bpy.utils.register_class(cl)	
+		bpy.utils.register_class(cl)
 
 	bpy.types.WindowManager.af = bpy.props.PointerProperty(type=AF_PR_AssetFetch)
+
 
 def unregister():
 
@@ -20,19 +22,19 @@ def unregister():
 	for cl in reversed(registration_targets):
 		bpy.utils.unregister_class(cl)
 
+
 registration_targets = [
 	AF_PR_GenericString,
 	AF_PR_FixedQuery,
 	AF_PR_BoolParameter,
 	AF_PR_TextParameter,
-#	AF_PR_FloatParameter,
-#	AF_PR_IntegerParameter,
+	#	AF_PR_FloatParameter,
+	#	AF_PR_IntegerParameter,
 	AF_PR_FixedParameter,
 	AF_PR_SelectParameterChoice,
 	AF_PR_SelectParameter,
 	AF_PR_VariableQuery,
 	AF_PR_Header,
-
 	AF_PR_TextBlock,
 	AF_PR_UserBlock,
 	AF_PR_FileInfoBlock,
@@ -53,7 +55,6 @@ registration_targets = [
 	AF_PR_UnlockQuery,
 	AF_PR_UnlockQueriesBlock,
 	AF_PR_PreviewImageThumbnailBlock,
-	
 	AF_PR_ProviderInitialization,
 	AF_PR_ConnectionStatus,
 	AF_PR_Asset,

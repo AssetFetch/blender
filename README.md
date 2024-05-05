@@ -45,3 +45,17 @@ Every module's `__init__.py` imports all relevant classes and stores them in a `
 The global `__init__.py` for the entire addon does the same pattern again by loading the registration functions from all the other modules.
 
 Required dependencies are loaded from the `/src/lib` directory.
+
+
+## YAPF style
+
+The following YAPF style configuration is recommended:
+```
+{based_on_style: pep8, indent_width:4, continuation_indent_width:4, continuation_align_style = fixed, column_limit: 180, use_tabs: true}
+```
+
+When using VSCode you can install the YAPF extension (`eeyore.yapf`) and add the following to your settings.json:
+
+```
+"yapf.args": ["--style", "{based_on_style: pep8, indent_width:4, continuation_indent_width:4, continuation_align_style = fixed, column_limit: 180, use_tabs: true}"]
+```
