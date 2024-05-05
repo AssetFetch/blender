@@ -53,3 +53,9 @@ The following YAPF style configuration is recommended:
 ```
 {based_on_style: pep8, indent_width:4, continuation_indent_width:4, continuation_align_style = fixed, column_limit: 180, use_tabs: true}
 ```
+
+When using VSCode you can install the YAPF extension (`eeyore.yapf`) and add the following to your settings.json:
+
+```
+"yapf.args": ["--style", "{based_on_style: pep8, indent_width:4, continuation_indent_width:4, continuation_align_style = fixed, column_limit: 180, use_tabs: true}"]
+```
