@@ -1,6 +1,6 @@
 import os, sys, logging
 
-print("Loading AssetFetch for Blender v0.1.0")
+print("Loading AssetFetch for Blender v0.2.0")
 logging.basicConfig()
 logging.root.setLevel(logging.WARN)
 
@@ -9,17 +9,16 @@ LIB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 if LIB_PATH not in sys.path:
 	sys.path.insert(0, LIB_PATH)
 
-SCHEMA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                           "json-schema")
+SCHEMA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "json-schema")
 
 bl_info = {
-    "name": "assetfetch-blender",
-    "description": "AssetFetch for Blender",
-    "author": "ambientCG / Lennart Demes",
-    "version": (0, 1),
-    "blender": (4, 0, 0),
-    "location": "View3D",
-    "category": "3D View"
+	"name": "assetfetch-blender",
+	"description": "AssetFetch for Blender",
+	"author": "ambientCG / Lennart Demes",
+	"version": (0, 1),
+	"blender": (4, 0, 0),
+	"location": "View3D",
+	"category": "3D View"
 }
 
 
