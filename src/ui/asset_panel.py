@@ -11,7 +11,7 @@ LOGGER.setLevel(logging.DEBUG)
 
 
 class AF_PT_AssetPanel(bpy.types.Panel):
-	bl_label = "Assets"
+	bl_label = "Asset Selection"
 	bl_idname = "AF_PT_ASSET_PANEL"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'UI'

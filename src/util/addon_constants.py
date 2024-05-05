@@ -9,8 +9,12 @@ class AF_ConnectionState(Enum):
 
 	@staticmethod
 	def property_items():
-		return [("pending", "Pending", "No connection attempt has been made yet"), ("awaiting_input", "Awaiting Input", "Configuration values are required in order to connect"),
-			("connected", "Connected", "The connection has been established"), ("connection_error", "Connection Error", "An error occured while connecting to the provider")]
+		return [
+			("pending", "Pending", "No connection attempt has been made yet"),
+			("awaiting_input", "Awaiting Input", "Configuration values are required in order to connect"),  # Used if the provider requires specific headers
+			("connected", "Connected", "The connection has been established"),
+			("connection_error", "Connection Error", "An error occured while connecting to the provider")
+		]
 
 
 class AF_ImportActionState(Enum):
@@ -35,7 +39,13 @@ class AF_ImportActionState(Enum):
 
 	@staticmethod
 	def property_items():
-		return [("pending", "Pending", ""), ("running", "Running", ""), ("completed", "Completed", ""), ("failed", "Failed", ""), ("canceled", "Canceled", "")]
+		return [
+			("pending", "Pending", "The step is waiting to be run."),  #
+			("running", "Running", "The step is currently running."),
+			("completed", "Completed", "The step has finished successfully."),
+			("failed", "Failed", "The step could not finish due to an error."),
+			("canceled", "Canceled", "The step was manually canceled by the user.")
+		]
 
 
 class AF_ImportAction(Enum):
@@ -79,21 +89,21 @@ class AF_ImportAction(Enum):
 			# The comments behind each item describe the config keys used for it.
 
 			# File actions
-			("fetch_download", "Download File", "Download a file."),  # component_id
-			("fetch_from_zip_archive", "Extract File From ZIP Archive", "Extract a file from a zip archive."),
+			("fetch_download", "Download File", "Downloads a file from the internet."),  # component_id
+			("fetch_from_zip_archive", "Extract File From ZIP Archive", "Extracts a file from a ZIP archive."),
 
 			# Import actions
-			("import_obj_from_local_path", "Import OBJ", "Imports obj file from local path."),  # component_id
-			("import_usd_from_local_path", "Import USD", "Imports USDA/C/Z file from a local path."),  # component_id
-			("import_loose_material_map_from_local_path", "Import loose material map", "Adds a loose material map from a local path to a material."),  # component_id
-			("import_loose_environment_from_local_path", "Import a loose environment", "Imports a loose HDR/EXR/... file and creates a world from it."),  # component_id
+			("import_obj_from_local_path", "Import OBJ", "Imports content from an OBJ file."),  # component_id
+			("import_usd_from_local_path", "Import USD", "Imports content from a USD file."),  # component_id
+			("import_loose_material_map_from_local_path", "Import Material Map", "Adds a material map to a new or existing material."),  # component_id
+			("import_loose_environment_from_local_path", "Import Environment Map", "Imports an HDRI environment."),  # component_id
 
 			# Unlock actions
-			("unlock", "Unlock Resource", ""),  # query_id
-			("unlock_get_download_data", "Prepare Download", "Prepare a download of a file after it has been unlocked."),  # component_id
+			("unlock", "Unlock Resource", "Unlocks a resource from the provider, so that it can be downloaded."),  # query_id
+			("unlock_get_download_data", "Prepare Unlocked Download", "Prepares to download an unlocked resource."),  # component_id
 
 			# Misc actions
-			("create_directory", "Create Directory", "Create a directory."),  # directory
+			("create_directory", "Create Directory", "Creates a directory."),  # directory
 		]
 
 

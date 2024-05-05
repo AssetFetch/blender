@@ -4,7 +4,7 @@ from ..property.core import *
 
 
 class AF_PT_ImplementationsPanel(bpy.types.Panel):
-	bl_label = "Implementations"
+	bl_label = "Import Settings"
 	bl_idname = "AF_PT_IMPLEMENTATIONS_PANEL"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'UI'
@@ -61,6 +61,9 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			#layout.separator()
 
 			# Import progress:
+
+			if len(current_impl.import_steps) > 0:
+				layout.label(text="Import Steps:")
 
 			previous_step_action = None
 			for step in current_impl.import_steps:

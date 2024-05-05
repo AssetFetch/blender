@@ -2,7 +2,7 @@ import bpy
 
 
 class AF_PT_ProviderPanel(bpy.types.Panel):
-	bl_label = "Provider"
+	bl_label = "Provider Selection"
 	bl_idname = "AF_PT_Provider_PANEL"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'UI'
