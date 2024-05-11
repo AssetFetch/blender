@@ -43,7 +43,7 @@ registration_targets = [
 	AF_PR_ProviderReconfigurationBlock,
 	AF_PR_UnlockBalanceBlock,
 	AF_PR_FileFetchFromArchiveBlock,
-	AF_PR_UnlockLinkBlock,
+	AF_PR_FileFetchDownloadPostUnlockBlock,
 	AF_PR_LooseEnvironmentBlock,
 	AF_PR_LooseMaterialDefineBlock,
 	AF_PR_LooseMaterialApplyElement,

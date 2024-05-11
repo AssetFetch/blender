@@ -86,7 +86,7 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	file_handle: bpy.props.PointerProperty(type=AF_PR_FileHandleBlock)
 	file_fetch_download: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_FileFetchFromArchiveBlock)
-	unlock_link: bpy.props.PointerProperty(type=AF_PR_UnlockLinkBlock)
+	file_fetch_download_post_unlock: bpy.props.PointerProperty(type=AF_PR_FileFetchDownloadPostUnlockBlock)
 
 	loose_environment: bpy.props.PointerProperty(type=AF_PR_LooseEnvironmentBlock)
 	loose_material_define: bpy.props.PointerProperty(type=AF_PR_LooseMaterialDefineBlock)
@@ -296,10 +296,10 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 
 	def get_unlock_query_by_id(self, query_id: str) -> AF_PR_UnlockQuery:
 		for q in self.unlock_queries.items:
-			if q.name == query_id:
+			if str(q.name) == str(query_id):
 				return q
 
-		raise Exception(f"No unlocking query with id {query_id} could be found.")
+		raise Exception(f"No unlocking query with id '{query_id}' could be found.")
 
 	def configure(self, implementation_list):
 		# Parse the datablocks for the ImplementationList itself

@@ -56,11 +56,11 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				# Step 2: Find the relevant unlocking queries
 				already_scheduled_unlocking_query_ids = []
 				for comp in self.current_impl.components:
-					if comp.unlock_link.is_set:
-						referenced_query = af.self.current_implementation_list.get_unlock_query_by_id(comp.unlock_link.unlock_query_id)
+					if comp.file_fetch_download_post_unlock.is_set:
+						referenced_query = af.current_implementation_list.get_unlock_query_by_id(comp.file_fetch_download_post_unlock.unlock_query_id)
 						if (not referenced_query.unlocked) and (referenced_query.name not in already_scheduled_unlocking_query_ids):
-							self.current_impl.import_steps.add().configure_unlock(comp.unlock_link.unlock_query_id)
-							already_scheduled_unlocking_query_ids.append(comp.unlock_link.unlock_query_id)
+							self.current_impl.import_steps.add().configure_unlock(comp.file_fetch_download_post_unlock.unlock_query_id)
+							already_scheduled_unlocking_query_ids.append(comp.file_fetch_download_post_unlock.unlock_query_id)
 							self.current_impl.expected_charges += referenced_query.price
 
 				# Step 3: Plan how to acquire and arrange all files in the asset directory
@@ -149,13 +149,12 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 			# Then add the step that loads the actual file we want from the archive
 			self.current_impl.import_steps.add().configure_fetch_from_zip_archive(comp.name)
 
-		elif comp.unlock_link.is_set:
+		elif comp.file_fetch_download_post_unlock.is_set:
 
 			# Case 3
 			# The component is not quite ready for an immediate download
 			# We first need to get the real fetch_download block from the provider
 
-			self.current_impl.import_steps.add().configure_unlock_get_download_data(comp.name)
-			self.current_impl.import_steps.add().configure_fetch_download(comp.name)
+			self.current_impl.import_steps.add().configure_fetch_download_unlocked(comp.name)
 		else:
-			raise Exception(f"{comp.name} is missing either a file_fetch.download, file_fetch.from_archive or unlock_link datablock.")
+			raise Exception(f"{comp.name} is missing either a file_fetch.* datablock.")

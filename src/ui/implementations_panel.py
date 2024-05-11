@@ -119,7 +119,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				# Unlocking
 				if step.action == AF_ImportAction.unlock.value:
 					query_id = step.config['query_id']
-					unlock_query: AF_PR_UnlockQuery = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id()
+					unlock_query: AF_PR_UnlockQuery = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id(query_id)
 					step_details = f"Unlock content ({unlock_query.price} {af.current_connection_state.unlock_balance.balance_unit})"
 
 				if step.action == AF_ImportAction.unlock_get_download_data.value:
