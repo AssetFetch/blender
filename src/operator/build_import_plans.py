@@ -155,6 +155,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 			# The component is not quite ready for an immediate download
 			# We first need to get the real fetch_download block from the provider
 
-			self.current_impl.import_steps.add().configure_fetch_download_unlocked(comp.name)
+			self.current_impl.import_steps.add().configure_unlock_get_download_data(comp.name)
+			self.current_impl.import_steps.add().configure_fetch_download(comp.name)
 		else:
 			raise Exception(f"{comp.name} is missing either a file_fetch.* datablock.")

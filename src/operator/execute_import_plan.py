@@ -90,7 +90,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		component = self.implementation.get_component_by_id(component_id)
 
 		# Perform the query to get the previously withheld datablocks
-		response = component.unlock_link.unlocked_datablocks_query.to_http_query().execute(raise_for_status=True)
+		response = component.file_fetch_download_post_unlock.unlocked_data_query.to_http_query().execute(raise_for_status=True)
 
 		# Add the real download configuration to the component so that it can be called in the next step.
 		if "file_fetch.download" in response.parsed['data']:

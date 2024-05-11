@@ -51,6 +51,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			else:
 				layout.label(text="Implementation is not readable.", icon="SEQUENCE_COLOR_01")
 
+			# Render validation messages in GUI
 			for m in current_impl.validation_messages:
 				layout.label(text=m.text)
 
