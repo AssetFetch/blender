@@ -37,7 +37,6 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				# We start by assuming that the implementation is valid, has no existing steps and costs nothing.
 				self.current_impl.is_valid = True
 				self.current_impl.import_steps.clear()
-				self.current_impl.expected_charges = 0
 
 				# Step 1: Find the implementation directory
 				if provider_id == "":
@@ -61,7 +60,6 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 						if (not referenced_query.unlocked) and (referenced_query.name not in already_scheduled_unlocking_query_ids):
 							self.current_impl.import_steps.add().configure_unlock(comp.file_fetch_download_post_unlock.unlock_query_id)
 							already_scheduled_unlocking_query_ids.add(comp.file_fetch_download_post_unlock.unlock_query_id)
-							self.current_impl.expected_charges += referenced_query.price
 
 				# Step 3: Get all the previously withheld datablocks
 				for comp in self.current_impl.components:

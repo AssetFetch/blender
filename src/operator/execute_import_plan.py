@@ -225,8 +225,15 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	def poll(self, context):
 		af = bpy.context.window_manager.af
 		implementation_list = af.current_implementation_list
-		return len(implementation_list.implementations) > 0 and implementation_list.implementations[af.current_implementation_list_index].is_valid
 
+		if len(implementation_list.implementations) < 1:
+			return False 
+		if not implementation_list.implementations[af.current_implementation_list_index].is_valid:
+			return False
+		if implementation_list.implementations[af.current_implementation_list_index].get_current_state() == AF_ImportActionState.running:
+			return False
+		return True
+		
 	def modal(self, context: Context, event: Event):
 
 		# Schedule a GUI redrawing to run after this modal function

@@ -201,14 +201,34 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 	is_valid: bpy.props.BoolProperty()
 	validation_messages: bpy.props.CollectionProperty(type=AF_PR_ImplementationValidationMessage)
 	import_steps: bpy.props.CollectionProperty(type=AF_PR_ImplementationImportStep)
-	expected_charges: bpy.props.FloatProperty(default=0)
 	local_directory: bpy.props.StringProperty()
+	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
+
+	def get_expected_charges(self, include_already_paid: bool) -> float:
+		"""This method returns the charges if all unlocking queries for this asset would get called."""
+		charges = 0
+		already_summed_query_ids = set()
+		for comp in self.components:
+			if comp.file_fetch_download_post_unlock.is_set:
+				referenced_query = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id(comp.file_fetch_download_post_unlock.unlock_query_id)
+				if ((not referenced_query.unlocked) or include_already_paid) and (referenced_query.name not in already_summed_query_ids):
+					already_summed_query_ids.add(comp.file_fetch_download_post_unlock.unlock_query_id)
+					charges += referenced_query.price
+
+		return float(charges)
+
+	def get_download_size(self) -> int:
+		size = 0
+		for comp in self.components:
+			if (comp.file_fetch_download.is_set or comp.file_fetch_download_post_unlock.is_set) and comp.file_info.is_set and comp.file_info.length > 0:
+				size += comp.file_info.length
+		return size
 
 	def get_completion_ratio(self) -> float:
 		"""Returns number between 0 and 1 to indicate the import progress of this implementation."""
 		if self.get_step_count() < 1:
 			return 0
-		return  float(self.get_completed_step_count()) / float(self.get_step_count())
+		return float(self.get_completed_step_count()) / float(self.get_step_count())
 
 	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
 		"""Finds the first non-completed step in the implementation and returns it."""
@@ -216,6 +236,12 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			if s.state != AF_ImportActionState.completed.value:
 				return s
 		return None
+
+	def get_current_state(self) -> AF_ImportActionState:
+		current_step = self.get_current_step()
+		if current_step is not None:
+			return current_step.state
+		return AF_ImportActionState.pending
 
 	def reset_state(self):
 		"""Resets all steps back to 'pending'."""
@@ -232,6 +258,9 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 				completed_steps += 1
 		return completed_steps
 
+	def all_steps_completed(self) ->bool:
+		return self.get_completed_step_count() >= len(self.import_steps)
+
 	def get_component_by_id(self, component_id: str) -> AF_PR_Component:
 		for c in self.components:
 			if c.name == component_id:
@@ -246,6 +275,11 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		if "id" not in incoming_impl:
 			raise Exception("Implementation is missing and id.")
 		self.name = incoming_impl['id']
+
+		# Text datablock for this implementation
+		if "data" in incoming_impl:
+			if "text" in incoming_impl['data']:
+				self.text.configure(incoming_impl['data']['text'])
 
 		# Component data
 		#if "components" not in incoming_impl or len(incoming_impl['components']) < 1:
@@ -325,6 +359,7 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)
 	current_asset_list_index: bpy.props.IntProperty(update=update_asset_list_index)
+
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
 	current_implementation_list_index: bpy.props.IntProperty(update=update_implementation_list_index)
 
