@@ -58,9 +58,23 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			# Import button
 			layout.operator("af.execute_import_plan", text=import_button_label)
 
+			import_info_box = layout.box()
+			import_info = {
+				"Steps":current_impl.get_completed_step_count(),
+				"Completion": current_impl.get_completion_ratio(),
+				"Charges":0.0,
+				"Download Size":0.0
+			}
+
+			for key in import_info.keys():
+				info_row = import_info_box.row()
+				info_row.label(text=str(key))
+				info_row.label(text=str(import_info[key]))
+
 			layout.separator()
 
 			#layout.label(text=f"{current_impl.get_completed_step_count()} / {current_impl.get_step_count()} steps completed.")
+			
 
 
 			if current_impl.is_valid and len(current_impl.import_steps) > 0:
@@ -124,7 +138,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 						step_details = f"Unlock content ({unlock_query.price} {af.current_connection_state.unlock_balance.balance_unit})"
 
 					if step.action == AF_ImportAction.unlock_get_download_data.value:
-						step_details = "Prepare Download"
+						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+						step_details = target_component.file_handle.local_path
 
 					# Directories
 					if step.action == AF_ImportAction.create_directory.value:
