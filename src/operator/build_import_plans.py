@@ -60,7 +60,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 						referenced_query = af.current_implementation_list.get_unlock_query_by_id(comp.file_fetch_download_post_unlock.unlock_query_id)
 						if (not referenced_query.unlocked) and (referenced_query.name not in already_scheduled_unlocking_query_ids):
 							self.current_impl.import_steps.add().configure_unlock(comp.file_fetch_download_post_unlock.unlock_query_id)
-							already_scheduled_unlocking_query_ids.append(comp.file_fetch_download_post_unlock.unlock_query_id)
+							already_scheduled_unlocking_query_ids.add(comp.file_fetch_download_post_unlock.unlock_query_id)
 							self.current_impl.expected_charges += referenced_query.price
 
 				# Step 3: Get all the previously withheld datablocks
@@ -81,6 +81,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 					if comp.file_fetch_from_archive.is_set:
 						pending_extraction_comps.append(comp)
 
+				# 5.2: Loop through all archives until all of them are scheduled
 				while len(pending_extraction_comps) > 0:
 					for pcomp in pending_extraction_comps:
 						# Get the target archive component ...
@@ -92,7 +93,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 							# The target is still pending, we can't continue with this one yet
 							continue
 						else:
-							self.current_impl.import_steps.add().configure_fetch_from_zip_archive(comp.name)
+							self.current_impl.import_steps.add().configure_fetch_from_zip_archive(pcomp.name)
 							pending_extraction_comps.remove(pcomp)
 
 				# Step 4: Plan how to import active files

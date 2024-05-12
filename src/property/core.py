@@ -206,6 +206,8 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 
 	def get_completion_ratio(self) -> float:
 		"""Returns number between 0 and 1 to indicate the import progress of this implementation."""
+		if self.get_step_count() < 1:
+			return 0
 		return  float(self.get_completed_step_count()) / float(self.get_step_count())
 
 	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:

@@ -276,6 +276,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 		else:
 			# Nothing left to do. Finish.
+			#bpy.ops.af.build_import_plans()
 			return {'FINISHED'}
 
 	def execute(self, context):

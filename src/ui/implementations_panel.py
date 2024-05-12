@@ -58,18 +58,18 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			# Import button
 			layout.operator("af.execute_import_plan", text=import_button_label)
 
-			import_info_box = layout.box()
-			import_info = {
-				"Steps":current_impl.get_completed_step_count(),
-				"Completion": current_impl.get_completion_ratio(),
-				"Charges":0.0,
-				"Download Size":0.0
-			}
+			#import_info_box = layout.box()
+			#import_info = {
+			#	"Steps":current_impl.get_completed_step_count(),
+			#	"Completion": current_impl.get_completion_ratio(),
+			#	"Charges":0.0,
+			#	"Download Size":0.0
+			#}
 
-			for key in import_info.keys():
-				info_row = import_info_box.row()
-				info_row.label(text=str(key))
-				info_row.label(text=str(import_info[key]))
+			#for key in import_info.keys():
+			#	info_row = import_info_box.row()
+			#	info_row.label(text=str(key))
+			#	info_row.label(text=str(import_info[key]))
 
 			layout.separator()
 
