@@ -86,7 +86,7 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	file_handle: bpy.props.PointerProperty(type=AF_PR_FileHandleBlock)
 	file_fetch_download: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_FileFetchFromArchiveBlock)
-	unlock_link: bpy.props.PointerProperty(type=AF_PR_UnlockLinkBlock)
+	file_fetch_download_post_unlock: bpy.props.PointerProperty(type=AF_PR_FileFetchDownloadPostUnlockBlock)
 
 	loose_environment: bpy.props.PointerProperty(type=AF_PR_LooseEnvironmentBlock)
 	loose_material_define: bpy.props.PointerProperty(type=AF_PR_LooseMaterialDefineBlock)
@@ -206,7 +206,9 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 
 	def get_completion_ratio(self) -> float:
 		"""Returns number between 0 and 1 to indicate the import progress of this implementation."""
-		return float(self.get_step_count()) / float(self.get_completed_step_count())
+		if self.get_step_count() < 1:
+			return 0
+		return  float(self.get_completed_step_count()) / float(self.get_step_count())
 
 	def get_current_step(self) -> AF_PR_ImplementationImportStep | None:
 		"""Finds the first non-completed step in the implementation and returns it."""
@@ -296,10 +298,10 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 
 	def get_unlock_query_by_id(self, query_id: str) -> AF_PR_UnlockQuery:
 		for q in self.unlock_queries.items:
-			if q.name == query_id:
+			if str(q.name) == str(query_id):
 				return q
 
-		raise Exception(f"No unlocking query with id {query_id} could be found.")
+		raise Exception(f"No unlocking query with id '{query_id}' could be found.")
 
 	def configure(self, implementation_list):
 		# Parse the datablocks for the ImplementationList itself

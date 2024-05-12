@@ -79,21 +79,19 @@ class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup, AF_PR_GenericBloc
 	archive_component_id: bpy.props.StringProperty()
 	component_path: bpy.props.StringProperty()
 
+class AF_PR_FileFetchDownloadPostUnlockBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
+	unlock_query_id: bpy.props.StringProperty()
+	unlocked_data_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
+
+	def configure(self, file_fetch_download_post_unlock):
+		self.unlock_query_id = file_fetch_download_post_unlock['unlock_query_id']
+		self.unlocked_data_query.configure(file_fetch_download_post_unlock['unlocked_data_query'])
 
 # This is not the actual datablock, just one list item within it
 class AF_PR_WebReference(bpy.types.PropertyGroup):
 	title: bpy.props.StringProperty
 	uri: bpy.props.StringProperty
 	icon_uri: bpy.props.StringProperty
-
-
-class AF_PR_UnlockLinkBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	unlock_query_id: bpy.props.StringProperty()
-	unlocked_datablocks_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
-
-	def configure(self, unlock_link):
-		self.unlock_query_id = unlock_link['unlock_query_id']
-		self.unlocked_datablocks_query.configure(unlock_link['unlocked_datablocks_query'])
 
 
 class AF_PR_LooseEnvironmentBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):

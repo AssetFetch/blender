@@ -51,95 +51,108 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			else:
 				layout.label(text="Implementation is not readable.", icon="SEQUENCE_COLOR_01")
 
+			# Render validation messages in GUI
+			for m in current_impl.validation_messages:
+				layout.label(text=m.text)
+
 			# Import button
 			layout.operator("af.execute_import_plan", text=import_button_label)
+
+			#import_info_box = layout.box()
+			#import_info = {
+			#	"Steps":current_impl.get_completed_step_count(),
+			#	"Completion": current_impl.get_completion_ratio(),
+			#	"Charges":0.0,
+			#	"Download Size":0.0
+			#}
+
+			#for key in import_info.keys():
+			#	info_row = import_info_box.row()
+			#	info_row.label(text=str(key))
+			#	info_row.label(text=str(import_info[key]))
 
 			layout.separator()
 
 			#layout.label(text=f"{current_impl.get_completed_step_count()} / {current_impl.get_step_count()} steps completed.")
+			
 
-			#layout.separator()
 
-			# Import progress:
-
-			if len(current_impl.import_steps) > 0:
+			if current_impl.is_valid and len(current_impl.import_steps) > 0:
 				layout.label(text="Import Steps:")
 
-			previous_step_action = None
-			for step in current_impl.import_steps:
+				previous_step_action = None
+				for step in current_impl.import_steps:
 
-				# Prepare variables for rendering the UI
-				step: AF_PR_ImplementationImportStep = step
-				step_title = step.bl_rna.properties['action'].enum_items[step.action].name
-				step_action_icon = AF_ImportAction[step.action].icon_string()
-				step_state_icon = AF_ImportActionState[step.state].icon_string()
+					# Prepare variables for rendering the UI
+					step: AF_PR_ImplementationImportStep = step
+					step_title = step.bl_rna.properties['action'].enum_items[step.action].name
+					step_action_icon = AF_ImportAction[step.action].icon_string()
+					step_state_icon = AF_ImportActionState[step.state].icon_string()
 
-				# Check whether a new box must be drawn
-				if step.action != previous_step_action:
-					box = layout.box()
-					box.label(text=step_title, icon=step_action_icon)
+					# Check whether a new box must be drawn
+					if step.action != previous_step_action:
+						box = layout.box()
+						box.label(text=step_title, icon=step_action_icon)
 
-				# Create a new row in the current box
-				row = box.row()
+					# Create a new row in the current box
+					row = box.row()
 
-				if step.state in [AF_ImportActionState.canceled.value, AF_ImportActionState.failed.value]:
-					row.alert = True
+					if step.state in [AF_ImportActionState.canceled.value, AF_ImportActionState.failed.value]:
+						row.alert = True
 
-				# Display details about the current step
-				step_details = "<No Details> "
+					# Display details about the current step
+					step_details = "<No Details> "
 
-				# Download
-				if step.action == AF_ImportAction.fetch_download.value:
-					target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-					step_details = target_component.file_handle.local_path
-					target_length = target_component.file_info.length
-					if target_length > 0:
-						step_details += f" - {self.format_bytes(target_length)}"
+					# Download
+					if step.action == AF_ImportAction.fetch_download.value:
+						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+						step_details = target_component.file_handle.local_path
+						target_length = target_component.file_info.length
+						if target_length > 0:
+							step_details += f" - {self.format_bytes(target_length)}"
 
-				# Standard imports
-				if step.action in [
-					AF_ImportAction.fetch_from_zip_archive.value, AF_ImportAction.import_obj_from_local_path.value, AF_ImportAction.import_usd_from_local_path.value
-				]:
-					target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-					step_details = target_component.file_handle.local_path
+					# Standard imports
+					if step.action in [
+						AF_ImportAction.fetch_from_zip_archive.value, AF_ImportAction.import_obj_from_local_path.value, AF_ImportAction.import_usd_from_local_path.value
+					]:
+						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+						step_details = target_component.file_handle.local_path
 
-				# Loose materials
-				if step.action == AF_ImportAction.import_loose_material_map_from_local_path.value:
-					target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-					target_path = target_component.file_handle.local_path
-					target_material = target_component.loose_material_define.material_name
-					target_map = target_component.loose_material_define.map
-					step_details = f"{target_path} → {target_material}/{target_map}"
+					# Loose materials
+					if step.action == AF_ImportAction.import_loose_material_map_from_local_path.value:
+						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+						target_path = target_component.file_handle.local_path
+						target_material = target_component.loose_material_define.material_name
+						target_map = target_component.loose_material_define.map
+						step_details = f"{target_path} → {target_material}/{target_map}"
 
-				# Loose environment
-				if step.action == AF_ImportAction.import_loose_environment_from_local_path.value:
-					target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-					#TODO ENVs are not implemented in general
+					# Loose environment
+					if step.action == AF_ImportAction.import_loose_environment_from_local_path.value:
+						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+						#TODO ENVs are not implemented in general
 
-				# Unlocking
-				if step.action == AF_ImportAction.unlock.value:
-					query_id = step.config['query_id']
-					unlock_query: AF_PR_UnlockQuery = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id()
-					step_details = f"Unlock content ({unlock_query.price} {af.current_connection_state.unlock_balance.balance_unit})"
+					# Unlocking
+					if step.action == AF_ImportAction.unlock.value:
+						query_id = step.config['query_id']
+						unlock_query: AF_PR_UnlockQuery = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id(query_id)
+						step_details = f"Unlock content ({unlock_query.price} {af.current_connection_state.unlock_balance.balance_unit})"
 
-				if step.action == AF_ImportAction.unlock_get_download_data.value:
-					step_details = "Prepare Download"
+					if step.action == AF_ImportAction.unlock_get_download_data.value:
+						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+						step_details = target_component.file_handle.local_path
 
-				# Directories
-				if step.action == AF_ImportAction.create_directory.value:
-					step_details = step.config['directory'].value
+					# Directories
+					if step.action == AF_ImportAction.create_directory.value:
+						step_details = step.config['directory'].value
 
-				# Display a static icon or a progress indicator for the current step
-				if step.completion > 0.0 and step.completion < 1.0 and step.state not in [AF_ImportActionState.canceled.value, AF_ImportActionState.failed.value]:
-					row.progress(text=step_details, factor=step.completion, type="RING")
-				else:
-					row.label(text=step_details, icon=step_state_icon)
+					# Display a static icon or a progress indicator for the current step
+					if step.completion > 0.0 and step.completion < 1.0 and step.state not in [AF_ImportActionState.canceled.value, AF_ImportActionState.failed.value]:
+						row.progress(text=step_details, factor=step.completion, type="RING")
+					else:
+						row.label(text=step_details, icon=step_state_icon)
 
-				# Remember the action type of this step
-				previous_step_action = step.action
-
-			for m in current_impl.validation_messages:
-				layout.label(text=m.text)
+					# Remember the action type of this step
+					previous_step_action = step.action
 
 		# We have already queried and found that there are no results...
 		elif af.current_implementation_list.already_queried:
