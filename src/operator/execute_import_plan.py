@@ -276,7 +276,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 		else:
 			# Nothing left to do. Finish.
-			#bpy.ops.af.build_import_plans()
+			if bpy.ops.af.connection_status.poll():
+				bpy.ops.af.connection_status()
 			return {'FINISHED'}
 
 	def execute(self, context):
