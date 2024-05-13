@@ -48,6 +48,17 @@ class AF_PR_FileHandleBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 		'single_passive'), ('archive_unpack_fully', 'archive_unpack_fully',
 		'archive_unpack_fully'), ('archive_unpack_referenced', 'archive_unpack_referenced', 'archive_unpack_referenced')])
 
+	def configure(self, file_handle):
+		self.behavior = file_handle['behavior']
+		
+		local_path : str = file_handle['local_path']
+		if local_path == "." or "./" in local_path or ".\\" in local_path:
+			raise Exception("Local path contains an illegal reference (.)")
+		if local_path == ".." or "../" in local_path or "..\\" in local_path:
+			raise Exception("Local path contains an illegal reference (..)")
+		self.local_path = local_path
+
+
 
 class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	headers: bpy.props.CollectionProperty(type=AF_PR_Header)
