@@ -3,6 +3,30 @@ import bpy
 from ..property.core import *
 
 
+class AF_UL_ImplementationsItems(bpy.types.UIList):
+
+	def draw_item(self, context, layout:bpy.types.UILayout, data, item:AF_PR_Implementation, icon, active_data, active_propname, index):
+		#if self.layout_type in {'DEFAULT', 'COMPACT'}:
+		#	split = layout.split(factor=0.3)
+		#	split.label(text="Index: %d" % (index))
+
+		#elif self.layout_type in {'GRID'}:
+		#	layout.alignment = 'CENTER'
+		#	layout.label(text="", icon_value=layout.icon(mat))
+
+		if item.is_valid:
+			icon = "SEQUENCE_COLOR_04"
+		else:
+			icon = "SEQUENCE_COLOR_01"
+		
+
+		row = layout.row()
+		if item.text.is_set:
+			row.label(text=item.text.title,icon=icon)
+		else:
+			row.label(text=item.name,icon=icon)
+
+
 class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_label = "Import Settings"
 	bl_idname = "AF_PT_IMPLEMENTATIONS_PANEL"
@@ -21,6 +45,12 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		af = bpy.context.window_manager.af
 		return af.current_connection_state.state == "connected" and len(af.current_asset_list.assets) > 0
 
+	def strike_through_text(self, text: str):
+		result = ''
+		for c in text:
+			result = result + c + '\u0336'
+		return result
+
 	def draw(self, context):
 		layout = self.layout
 		af: AF_PR_AssetFetch = bpy.context.window_manager.af
@@ -31,51 +61,73 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 		#layout.operator("af.update_implementations_list",text="Search Implementations")
 
-		# Create default import button label
-		import_button_label = "Import"
-
 		# We have results to display...
 		if len(af.current_implementation_list.implementations) > 0:
 
+			layout.separator()
+
 			# Selection of implementations (if applicable)
-			layout.template_list("UI_UL_list", "name", af.current_implementation_list, "implementations", af, "current_implementation_list_index")
+			layout.template_list(listtype_name="AF_UL_ImplementationsItems",
+				list_id="name",
+				dataptr=af.current_implementation_list,
+				propname="implementations",
+				active_dataptr=af,
+				active_propname="current_implementation_list_index",
+				sort_lock=True,rows=3)
 
 			current_impl: AF_PR_Implementation = af.get_current_implementation()
 			current_step: AF_PR_ImplementationImportStep = current_impl.get_current_step()
 
 			# Confirm readability
-			if current_impl.is_valid:
-				layout.label(text="Implementation is readable. Ready to import.", icon="SEQUENCE_COLOR_04")
-				if current_impl.expected_charges > 0:
-					import_button_label = f"Import ({current_impl.expected_charges} {af.current_connection_state.unlock_balance.balance_unit})"
+			#if current_impl.is_valid:
+			#	layout.label(text="Implementation is readable. Ready to import.", icon="SEQUENCE_COLOR_04")
+			#else:
+			#	layout.label(text="Implementation is not readable.", icon="SEQUENCE_COLOR_01")
+
+			import_info_box = layout.box()
+
+			# Calculate how to display the charges.
+			charges_full = current_impl.get_expected_charges(include_already_paid=True)
+			charges_actual = current_impl.get_expected_charges(include_already_paid=False)
+			if charges_full == charges_actual:
+				if charges_full > 0:
+					row = import_info_box.row()
+					row.label(text="Price")
+					row.label(text=f"{charges_actual} {af.current_connection_state.unlock_balance.balance_unit}")
 			else:
-				layout.label(text="Implementation is not readable.", icon="SEQUENCE_COLOR_01")
+				charges_formatted = f"{self.strike_through_text(str(charges_full))} {charges_actual} {af.current_connection_state.unlock_balance.balance_unit}"
+				row = import_info_box.row()
+				row.label(text="Price")
+				row.label(text=charges_formatted)
+
+			row = import_info_box.row()
+			row.label(text="Download Size")
+			row.label(text=self.format_bytes(current_impl.get_download_size()))
 
 			# Render validation messages in GUI
 			for m in current_impl.validation_messages:
-				layout.label(text=m.text)
+				validation_message_row = layout.row()
+				validation_message_row.alert = True
+				validation_message_row.label(text=m.text)
 
 			# Import button
-			layout.operator("af.execute_import_plan", text=import_button_label)
+			if current_impl.get_completed_step_count() > 0 and not current_impl.all_steps_completed():
+				import_button_label = "Importing..."
+			else:
+				if charges_actual > 0.0:
+					import_button_label = "Pay & Import"
+				else:
+					import_button_label = "Import"
 
-			#import_info_box = layout.box()
-			#import_info = {
-			#	"Steps":current_impl.get_completed_step_count(),
-			#	"Completion": current_impl.get_completion_ratio(),
-			#	"Charges":0.0,
-			#	"Download Size":0.0
-			#}
 
-			#for key in import_info.keys():
-			#	info_row = import_info_box.row()
-			#	info_row.label(text=str(key))
-			#	info_row.label(text=str(import_info[key]))
+			import_button_row = layout.row()
+			if current_impl.get_current_state() == AF_ImportActionState.running:
+				import_button_row.enabled = False
+			import_button_row.operator("af.execute_import_plan", text=import_button_label)
 
 			layout.separator()
 
 			#layout.label(text=f"{current_impl.get_completed_step_count()} / {current_impl.get_step_count()} steps completed.")
-			
-
 
 			if current_impl.is_valid and len(current_impl.import_steps) > 0:
 				layout.label(text="Import Steps:")

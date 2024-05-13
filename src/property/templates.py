@@ -195,7 +195,7 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 
 		return AF_HttpQuery(uri=self.uri, method=self.method, parameters=parameters)
 
-	def draw_ui(self, layout) -> None:
+	def draw_ui(self, layout : bpy.types.UILayout) -> None:
 
 		# Text parameters
 		for asset_list_parameter in self.parameters_text:
@@ -210,8 +210,10 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 			layout.prop(asset_list_parameter, "value", text=asset_list_parameter["title"])
 
 		# Fixed parameters
-		for asset_list_parameter in self.parameters_fixed:
-			layout.label(text=f"{asset_list_parameter.name}: {asset_list_parameter.value}")
+		#for asset_list_parameter in self.parameters_fixed:
+		#	row = layout.row()
+		#	row.enabled = False
+		#	row.prop(asset_list_parameter, "value", text=asset_list_parameter["title"])
 
 
 class AF_PR_Header(bpy.types.PropertyGroup):

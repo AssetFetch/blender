@@ -3,11 +3,20 @@ import os
 import uuid
 import bpy
 
-from ..property.core import AF_PR_Asset
+from ..property.core import *
 from ..util import http, ui_images
 
 LOGGER = logging.getLogger("af.ui.asset_panel")
 LOGGER.setLevel(logging.DEBUG)
+
+
+class AF_UL_AssetsItems(bpy.types.UIList):
+
+	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_Asset, icon, active_data, active_propname, index):
+
+		row = layout.row()
+
+		row.label(text=item.get_display_title())
 
 
 class AF_PT_AssetPanel(bpy.types.Panel):
@@ -35,7 +44,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		if len(af.current_asset_list.assets) > 0:
 			layout.separator()
 			row = layout.row()
-			row.template_list(listtype_name="UI_UL_list",
+			row.template_list(listtype_name="AF_UL_AssetsItems",
 				list_id="asset_list",
 				dataptr=af.current_asset_list,
 				propname="assets",
@@ -45,7 +54,7 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
 			asset_box = row.box()
-			asset_box.label(text=current_asset.text.title, icon="PACKAGE")
+			asset_box.label(text=current_asset.get_display_title(), icon="ASSET_MANAGER")
 
 			thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(256)
 			thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
