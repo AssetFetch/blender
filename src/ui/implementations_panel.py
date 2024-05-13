@@ -23,7 +23,6 @@ class AF_UL_ImplementationsItems(bpy.types.UIList):
 		row = layout.row()
 		if item.text.is_set:
 			row.label(text=item.text.title,icon=icon)
-			row.label(text=item.text.description)
 		else:
 			row.label(text=item.name,icon=icon)
 
