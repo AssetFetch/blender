@@ -65,6 +65,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		# We have results to display...
 		if len(af.current_implementation_list.implementations) > 0:
 
+			layout.separator()
+
 			# Selection of implementations (if applicable)
 			layout.template_list(listtype_name="AF_UL_ImplementationsItems",
 				list_id="name",
@@ -72,9 +74,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				propname="implementations",
 				active_dataptr=af,
 				active_propname="current_implementation_list_index",
-				sort_lock=True)
-
-			layout.prop_search(data=af.current_implementation_list, property="implementations", search_data=af.current_implementation_list, search_property="implementations")
+				sort_lock=True,rows=3)
 
 			current_impl: AF_PR_Implementation = af.get_current_implementation()
 			current_step: AF_PR_ImplementationImportStep = current_impl.get_current_step()
@@ -112,7 +112,6 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				validation_message_row.label(text=m.text)
 
 			# Import button
-			
 			if current_impl.get_completed_step_count() > 0 and not current_impl.all_steps_completed():
 				import_button_label = "Importing..."
 			else:

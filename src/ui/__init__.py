@@ -18,6 +18,7 @@ def unregister():
 
 registration_targets = [
 	AF_PT_ProviderPanel,
+	AF_UL_AssetsItems,
 	AF_PT_AssetPanel,
 	AF_UL_ImplementationsItems,
 	AF_PT_ImplementationsPanel,

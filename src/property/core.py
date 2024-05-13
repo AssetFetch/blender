@@ -32,6 +32,10 @@ class AF_PR_Asset(bpy.types.PropertyGroup):
 	implementation_list_query: bpy.props.PointerProperty(type=AF_PR_VariableQuery)
 	preview_image_thumbnail: bpy.props.PointerProperty(type=AF_PR_PreviewImageThumbnailBlock)
 
+	def get_display_title(self):
+		if self.text.is_set:
+			return self.text.title
+		return self.name
 
 class AF_PR_AssetList(bpy.types.PropertyGroup):
 	assets: bpy.props.CollectionProperty(type=AF_PR_Asset)
