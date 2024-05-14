@@ -53,7 +53,7 @@ class AF_HttpResponse:
 
 class AF_HttpQuery:
 
-	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.1"}
+	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.2"}
 	"""Represents a query that the client sends to the provider"""
 
 	def __init__(self, uri: str, method: str, parameters: Dict[str, str] = None, chunk_size: int = 128 * 1024 * 8):

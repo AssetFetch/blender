@@ -15,7 +15,7 @@ bl_info = {
 	"name": "assetfetch-blender",
 	"description": "AssetFetch for Blender",
 	"author": "ambientCG / Lennart Demes",
-	"version": (0, 1),
+	"version": (0, 2),
 	"blender": (4, 0, 0),
 	"location": "View3D",
 	"category": "3D View"
