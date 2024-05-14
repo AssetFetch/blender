@@ -5,6 +5,7 @@ import bpy
 from .core import *
 from .datablocks import *
 from .templates import *
+from .preferences import *
 
 
 def register():
@@ -65,5 +66,7 @@ registration_targets = [
 	AF_PR_ImplementationValidationMessage,
 	AF_PR_Implementation,
 	AF_PR_ImplementationList,
-	AF_PR_AssetFetch
+	AF_PR_AssetFetch,
+	AF_PR_ProviderBookmarkPref,
+	AF_PR_Preferences
 ]

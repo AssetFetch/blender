@@ -1,4 +1,5 @@
 import os, sys, logging
+import bpy
 
 print("Loading AssetFetch for Blender v0.2.0")
 logging.basicConfig()
@@ -10,6 +11,14 @@ if LIB_PATH not in sys.path:
 	sys.path.insert(0, LIB_PATH)
 
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "json-schema")
+
+
+# This variable is used for the preferences definition.
+# Normally, it is common practice to use __name__ in the preferences class to tell
+# Blender which addon the preferences are meant. But because we don't define
+# the preferences in this init file, we instead pipe the name over to properties/preferences.py
+# using this variable.
+ADDON_NAME = __name__
 
 bl_info = {
 	"name": "assetfetch-blender",
