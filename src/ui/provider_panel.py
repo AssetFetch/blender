@@ -1,5 +1,5 @@
 import bpy
-
+from ..property.preferences import *
 
 class AF_PT_ProviderPanel(bpy.types.Panel):
 	bl_label = "Provider Selection"
@@ -19,6 +19,8 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		info_box.label(text=f"Download directory: {af.download_directory}")
 		info_box.label(text=f"Icon directory: {af.ui_image_directory}")
 		info_box.label(text="Unstable & lacking numerous features, use with caution & patience!")
+
+		layout.prop(af,"provider_bookmark_selection")
 
 		# Add a text box to enter the URL
 		layout.prop(context.window_manager.af, "current_init_url", text="Provider URL", icon="URL")

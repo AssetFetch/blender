@@ -89,3 +89,11 @@ def update_variable_query_parameter(property, context):
 			update_asset_list_parameter(property, context)
 	else:
 		LOGGER.warn(f"No update_target on {property}")
+
+def update_bookmarks(property,context):
+	from .preferences import AF_PR_Preferences
+	LOGGER.debug("update_bookmarks")
+	prefs = AF_PR_Preferences.get_prefs()
+	selection = str(property.provider_bookmark_selection)
+	if selection != "none":
+		bpy.context.window_manager.af.current_init_url = prefs.provider_bookmarks[selection].init_url

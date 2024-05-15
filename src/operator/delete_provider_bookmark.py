@@ -1,5 +1,5 @@
 import bpy
-from ..property.preferences import addon_preferences
+from ..property.preferences import *
 
 class AF_OP_DeleteProviderBookmark(bpy.types.Operator):
 	"""Creates a new provider bookmark."""
@@ -9,6 +9,7 @@ class AF_OP_DeleteProviderBookmark(bpy.types.Operator):
 	bl_options = {"REGISTER", "INTERNAL"}
 
 	def execute(self, context):
-		addon_preferences().provider_bookmarks.remove(addon_preferences().provider_bookmarks_index)
-		addon_preferences().provider_bookmarks_index = max(0,addon_preferences().provider_bookmarks_index-1)
+		prefs = AF_PR_Preferences.get_prefs()
+		prefs.provider_bookmarks.remove(prefs.provider_bookmarks_index)
+		prefs.provider_bookmarks_index = max(0,prefs.provider_bookmarks_index-1)
 		return {'FINISHED'}
