@@ -24,7 +24,7 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 
 		# Add a text box to enter the URL
 		row = layout.row()
-		if af['provider_bookmark_selection'] > 0:
+		if "provider_bookmark_selection" in af and af['provider_bookmark_selection'] > 0:
 			row.enabled = False
 		row.prop(context.window_manager.af, "current_init_url", text="Provider URL", icon="URL")
 

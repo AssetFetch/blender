@@ -9,16 +9,11 @@ LOGGER.setLevel(logging.DEBUG)
 
 
 class AF_OP_UpdateAssetList(bpy.types.Operator):
-	"""Performs the initialization request to the provider and sets the provider settings, if requested."""
+	"""Loads the list of available assets from the provider using the query provided during initialization."""
 
 	bl_idname = "af.update_asset_list"
 	bl_label = "Update Asset List"
 	bl_options = {"REGISTER", "INTERNAL"}
-
-	def draw(self, context):
-		pass
-		#layout = self.layout
-		#layout.prop(self,'radius')
 
 	@classmethod
 	def poll(self, context) -> bool:

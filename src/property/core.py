@@ -12,23 +12,22 @@ LOGGER.setLevel(logging.DEBUG)
 
 
 class AF_PR_ProviderInitialization(bpy.types.PropertyGroup):
-	# The built-in 'name' property takes care of the provider id
+	"""Stores initialization data about the current provider, such as its title, asset list query and user profile information (if present)."""
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
-	# I would have loved to create a class that inherits from the template instead of using it directly.
-	# However, inherited properties are not considered, so I have to use the template directly here.
 	asset_list_query: bpy.props.PointerProperty(type=AF_PR_VariableQuery)
 	provider_configuration: bpy.props.PointerProperty(type=AF_PR_ProviderConfigurationBlock)
-	user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
+	#user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
 
 
 class AF_PR_ConnectionStatus(bpy.types.PropertyGroup):
+	"""Stores data about the current connection status."""
 	user: bpy.props.PointerProperty(type=AF_PR_UserBlock)
 	unlock_balance: bpy.props.PointerProperty(type=AF_PR_UnlockBalanceBlock)
 	state: bpy.props.EnumProperty(default="pending", items=AF_ConnectionState.property_items())
 
 
 class AF_PR_Asset(bpy.types.PropertyGroup):
-	# No id field, blender's property name takes care of that
+	"""Stores data about one asset."""
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
 	implementation_list_query: bpy.props.PointerProperty(type=AF_PR_VariableQuery)
 	preview_image_thumbnail: bpy.props.PointerProperty(type=AF_PR_PreviewImageThumbnailBlock)
@@ -38,9 +37,10 @@ class AF_PR_Asset(bpy.types.PropertyGroup):
 			return self.text.title
 		return self.name
 
+
 class AF_PR_AssetList(bpy.types.PropertyGroup):
+	"""Stores data about a list of assets (AF_PR_Asset)."""
 	assets: bpy.props.CollectionProperty(type=AF_PR_Asset)
-	# Datablocks...
 
 	# If the list is empty this field decides whether it is empty because there were no results (True)
 	# or because it simply hasn't been queried yet (False)
@@ -50,6 +50,8 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 		af = bpy.context.window_manager.af
 
 		self.assets.clear()
+
+		# Handle datablocks
 		for asset in asset_list['assets']:
 			asset_entry = self.assets.add()
 			asset_entry.name = asset['id']
@@ -79,11 +81,15 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 
 
 class AF_PR_BlenderResource(bpy.types.PropertyGroup):
-	# object name is handled by name property
+	"""Stores a reference to a resource in Blender, namely a material or an object."""
+	# Resource name is handled by name property
 	kind: bpy.props.EnumProperty(items=[("material", "material", "material"), ("object", "object", "object")])
 
 
 class AF_PR_Component(bpy.types.PropertyGroup):
+	"""Stores data about one component of an implementation."""
+
+	# Whether these fields for the individual datablocks contain actual data is determined by the "is_set" property on each of them.
 
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
 
@@ -106,14 +112,18 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 
 
 class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
+	"""Stores data about an individual step of one implementation.
+	Since Blender's property system does not allow inheritance all kinds of steps are represented
+	using this class. The different configuration methods decide what kind of step
+	one instance represents."""
+
 	action: bpy.props.EnumProperty(items=AF_ImportAction.property_items())
 	config: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 	state: bpy.props.EnumProperty(items=AF_ImportActionState.property_items())
 	completion: bpy.props.FloatProperty(default=0.0, max=1.0, min=0.0)
 
-	#def set_action(self,action:AF_ImportAction):
-	#	self.action = action.value
-	#	return self
+	# Helper methods
+	# These methods are used by the configuration methods further below.
 
 	def set_config_value(self, key: str, value: str):
 		new_conf = self.config.add()
@@ -191,6 +201,7 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 
 
 class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
+	"""A message generated while building an import plan."""
 	text: bpy.props.StringProperty()
 	kind: bpy.props.EnumProperty(items=[("info", "info", "info"), ("warn", "warning", "warning"), ("crit", "critical", "critical")])
 
@@ -201,6 +212,7 @@ class AF_PR_ImplementationValidationMessage(bpy.types.PropertyGroup):
 
 
 class AF_PR_Implementation(bpy.types.PropertyGroup):
+	"""Stores data about one implementation of an asset."""
 	# No id field, blender's property name takes care of that
 	components: bpy.props.CollectionProperty(type=AF_PR_Component)
 	is_valid: bpy.props.BoolProperty()
@@ -215,14 +227,18 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		already_summed_query_ids = set()
 		for comp in self.components:
 			if comp.file_fetch_download_post_unlock.is_set:
-				referenced_query = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id(comp.file_fetch_download_post_unlock.unlock_query_id)
+
+				unlock_query_id = comp.file_fetch_download_post_unlock.unlock_query_id
+				referenced_query = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id(unlock_query_id)
+
 				if ((not referenced_query.unlocked) or include_already_paid) and (referenced_query.name not in already_summed_query_ids):
-					already_summed_query_ids.add(comp.file_fetch_download_post_unlock.unlock_query_id)
+					already_summed_query_ids.add(unlock_query_id)
 					charges += referenced_query.price
 
 		return float(charges)
 
 	def get_download_size(self) -> int:
+		"""Returns the total download size across all components in the implementation in bytes."""
 		size = 0
 		for comp in self.components:
 			if (comp.file_fetch_download.is_set or comp.file_fetch_download_post_unlock.is_set) and comp.file_info.is_set and comp.file_info.length > 0:
@@ -243,6 +259,8 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		return None
 
 	def get_current_state(self) -> AF_ImportActionState:
+		"""Gets the import state of the entire implementation. This is either the state of the current step
+		or 'pending' if there is no current step."""
 		current_step = self.get_current_step()
 		if current_step is not None:
 			return current_step.state
@@ -254,27 +272,30 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			s.state = AF_ImportActionState.pending.value
 
 	def get_step_count(self) -> int:
+		"""Returns number of steps."""
 		return len(self.import_steps)
 
 	def get_completed_step_count(self) -> int:
+		"""Returns the number of completed steps."""
 		completed_steps = 0
 		for s in self.import_steps:
 			if s.state == AF_ImportActionState.completed.value:
 				completed_steps += 1
 		return completed_steps
 
-	def all_steps_completed(self) ->bool:
+	def all_steps_completed(self) -> bool:
+		"""Returns whether all steps have been completed."""
 		return self.get_completed_step_count() >= len(self.import_steps)
 
 	def get_component_by_id(self, component_id: str) -> AF_PR_Component:
+		"""Returns a component based on its """
 		for c in self.components:
 			if c.name == component_id:
 				return c
 		raise Exception(f"No component with id {component_id} could be found.")
 
 	def configure(self, incoming_impl):
-
-		# Fill the implementation with data from the HTTP endpoint
+		"""Configures the implementation based on the incoming response data from the provider."""
 
 		# Implementation id
 		if "id" not in incoming_impl:
@@ -287,8 +308,6 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 				self.text.configure(incoming_impl['data']['text'])
 
 		# Component data
-		#if "components" not in incoming_impl or len(incoming_impl['components']) < 1:
-		#	raise Exception("This implementation has no components.")
 		for provider_comp in incoming_impl['components']:
 
 			blender_comp = self.components.add()
@@ -328,6 +347,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 
 
 class AF_PR_ImplementationList(bpy.types.PropertyGroup):
+	"""Stores a list of implementations."""
 	implementations: bpy.props.CollectionProperty(type=AF_PR_Implementation)
 	unlock_queries: bpy.props.PointerProperty(type=AF_PR_UnlockQueriesBlock)
 
@@ -355,18 +375,18 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 		self.already_queried = True
 
 
-# Final AssetFetch property
-
 def bookmarks_property_items(property, context):
 	prefs = AF_PR_Preferences.get_prefs()
-	out = [("none","None","No Bookmark")]
+	out = [("none", "None", "No Bookmark")]
 	for c in prefs.provider_bookmarks:
 		if c.name:
-			out.append((c.name, c.name,c.init_url))
+			out.append((c.name, c.name, c.init_url))
 	return out
 
+
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
-	provider_bookmark_selection: bpy.props.EnumProperty(name="Bookmark",items=bookmarks_property_items,update=update_bookmarks,description="Bookmark")
+	"""The main AssetFetch property storing all the addon's session data."""
+	provider_bookmark_selection: bpy.props.EnumProperty(name="Bookmark", items=bookmarks_property_items, update=update_bookmarks, description="Bookmark")
 
 	current_init_url: bpy.props.StringProperty(description="Init", update=update_init_url)
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
@@ -380,19 +400,16 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'), "AssetFetch"))
 	ui_image_directory: bpy.props.StringProperty(default=os.path.join(tempfile.gettempdir(), "af-ui-img"))
 
-	#current_import_execution_progress : bpy.props.FloatProperty(max=1.0,min=0.0)
-
-	#progress_all_steps : bpy.props.FloatProperty(max=1,min=0)
-	#progress_current_step : bpy.props.FloatProperty(max=1,min=1)
-
 	def get_current_asset(self) -> AF_PR_Asset | None:
+		"""Returns the currently selected asset, if available."""
 
 		if self.current_asset_list_index < 0 | self.current_asset_list_index >= len(self.current_asset_list):
 			raise Exception("Invalid index for current asset list.")
 
 		return self.current_asset_list.assets[self.current_asset_list_index]
 
-	def get_current_implementation(self) -> AF_PR_Implementation:
+	def get_current_implementation(self) -> AF_PR_Implementation | None:
+		"""Returns the currently selected implementation, if available"""
 
 		if self.current_implementation_list_index < 0 | self.current_implementation_list_index >= len(self.current_implementation_list):
 			raise Exception("Invalid index for current implementation list.")
