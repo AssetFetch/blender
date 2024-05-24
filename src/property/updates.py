@@ -33,12 +33,15 @@ def update_init_url(property, context):
 def update_provider_header(property, context):
 	LOGGER.debug("update_provider_header")
 	if bpy.ops.af.connection_status.poll():
+		LOGGER.debug("Getting connection status...")
 		bpy.ops.af.connection_status()
 
 	if bpy.ops.af.update_asset_list.poll():
+		LOGGER.debug("Updating Asset List...")
 		bpy.ops.af.update_asset_list()
 
 	if bpy.ops.af.update_implementations_list.poll():
+		LOGGER.debug("Updating Implementation List...")
 		bpy.ops.af.update_implementations_list()
 
 
