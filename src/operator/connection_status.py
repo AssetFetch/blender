@@ -21,6 +21,7 @@ class AF_OP_ConnectionStatus(bpy.types.Operator):
 		for h in af.current_provider_initialization.provider_configuration.headers:
 			if h.value == "":
 				all_headers_set = False
+				break
 
 		return status_query_set and all_headers_set
 
