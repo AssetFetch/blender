@@ -147,7 +147,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 							unreachable_components_formatted += pcomp.name + " "
 						raise Exception(f"Components {unreachable_components_formatted} could not be resolved in the provided implementation definition.")
 
-				# Step 4: Plan how to import active files
+				# Step 4: Plan how to import files
 				# "Importing" includes loading the file using Blender's native format handler
 				# and creating or applying loose materials referenced in loose_material.* datablocks
 
@@ -191,7 +191,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 							raise Exception(f"The addon does not know how to actively handle this '{comp.file_info.extension}'-file using the given metadata.")
 
 			except Exception as e:
-				self.current_impl.is_valid = False
-				self.current_impl.validation_messages.add().set("crit", str(e))
+				current_impl.is_valid = False
+				current_impl.validation_messages.add().set("crit", str(e))
 				raise e
 		return {'FINISHED'}
