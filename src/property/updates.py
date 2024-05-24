@@ -33,12 +33,15 @@ def update_init_url(property, context):
 def update_provider_header(property, context):
 	LOGGER.debug("update_provider_header")
 	if bpy.ops.af.connection_status.poll():
+		LOGGER.debug("Getting connection status...")
 		bpy.ops.af.connection_status()
 
 	if bpy.ops.af.update_asset_list.poll():
+		LOGGER.debug("Updating Asset List...")
 		bpy.ops.af.update_asset_list()
 
 	if bpy.ops.af.update_implementations_list.poll():
+		LOGGER.debug("Updating Implementation List...")
 		bpy.ops.af.update_implementations_list()
 
 
@@ -89,3 +92,11 @@ def update_variable_query_parameter(property, context):
 			update_asset_list_parameter(property, context)
 	else:
 		LOGGER.warn(f"No update_target on {property}")
+
+def update_bookmarks(property,context):
+	from .preferences import AF_PR_Preferences
+	LOGGER.debug("update_bookmarks")
+	prefs = AF_PR_Preferences.get_prefs()
+	selection = str(property.provider_bookmark_selection)
+	if selection != "none":
+		bpy.context.window_manager.af.current_init_url = prefs.provider_bookmarks[selection].init_url

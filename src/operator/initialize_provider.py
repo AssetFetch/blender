@@ -3,6 +3,8 @@ import bpy
 
 from ..property.templates import AF_VariableQueryUpdateTarget
 from ..util import http
+from ..property.preferences import *
+from ..property.core import *
 
 LOGGER = logging.getLogger("af.ops.initialize_provider")
 LOGGER.setLevel(logging.DEBUG)
@@ -23,7 +25,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 		#layout.prop(self,'radius')
 
 	def execute(self, context):
-		af = bpy.context.window_manager.af
+		af: AF_PR_AssetFetch = bpy.context.window_manager.af
 
 		LOGGER.info(f"Initializing for {af.current_init_url}")
 
@@ -73,6 +75,15 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 					for header_info in provider_config['headers']:
 						current_header = af.current_provider_initialization.provider_configuration.headers.add()
 						current_header.configure(header_info)
+
+					# Populate header from preferences, if applicable
+					if af['provider_bookmark_selection'] > 0:
+						prefs = AF_PR_Preferences.get_prefs()
+						bookmark = prefs.provider_bookmarks[af['provider_bookmark_selection'] - 1]
+						for pref_header in bookmark.header_values:
+							target_header = af.current_provider_initialization.provider_configuration.headers.get(pref_header.name)
+							if target_header is not None:
+								target_header.value = pref_header.value
 				else:
 					af.current_connection_state.state = "connected"
 
@@ -89,6 +100,11 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 				af.current_asset_list.already_queried = False
 			else:
 				raise Exception("No Asset List Query!")
+
+			if bpy.ops.af.connection_status.poll():
+				LOGGER.debug("Getting connection status...")
+				bpy.ops.af.connection_status()
+
 		except Exception as e:
 			af.current_connection_state.state = "connection_error"
 			LOGGER.error(e)

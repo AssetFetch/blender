@@ -5,6 +5,7 @@ from .updates import *
 from .templates import *
 from .datablocks import *
 from ..util.addon_constants import *
+from .preferences import *
 
 LOGGER = logging.getLogger("af.property.core")
 LOGGER.setLevel(logging.DEBUG)
@@ -356,8 +357,17 @@ class AF_PR_ImplementationList(bpy.types.PropertyGroup):
 
 # Final AssetFetch property
 
+def bookmarks_property_items(property, context):
+	prefs = AF_PR_Preferences.get_prefs()
+	out = [("none","None","No Bookmark")]
+	for c in prefs.provider_bookmarks:
+		if c.name:
+			out.append((c.name, c.name,c.init_url))
+	return out
 
 class AF_PR_AssetFetch(bpy.types.PropertyGroup):
+	provider_bookmark_selection: bpy.props.EnumProperty(name="Bookmark",items=bookmarks_property_items,update=update_bookmarks,description="Bookmark")
+
 	current_init_url: bpy.props.StringProperty(description="Init", update=update_init_url)
 	current_connection_state: bpy.props.PointerProperty(type=AF_PR_ConnectionStatus)
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)

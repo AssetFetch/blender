@@ -1,5 +1,5 @@
 import bpy
-
+from ..property.preferences import *
 
 class AF_PT_ProviderPanel(bpy.types.Panel):
 	bl_label = "Provider Selection"
@@ -20,8 +20,13 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		info_box.label(text=f"Icon directory: {af.ui_image_directory}")
 		info_box.label(text="Unstable & lacking numerous features, use with caution & patience!")
 
+		layout.prop(af,"provider_bookmark_selection")
+
 		# Add a text box to enter the URL
-		layout.prop(context.window_manager.af, "current_init_url", text="Provider URL", icon="URL")
+		row = layout.row()
+		if af['provider_bookmark_selection'] > 0:
+			row.enabled = False
+		row.prop(context.window_manager.af, "current_init_url", text="Provider URL", icon="URL")
 
 		# Add a button to get the vendor info
 		#layout.operator("af.initialize_provider", text="Initialize")
@@ -30,8 +35,11 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		if len(af.current_provider_initialization.provider_configuration.headers.values()) > 0:
 
 			for provider_header in af.current_provider_initialization.provider_configuration.headers.values():
-				layout.prop(provider_header, "value", text=provider_header.title)
-			#layout.operator("af.connection_status",text="Connect")
+				col = layout.column()
+				col.prop(provider_header, "value", text=provider_header.title)
+				#layout.operator("af.connection_status",text="Connect")
+				if af['provider_bookmark_selection'] > 0:
+					col.enabled = False
 
 		connection_state_icons = {"pending": "SEQUENCE_COLOR_09", "awaiting_input": "SEQUENCE_COLOR_03", "connection_error": "SEQUENCE_COLOR_01", "connected": "SEQUENCE_COLOR_04"}
 
