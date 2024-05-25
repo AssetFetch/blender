@@ -18,9 +18,10 @@ class AF_VariableQueryUpdateTarget(Enum):
 	def to_property_enum(cls):
 		return list(map(lambda c: (c.value, c.value, c.value), cls))
 
-
 # General update functions
+
 def update_init_url(property, context):
+	"""Function to run if the provider initialization url has changed."""
 	LOGGER.debug("update_init_url")
 	bpy.ops.af.initialize_provider()
 
@@ -32,6 +33,7 @@ def update_init_url(property, context):
 
 
 def update_provider_header(property, context):
+	"""Function to run if a provider header has changed."""
 	LOGGER.debug("update_provider_header")
 	if bpy.ops.af.connection_status.poll():
 		LOGGER.debug("Getting connection status...")
@@ -47,6 +49,7 @@ def update_provider_header(property, context):
 
 
 def update_asset_list_index(property, context):
+	"""Function to run if a new asset has been selected aka the index in the asset list has changed."""
 	LOGGER.debug("update_asset_list_index")
 	if bpy.ops.af.update_implementations_list.poll():
 		bpy.ops.af.update_implementations_list()

@@ -4,30 +4,27 @@ from ..property.core import *
 
 
 class AF_UL_ImplementationsItems(bpy.types.UIList):
+	"""Class for drawing the list of implementations."""
 
-	def draw_item(self, context, layout:bpy.types.UILayout, data, item:AF_PR_Implementation, icon, active_data, active_propname, index):
-		#if self.layout_type in {'DEFAULT', 'COMPACT'}:
-		#	split = layout.split(factor=0.3)
-		#	split.label(text="Index: %d" % (index))
+	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_Implementation, icon, active_data, active_propname, index):
 
-		#elif self.layout_type in {'GRID'}:
-		#	layout.alignment = 'CENTER'
-		#	layout.label(text="", icon_value=layout.icon(mat))
-
+		# Add colored icon to quickly indicate if an implementation is readable
 		if item.is_valid:
 			icon = "SEQUENCE_COLOR_04"
 		else:
 			icon = "SEQUENCE_COLOR_01"
-		
 
+		# Render the name of the implementation
 		row = layout.row()
 		if item.text.is_set:
-			row.label(text=item.text.title,icon=icon)
+			row.label(text=item.text.title, icon=icon)
 		else:
-			row.label(text=item.name,icon=icon)
+			row.label(text=item.name, icon=icon)
 
 
 class AF_PT_ImplementationsPanel(bpy.types.Panel):
+	"""Class for drawing the implementations panel ('Import Settings' in the UI)."""
+
 	bl_label = "Import Settings"
 	bl_idname = "AF_PT_IMPLEMENTATIONS_PANEL"
 	bl_space_type = 'VIEW_3D'
@@ -35,6 +32,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 	bl_category = 'AssetFetch'
 
 	def format_bytes(self, num: int):
+		"""Formats a number of bytes in the appropriate unit."""
 		for x in ['B', 'KB', 'MB', 'GB', 'TB']:
 			if num < 1000.0:
 				return "%3.1f %s" % (num, x)
@@ -46,60 +44,64 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		return af.current_connection_state.state == "connected" and len(af.current_asset_list.assets) > 0
 
 	def strike_through_text(self, text: str):
+		"""Create a strike-through effect on the given text using unicode."""
 		result = ''
 		for c in text:
 			result = result + c + '\u0336'
 		return result
 
 	def draw(self, context):
+
+		# Helpful variables
 		layout = self.layout
 		af: AF_PR_AssetFetch = bpy.context.window_manager.af
 		current_asset = af.current_asset_list.assets[af.current_asset_list_index]
 
-		# Query properties
+		# Draw the form for querying implementations
 		current_asset.implementation_list_query.draw_ui(layout)
-
-		#layout.operator("af.update_implementations_list",text="Search Implementations")
 
 		# We have results to display...
 		if len(af.current_implementation_list.implementations) > 0:
 
 			layout.separator()
 
-			# Selection of implementations (if applicable)
+			# Selection of implementations
 			layout.template_list(listtype_name="AF_UL_ImplementationsItems",
 				list_id="name",
 				dataptr=af.current_implementation_list,
 				propname="implementations",
 				active_dataptr=af,
 				active_propname="current_implementation_list_index",
-				sort_lock=True,rows=3)
+				sort_lock=True,
+				rows=3)
 
 			current_impl: AF_PR_Implementation = af.get_current_implementation()
 			current_step: AF_PR_ImplementationImportStep = current_impl.get_current_step()
 
-			# Confirm readability
-			#if current_impl.is_valid:
-			#	layout.label(text="Implementation is readable. Ready to import.", icon="SEQUENCE_COLOR_04")
-			#else:
-			#	layout.label(text="Implementation is not readable.", icon="SEQUENCE_COLOR_01")
-
 			import_info_box = layout.box()
 
-			# Calculate how to display the charges.
+			# Calculate how to display the charges
+
+			# charges_full -> Charges that would apply if no unlocking query was already activated
+			# charges_actual -> Charges that will actually apply if the import is performed
 			charges_full = current_impl.get_expected_charges(include_already_paid=True)
 			charges_actual = current_impl.get_expected_charges(include_already_paid=False)
+
+			# Render only the full price if it reflects the actual price...
 			if charges_full == charges_actual:
 				if charges_full > 0:
 					row = import_info_box.row()
 					row.label(text="Price")
 					row.label(text=f"{charges_actual} {af.current_connection_state.unlock_balance.balance_unit}")
+
+			# Render the original and the reduced price if the actual price is below the full price
 			else:
 				charges_formatted = f"{self.strike_through_text(str(charges_full))} {charges_actual} {af.current_connection_state.unlock_balance.balance_unit}"
 				row = import_info_box.row()
 				row.label(text="Price")
 				row.label(text=charges_formatted)
 
+			# Render download information
 			row = import_info_box.row()
 			row.label(text="Download Size")
 			row.label(text=self.format_bytes(current_impl.get_download_size()))
@@ -115,11 +117,11 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				import_button_label = "Importing..."
 			else:
 				if charges_actual > 0.0:
-					import_button_label = "Pay & Import"
+					import_button_label = "Pay & Perform Import"
 				else:
-					import_button_label = "Import"
+					import_button_label = "Perform Import"
 
-
+			# Render the import button
 			import_button_row = layout.row()
 			if current_impl.get_current_state() == AF_ImportActionState.running:
 				import_button_row.enabled = False
@@ -127,10 +129,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 			layout.separator()
 
-			#layout.label(text=f"{current_impl.get_completed_step_count()} / {current_impl.get_step_count()} steps completed.")
-
 			if current_impl.is_valid and len(current_impl.import_steps) > 0:
-				layout.label(text="Import Steps:")
+				layout.label(text=f"Import Steps ({current_impl.get_completed_step_count()} / {current_impl.get_step_count()} completed):")
 
 				previous_step_action = None
 				for step in current_impl.import_steps:

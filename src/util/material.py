@@ -5,6 +5,7 @@ from . import af_constants
 
 
 def get_or_create_material(material_name: str, af_namespace: str):
+	"""Returns a Blender material (existing or newly created) with the given name and AF Namespace."""
 
 	for existing_material in bpy.data.materials:
 		if ("af_name" in existing_material) and ("af_namespace" in existing_material):
@@ -46,6 +47,7 @@ def count_image_nodes(shader_tree: bpy.types.NodeTree):
 
 
 def add_map_to_material(target_material: bpy.types.Material, colorspace: af_constants.AF_Colorspace, map: af_constants.AF_MaterialMap, image_target_path: str):
+	"""Adds a new PBR map to a given material."""
 
 	# Import the file from local_path into blender
 	image = bpy_extras.image_utils.load_image(imagepath=image_target_path)

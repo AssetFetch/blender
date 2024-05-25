@@ -4,6 +4,7 @@ import logging, bpy, os, hashlib, shutil
 LOGGER = logging.getLogger("af.util.ui_images")
 LOGGER.setLevel(logging.DEBUG)
 
+# Registry of images that are currently loaded into Blender as preview icons
 registry: bpy.utils.previews.ImagePreviewCollection = bpy.utils.previews.new()
 
 
@@ -54,8 +55,6 @@ def get_ui_image_icon_id(uri: str) -> int:
 	if uri_hash not in registry.keys():
 		registry.load(name=uri_hash, path=target_file_location, path_type='IMAGE')
 		LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
-	#else:
-	#	LOGGER.debug(f"Requested ui image {uri} is already loaded with ID {registry[uri_hash].icon_id}")
 
 	# Return the icon id
 	return registry[uri_hash].icon_id
