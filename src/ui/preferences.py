@@ -6,7 +6,7 @@ from ..property.preferences import *
 
 class AF_UL_ProviderBookmarksItems(bpy.types.UIList):
 
-	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_ProviderBookmarkPref, icon, active_data, active_propname, index):
+	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_ProviderBookmark, icon, active_data, active_propname, index):
 		if item.name != "":
 			layout.label(text=item.name)
 		else:

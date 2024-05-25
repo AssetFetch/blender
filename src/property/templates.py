@@ -1,13 +1,15 @@
+"""This module contains templates for common datastructures that are used in many
+places throughout the addon."""
+
 import bpy
 from ..util.http import *
-
 from .updates import *
 
 http_method_enum = [('get', 'GET', 'HTTP GET'), ('post', 'POST', 'HTTP POST')]
 
 
 class AF_PR_GenericString(bpy.types.PropertyGroup):
-	"""A wrapper for the StringProperty to make it usable as a propertyGroup."""
+	"""A wrapper for the StringProperty to make it usable as a member of a PropertyGroup."""
 	value: bpy.props.StringProperty()
 
 	def set(self, value):
@@ -18,6 +20,7 @@ class AF_PR_GenericString(bpy.types.PropertyGroup):
 
 
 class AF_PR_FixedQuery(bpy.types.PropertyGroup):
+	"""https://assetfetch.org/spec/0.3/#722-fixed_query"""
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	payload: bpy.props.CollectionProperty(type=AF_PR_GenericString)
@@ -44,26 +47,15 @@ update_target_enum = AF_VariableQueryUpdateTarget.to_property_enum()
 
 
 class AF_PR_TextParameter(bpy.types.PropertyGroup):
+	"""'text' parameter for a variable query (https://assetfetch.org/spec/0.3/#4411-variable-query-parameters)"""
 	title: bpy.props.StringProperty()
 	default: bpy.props.StringProperty()
 	value: bpy.props.StringProperty(update=update_variable_query_parameter)
 	update_target: bpy.props.EnumProperty(items=update_target_enum)
 
 
-#class AF_PR_IntegerParameter(bpy.types.PropertyGroup):
-#	title: bpy.props.StringProperty()
-#	default: bpy.props.StringProperty()
-#	value: bpy.props.IntProperty(update=update_variable_query_parameter)
-#	update_target: bpy.props.EnumProperty(items=update_target_enum)
-#
-#class AF_PR_FloatParameter(bpy.types.PropertyGroup):
-#	title: bpy.props.StringProperty()
-#	default: bpy.props.StringProperty()
-#	value: bpy.props.FloatProperty(update=update_variable_query_parameter)
-#	update_target: bpy.props.EnumProperty(items=update_target_enum)
-
-
 class AF_PR_BoolParameter(bpy.types.PropertyGroup):
+	"""'boolean' parameter for a variable query (https://assetfetch.org/spec/0.3/#4411-variable-query-parameters)"""
 	title: bpy.props.StringProperty()
 	default: bpy.props.BoolProperty()
 	value: bpy.props.BoolProperty(update=update_variable_query_parameter)
@@ -71,15 +63,9 @@ class AF_PR_BoolParameter(bpy.types.PropertyGroup):
 
 
 class AF_PR_FixedParameter(bpy.types.PropertyGroup):
+	"""'fixed' parameter for a variable query (https://assetfetch.org/spec/0.3/#4411-variable-query-parameters)"""
 	title: bpy.props.StringProperty()
 	value: bpy.props.StringProperty()
-
-
-def select_property_enum_items(property, context):
-	out = []
-	for c in property.choices:
-		out.append((c.value, c.title, c.title))
-	return out
 
 
 class AF_PR_SelectParameterChoice(bpy.types.PropertyGroup):
@@ -87,7 +73,16 @@ class AF_PR_SelectParameterChoice(bpy.types.PropertyGroup):
 	value: bpy.props.StringProperty()
 
 
+def select_property_enum_items(property, context):
+	"""Generates the items for the EnumProperty to represent a selection parameter in a variable query."""
+	out = []
+	for c in property.choices:
+		out.append((c.value, c.title, c.title))
+	return out
+
+
 class AF_PR_SelectParameter(bpy.types.PropertyGroup):
+	"""'select' parameter for a variable query (https://assetfetch.org/spec/0.3/#4411-variable-query-parameters)"""
 	title: bpy.props.StringProperty()
 	default: bpy.props.StringProperty()
 	choices: bpy.props.CollectionProperty(type=AF_PR_SelectParameterChoice)
@@ -96,12 +91,11 @@ class AF_PR_SelectParameter(bpy.types.PropertyGroup):
 
 
 class AF_PR_VariableQuery(bpy.types.PropertyGroup):
+	"""https://assetfetch.org/spec/0.3/#441-variable-query"""
 	uri: bpy.props.StringProperty()
 	method: bpy.props.EnumProperty(items=http_method_enum)
 	parameters_text: bpy.props.CollectionProperty(type=AF_PR_TextParameter)
 	parameters_boolean: bpy.props.CollectionProperty(type=AF_PR_BoolParameter)
-	#parameters_float: bpy.props.CollectionProperty(type=AF_PR_FloatParameter)
-	#parameters_int: bpy.props.CollectionProperty(type=AF_PR_IntegerParameter)
 	parameters_fixed: bpy.props.CollectionProperty(type=AF_PR_FixedParameter)
 	parameters_select: bpy.props.CollectionProperty(type=AF_PR_SelectParameter)
 
@@ -112,8 +106,6 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 
 		self.parameters_text.clear()
 		self.parameters_boolean.clear()
-		#self.parameters_float.clear()
-		#self.parameters_int.clear()
 		self.parameters_fixed.clear()
 		self.parameters_select.clear()
 
@@ -174,14 +166,6 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 				val = "1"
 			parameters[par.name] = val
 
-		# Float parameters
-		#for par in self.parameters_float:
-		#	parameters[par.name] = str(par.value)
-
-		# Integer parameters
-		#for par in self.parameters_float:
-		#	parameters[par.name] = str(par.value)
-
 		# Fixed Parameters
 		for par in self.parameters_fixed:
 			parameters[par.name] = str(par.value)
@@ -191,11 +175,9 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 			if par.value != "<none>":
 				parameters[par.name] = str(par.value)
 
-		# Ignoring multi-select for now
-
 		return AF_HttpQuery(uri=self.uri, method=self.method, parameters=parameters)
 
-	def draw_ui(self, layout : bpy.types.UILayout) -> None:
+	def draw_ui(self, layout: bpy.types.UILayout) -> None:
 
 		# Text parameters
 		for asset_list_parameter in self.parameters_text:
@@ -208,29 +190,3 @@ class AF_PR_VariableQuery(bpy.types.PropertyGroup):
 		# Select parameters
 		for asset_list_parameter in self.parameters_select:
 			layout.prop(asset_list_parameter, "value", text=asset_list_parameter["title"])
-
-		# Fixed parameters
-		#for asset_list_parameter in self.parameters_fixed:
-		#	row = layout.row()
-		#	row.enabled = False
-		#	row.prop(asset_list_parameter, "value", text=asset_list_parameter["title"])
-
-
-class AF_PR_Header(bpy.types.PropertyGroup):
-	# name is already taken care of by blender's name field
-	default: bpy.props.StringProperty()
-	is_required: bpy.props.BoolProperty()
-	is_sensitive: bpy.props.BoolProperty()
-	prefix: bpy.props.StringProperty()
-	suffix: bpy.props.StringProperty()
-	title: bpy.props.StringProperty()
-	encoding: bpy.props.EnumProperty(items=[("plain", "plain", "plain"), ("base64", "base64", "base64")])
-
-	# The actual value entered by the user
-	value: bpy.props.StringProperty(update=update_provider_header)
-
-	def configure(self, header):
-		for key in ['name', 'default', 'is_required', 'is_sensitive', 'prefix', 'suffix', 'title', 'encoding']:
-			if key in header:
-				setattr(self, key, header[key])
-		self.value = self.default

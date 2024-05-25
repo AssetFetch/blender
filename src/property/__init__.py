@@ -67,6 +67,6 @@ registration_targets = [
 	AF_PR_Implementation,
 	AF_PR_ImplementationList,
 	AF_PR_AssetFetch,
-	AF_PR_ProviderBookmarkPref,
+	AF_PR_ProviderBookmark,
 	AF_PR_Preferences
 ]
