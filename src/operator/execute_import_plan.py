@@ -10,43 +10,40 @@ from ..property.core import *
 from ..util.addon_constants import *
 from ..util import http, material, af_constants
 
+# Prepare logging
 LOGGER = logging.getLogger("af.execute_import_plan")
 LOGGER.setLevel(logging.DEBUG)
 
 
 class AF_OP_ExecuteImportPlan(bpy.types.Operator):
-	"""Executes the currently loaded import plan."""
+	"""Executes the currently selected import plan which was constructured by the build_import_plans operator.
+	Every type of step in the import plan has a dedicated function in this method
+	which runs the action associated with it using the configuration data stored for the step."""
 
 	bl_idname = "af.execute_import_plan"
 	bl_label = "Execute Import Plan"
 	bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-	#url: StringProperty(name="URL")
-
-	#def draw(self,context):
-	#	pass
-	#layout = self.layout
-	#layout.prop(self,'radius')
-
 	def __init__(self):
 
-		# INITIALIZE VARIABLES
-
+		# Initialize variables
 		self.af: AF_PR_AssetFetch = bpy.context.window_manager.af
 		self.implementation_list: AF_PR_ImplementationList = self.af.current_implementation_list
 		self.implementation: AF_PR_Implementation = self.implementation_list.implementations[self.af.current_implementation_list_index]
 		self.asset_id: str = self.af.current_asset_list.assets[self.af.current_asset_list_index].name
 
 		# Namespace for this import execution (used for loose material linking)
+		# This will later be used to tell materials apart in the case of naming conflicts.
 		self.af_namespace: str = str(uuid.uuid4())
 
-		# Ensure that temp directory exists
+		# Calculate the path for the temp directory
 		self.temp_dir: str = os.path.join(tempfile.gettempdir(), "assetfetch-blender-temp-dl")
 
 		# Variable to keep track of ongoing downloads
 		self.ongoing_queries = {}
 
 		# Lookup for functions to use
+		# This object associates every import action type to its dedicated function
 		self.step_functions = {
 			AF_ImportAction.fetch_download.value: self.step_fetch_download,
 			AF_ImportAction.fetch_from_zip_archive.value: self.step_fetch_from_zip_archive,
@@ -61,6 +58,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	# HELPER FUNCTIONS
 
 	def helper_assign_loose_materials(self, loose_material_apply_block, target_blender_objects: List[bpy.types.Object], af_namespace: str):
+		"""Takes in a loose_material.apply datablock and a list of Blender objects and applies the materials as defined."""
 		if loose_material_apply_block.is_set:
 			for obj in target_blender_objects:
 				obj.data.materials.clear()
@@ -71,7 +69,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	# STEP FUNCTIONS
 
 	def step_unlock(self, query_id: str) -> AF_ImportActionState:
-		"""Perform an unlock query"""
+		"""Perform an unlock query."""
 		unlock_query = self.implementation_list.get_unlock_query_by_id(query_id)
 		query: http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
 		response = query.execute(raise_for_status=True)
@@ -79,13 +77,12 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return AF_ImportActionState.completed
 
 	def step_create_directory(self, directory: str) -> AF_ImportActionState:
-		"""Simply create a new directory"""
+		"""Create a new directory"""
 		os.makedirs(directory, exist_ok=True)
 		return AF_ImportActionState.completed
 
 	def step_unlock_get_download_data(self, component_id: str) -> AF_ImportActionState:
-		# This code will fetch the file_fetch.download datablock that is missing on the locked asset.
-		# It can do that now because the resource was already unlocked during a previous step.
+		"""Fetch the file_fetch.download datablock that is missing on the locked asset."""
 
 		component = self.implementation.get_component_by_id(component_id)
 
@@ -101,17 +98,18 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return AF_ImportActionState.completed
 
 	def step_fetch_download(self, component_id: str, max_runtime: float = 2.0) -> AF_ImportActionState:
-		# Actually download the asset file.
-		# The data was either there already or has been fetched using the code above (action=unlock_get_download_data)
-		# In both cases, this code below actually downloads the asset and places it in its desired place
+		""" Download the asset file.
+		The data was either there already or has been fetched using the code above (action=unlock_get_download_data)
+		In both cases, this code below actually downloads the asset and places it in its desired location
+		The operator can't run continuously for a long period, it has to "check in" with Blender to prevent the
+		application from timing out. Therefore the download is performed in chunks which is reflected in the
+		two scenarios outlined in the code. """
+
 		component = self.implementation.get_component_by_id(component_id)
 
-		# At this point there are multiple scenarios possible:
-
-		# The download is ongoing and may or may not finish during this iteration
+		# Scenario 1: The download is ongoing and may or may not finish during this iteration
 		if (component_id in self.ongoing_queries):
 			current_query = self.ongoing_queries[component_id]
-			#start_time = time.time()
 			ongoing = current_query.execute_as_file_piecewise_next_chunk()
 			if ongoing:
 				self.implementation.get_current_step().completion = current_query.get_download_completeness()
@@ -120,7 +118,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				current_query.execute_as_file_piecewise_finish()
 				return AF_ImportActionState.completed
 
-		# The download hasn't been started yet and must be started
+		# Scenario 2: The download hasn't been started yet and must be started
 		else:
 			# Prepare query
 			query: AF_HttpQuery = component.file_fetch_download.to_http_query()
@@ -143,6 +141,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			return AF_ImportActionState.running
 
 	def step_fetch_from_zip_archive(self, component_id: str) -> AF_ImportActionState:
+		"""Fetches a component from the ZIP archive that it references in its file_fetch.from_archive datablock."""
+
 		# Find the participating components
 		file_component = self.implementation.get_component_by_id(component_id)
 		zip_component = self.implementation.get_component_by_id(file_component.file_fetch_from_archive.archive_component_id)
@@ -179,6 +179,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return AF_ImportActionState.completed
 
 	def step_import_usd_from_local_path(self, component_id: str) -> AF_ImportActionState:
+		"""Imports a USD file."""
 		usd_component = self.implementation.get_component_by_id(component_id=component_id)
 		usd_target_path = os.path.join(self.implementation.local_directory, usd_component.file_handle.local_path)
 		bpy.ops.wm.usd_import(filepath=usd_target_path, import_all_materials=True)
@@ -186,6 +187,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return AF_ImportActionState.completed
 
 	def step_import_obj_from_local_path(self, component_id: str) -> AF_ImportActionState:
+		"""Imports an OBJ file."""
 		# The path where the obj file was downloaded in a previous step
 		obj_component = self.implementation.get_component_by_id(component_id=component_id)
 		obj_target_path = os.path.join(self.implementation.local_directory, obj_component.file_handle.local_path)
@@ -207,6 +209,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		return AF_ImportActionState.completed
 
 	def step_import_loose_material_map_from_local_path(self, component_id: str) -> AF_ImportActionState:
+		"""Imports a material map and adds it to a material based on the loose_material.define datablock"""
 
 		image_component = self.implementation.get_component_by_id(component_id=component_id)
 		image_target_path = os.path.join(self.implementation.local_directory, image_component.file_handle.local_path)
@@ -227,13 +230,13 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		implementation_list = af.current_implementation_list
 
 		if len(implementation_list.implementations) < 1:
-			return False 
+			return False
 		if not implementation_list.implementations[af.current_implementation_list_index].is_valid:
 			return False
 		if implementation_list.implementations[af.current_implementation_list_index].get_current_state() == AF_ImportActionState.running:
 			return False
 		return True
-		
+
 	def modal(self, context: Context, event: Event):
 
 		# Schedule a GUI redrawing to run after this modal function
@@ -251,12 +254,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				print("USER_CANCEL")
 				return {'CANCELLED'}
 
-			# Log current step
-			#conf_log = {}
-			#for k in current_step.config.keys():
-			#	conf_log[k] = current_step.config[k].value
-			#LOGGER.debug(f"Running step {current_step.action} with config {conf_log}")
-
 			# Cancel the ongoing import if the current step is already marked as canceled or failed
 			# This mostly exists as a fallback because ideally the error would already be detected during execution and
 			# then canceled immediately.
@@ -269,16 +266,19 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				current_step.state = (self.step_functions[current_step.action](**current_step.get_config_as_function_parameters())).value
 			except Exception as e:
 				current_step.state = AF_ImportActionState.failed.value
+
+				# Cancel ongoing queries in case of failure to avoid orphaned file locks.
 				for q in self.ongoing_queries.values():
 					q.execute_as_file_piecewise_finish()
+
 				raise e
 
+			# Raise exception if an unexpected state has been reached.
 			if current_step.state not in [
 				AF_ImportActionState.running.value, AF_ImportActionState.completed.value, AF_ImportActionState.failed.value, AF_ImportActionState.canceled.value
 			]:
 				raise Exception(f"Unexpected state during current step: {current_step.state}")
 
-			context.window_manager.af.progress_all_steps = random.uniform(0, 1)
 			return {'RUNNING_MODAL'}
 
 		else:

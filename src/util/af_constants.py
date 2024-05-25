@@ -1,3 +1,5 @@
+"""This module contains constants that represent concepts from AssetFetch."""
+
 from enum import Enum
 
 

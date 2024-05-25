@@ -9,7 +9,11 @@ class AF_OP_NewProviderBookmark(bpy.types.Operator):
 	bl_options = {"REGISTER", "INTERNAL"}
 
 	def execute(self, context):
+
+		# Get preferences
 		prefs = AF_PR_Preferences.get_prefs()
+
+		# Add a new Bookmark and select it
 		prefs.provider_bookmarks.add()
 		prefs.provider_bookmarks_index = len(prefs.provider_bookmarks) - 1
 		return {'FINISHED'}

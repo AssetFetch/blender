@@ -1,3 +1,5 @@
+"""This module contains the update functions that handle changes of properties."""
+
 from enum import Enum
 import logging
 import bpy
@@ -7,6 +9,7 @@ LOGGER.setLevel(logging.DEBUG)
 
 
 class AF_VariableQueryUpdateTarget(Enum):
+	"""Enum to define which action should be taken after a variable query has been adjusted."""
 	update_asset_list_parameter = "update_asset_list_parameter"
 	update_implementation_list_parameter = "update_implementation_list_parameter"
 	update_nothing = "update_nothing"
@@ -15,11 +18,10 @@ class AF_VariableQueryUpdateTarget(Enum):
 	def to_property_enum(cls):
 		return list(map(lambda c: (c.value, c.value, c.value), cls))
 
-
 # General update functions
 
-
 def update_init_url(property, context):
+	"""Function to run if the provider initialization url has changed."""
 	LOGGER.debug("update_init_url")
 	bpy.ops.af.initialize_provider()
 
@@ -31,6 +33,7 @@ def update_init_url(property, context):
 
 
 def update_provider_header(property, context):
+	"""Function to run if a provider header has changed."""
 	LOGGER.debug("update_provider_header")
 	if bpy.ops.af.connection_status.poll():
 		LOGGER.debug("Getting connection status...")
@@ -46,6 +49,7 @@ def update_provider_header(property, context):
 
 
 def update_asset_list_index(property, context):
+	"""Function to run if a new asset has been selected aka the index in the asset list has changed."""
 	LOGGER.debug("update_asset_list_index")
 	if bpy.ops.af.update_implementations_list.poll():
 		bpy.ops.af.update_implementations_list()
@@ -54,19 +58,7 @@ def update_asset_list_index(property, context):
 def update_implementation_list_index(property, context):
 	LOGGER.debug("update_implementation_list_index")
 
-
-#def update_implementation_list_query(property,context):
-#	print("update_implementation_list_query")
-#	if bpy.ops.af.update_implementations_list.poll():
-#		bpy.ops.af.update_implementations_list()
-#
-#def update_asset_list_query(property,context):
-#	print("update_asset_list_query")
-#	if bpy.ops.af.update_asset_list.poll():
-#		bpy.ops.af.update_asset_list()
-
 # Update functions for variable query parameters
-
 
 def update_asset_list_parameter(property, context):
 	LOGGER.debug("update_asset_list_parameter")
@@ -93,7 +85,8 @@ def update_variable_query_parameter(property, context):
 	else:
 		LOGGER.warn(f"No update_target on {property}")
 
-def update_bookmarks(property,context):
+
+def update_bookmarks(property, context):
 	from .preferences import AF_PR_Preferences
 	LOGGER.debug("update_bookmarks")
 	prefs = AF_PR_Preferences.get_prefs()

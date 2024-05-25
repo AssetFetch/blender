@@ -1,12 +1,11 @@
 import bpy
-from .. import ADDON_NAME
 from ..property.templates import *
 from ..property.preferences import *
 
 
 class AF_UL_ProviderBookmarksItems(bpy.types.UIList):
-
-	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_ProviderBookmarkPref, icon, active_data, active_propname, index):
+	"""Class for rendering the list of bookmarks."""
+	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_ProviderBookmark, icon, active_data, active_propname, index):
 		if item.name != "":
 			layout.label(text=item.name)
 		else:
@@ -16,13 +15,16 @@ class AF_UL_ProviderBookmarksItems(bpy.types.UIList):
 
 
 class AF_UL_ProviderBookmarksHeadersItems(bpy.types.UIList):
-
+	"""Class for rendering the list of headers for a bookmark."""
 	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_GenericString, icon, active_data, active_propname, index):
 		layout.prop(item, "name",text="Name")
 		layout.prop(item, "value",text="Value")
 
 
 def draw_preferences(self, context):
+	"""Method for drawing the preferences UI in Blender's Preferences menu.
+	This method gets called in the property/preferences module because preferences don't follow Blender's normal separation of
+	Data and UI (It's all in one class)."""
 	layout: bpy.types.UILayout = self.layout
 
 	bookmarks = layout.column()

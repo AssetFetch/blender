@@ -1,3 +1,5 @@
+"""This module contains all data classes. This includes core data for the addon itself, as well as representations of all datablocks."""
+
 import os
 from typing import Dict
 import bpy
@@ -29,8 +31,6 @@ registration_targets = [
 	AF_PR_FixedQuery,
 	AF_PR_BoolParameter,
 	AF_PR_TextParameter,
-	#	AF_PR_FloatParameter,
-	#	AF_PR_IntegerParameter,
 	AF_PR_FixedParameter,
 	AF_PR_SelectParameterChoice,
 	AF_PR_SelectParameter,
@@ -67,6 +67,6 @@ registration_targets = [
 	AF_PR_Implementation,
 	AF_PR_ImplementationList,
 	AF_PR_AssetFetch,
-	AF_PR_ProviderBookmarkPref,
+	AF_PR_ProviderBookmark,
 	AF_PR_Preferences
 ]

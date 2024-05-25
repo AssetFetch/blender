@@ -21,7 +21,9 @@ class AF_HttpResponse:
 	"""Represents a response received from a provider."""
 
 	def __init__(self, raw_response: requests.Response):
+		"""Creates a new HttpResponse based on the 'raw' response object from the requests module. """
 
+		# Take response and parse it as JSON
 		self.content = raw_response.text
 		self.response_code = raw_response.status_code
 		try:
@@ -29,13 +31,13 @@ class AF_HttpResponse:
 		except Exception as e:
 			self.parsed = {}
 
-		raw_response.raise_for_status()
-
+		# Figure out which "kind" of response this is.
 		if "meta" in self.parsed and "kind" in self.parsed['meta']:
 			kind = self.parsed['meta']['kind']
 		else:
 			raise Exception("Could not resolve meta.kind for this request.")
 
+		# Validate the data structure based on the "kind" of the request
 		target_schema_path = (SCHEMA_PATH + f"/endpoint/{kind}.json").replace("\\", "/")
 		target_base_path = SCHEMA_PATH.replace("\\", "/")
 
@@ -52,9 +54,10 @@ class AF_HttpResponse:
 
 
 class AF_HttpQuery:
-
-	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.2"}
 	"""Represents a query that the client sends to the provider"""
+
+	# The standard headers that get sent with every request (along with any auth headers)
+	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.2"}
 
 	def __init__(self, uri: str, method: str, parameters: Dict[str, str] = None, chunk_size: int = 128 * 1024 * 8):
 		self.uri = uri
@@ -84,14 +87,17 @@ class AF_HttpQuery:
 		return progress
 
 	def execute(self, raise_for_status: bool = False) -> AF_HttpResponse:
-		af = bpy.context.window_manager.af
+		"""Executes an API query (in one go) and generates a response object."""
 
+		af = bpy.context.window_manager.af
 		LOGGER.info(f"Sending http {self.method} to {self.uri} with payload {self.parameters}")
 
+		# Build the list of headers
 		headers = AF_HttpQuery.default_headers.copy()
 		for header_name in af.current_provider_initialization.provider_configuration.headers.keys():
 			headers[header_name] = af.current_provider_initialization.provider_configuration.headers[header_name].value
 
+		# Make the request with the appropriate HTTP method
 		if self.method == "get":
 			response = requests.get(self.uri, params=self.parameters, headers=headers)
 		elif self.method == "post":
@@ -108,6 +114,7 @@ class AF_HttpQuery:
 		return AF_HttpResponse(response)
 
 	def execute_as_file_piecewise_start(self, destination_path: str):
+		"""Starts a chunked download."""
 
 		# Check for existing initialization
 		if self.stream_handle is not None or self.file_handle is not None:
@@ -142,6 +149,7 @@ class AF_HttpQuery:
 		self.stream_handle_iter = self.stream_handle.iter_content(chunk_size=self.chunk_size)
 
 	def execute_as_file_piecewise_next_chunk(self) -> bool:
+		"""Continues an already started chunked download."""
 		if self.stream_handle is None or self.file_handle is None:
 			raise Exception("Download has not been initialized")
 
@@ -158,6 +166,7 @@ class AF_HttpQuery:
 			raise e
 
 	def execute_as_file_piecewise_finish(self):
+		"""Finishes a chunked download."""
 		if self.stream_handle is None or self.file_handle is None:
 			raise Exception("Download has not been initialized")
 
@@ -166,6 +175,7 @@ class AF_HttpQuery:
 		LOGGER.debug("Closed streams.")
 
 	def execute_as_file(self, destination_path: str) -> None:
+		"""Downloads all chunks of a file in one go."""
 
 		self.execute_as_file_piecewise_start(destination_path)
 

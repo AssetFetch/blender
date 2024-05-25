@@ -1,3 +1,5 @@
+"""This module contains constants that are used internally by the addon."""
+
 from enum import Enum
 
 
@@ -89,21 +91,21 @@ class AF_ImportAction(Enum):
 			# The comments behind each item describe the config keys used for it.
 
 			# File actions
-			("fetch_download", "Download File", "Downloads a file from the internet."),  # component_id
+			("fetch_download", "Download File", "Downloads a file from the internet."),
 			("fetch_from_zip_archive", "Extract File From ZIP Archive", "Extracts a file from a ZIP archive."),
 
 			# Import actions
-			("import_obj_from_local_path", "Import OBJ", "Imports content from an OBJ file."),  # component_id
-			("import_usd_from_local_path", "Import USD", "Imports content from a USD file."),  # component_id
-			("import_loose_material_map_from_local_path", "Import Material Map", "Adds a material map to a new or existing material."),  # component_id
-			("import_loose_environment_from_local_path", "Import Environment Map", "Imports an HDRI environment."),  # component_id
+			("import_obj_from_local_path", "Import OBJ", "Imports content from an OBJ file."),
+			("import_usd_from_local_path", "Import USD", "Imports content from a USD file."),
+			("import_loose_material_map_from_local_path", "Import Material Map", "Adds a material map to a new or existing material."),
+			("import_loose_environment_from_local_path", "Import Environment Map", "Imports an HDRI environment."),
 
 			# Unlock actions
-			("unlock", "Unlock Resource", "Unlocks a resource from the provider, so that it can be downloaded."),  # query_id
-			("unlock_get_download_data", "Prepare Unlocked Download", "Prepares to download an unlocked resource."),  # component_id
+			("unlock", "Unlock Resource", "Unlocks a resource from the provider, so that it can be downloaded."),
+			("unlock_get_download_data", "Prepare Unlocked Download", "Prepares to download an unlocked resource."),
 
 			# Misc actions
-			("create_directory", "Create Directory", "Creates a directory."),  # directory
+			("create_directory", "Create Directory", "Creates a directory."),
 		]
 
 
