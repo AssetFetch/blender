@@ -23,13 +23,6 @@ class AF_UL_ProviderBookmarksHeadersItems(bpy.types.UIList):
 		layout.prop(item, "value", text="Value")
 
 
-class AF_UL_LocalDirectoryRulesItem(bpy.types.UIList):
-	"""Class for rendering the list of local directory rules."""
-
-	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_LocalDirectoryRule, icon, active_data, active_propname, index):
-		layout.prop(item, "blend_directory")
-
-
 #def draw_preferences(self, context):
 def draw_preferences(prefs, layout: bpy.types.UILayout, context):
 	"""Method for drawing the preferences UI in Blender's Preferences menu.
@@ -81,40 +74,18 @@ def draw_preferences(prefs, layout: bpy.types.UILayout, context):
 
 	if prefs.display_mode == "directory":
 
-		# Rules
 		directories = layout.column()
+		is_unsaved = bpy.data.filepath == ''
 
-		directories_rules = directories.box()
-		directories_rules.prop(prefs, "use_rules", text="Use rule-based download directories")
+		if is_unsaved:
+			directories.label(icon="INFO", text="Save the current file to use a relative download directory.")
+		else:
+			directories.prop(prefs, "use_relative", text="Relative to currently opened file")
 
-		directories_rules_config = directories_rules.row()
-		directories_rules_config.template_list(listtype_name="AF_UL_LocalDirectoryRulesItem",
-			list_id="name",
-			dataptr=prefs,
-			propname="directory_rules",
-			active_dataptr=prefs,
-			active_propname="directory_rules_index",
-			sort_lock=True,
-			rows=3)
-
-		directories_rules_actions = directories_rules_config.column(align=True)
-		directories_rules_actions.operator(operator="af.new_directory_rule", icon="ADD", text="")
-		directories_rules_actions.operator(operator="af.delete_directory_rule", icon="REMOVE", text="")
-
-		directories_rules_config.enabled = prefs.use_rules
-
-		# Relative
-		directories_relative = directories.box()
-		directories_relative.prop(prefs, "use_relative", text="Use download directory relative to currently opened file")
-		directories_relative_config = directories_relative.column()
-		directories_relative_config.prop(prefs, "relative_directory", text="Relative Path")
-
-		directories_relative_config.enabled = prefs.use_relative
-
-		# Absolute/Fallback
-		directories_default = directories.box()
-		directories_default.label(text="Default download directory", icon="FILE_FOLDER")
-		directories_default.prop(prefs, "default_directory", text="Path")
+		if not is_unsaved and prefs.use_relative:
+			directories.prop(prefs, "relative_directory", text="Relative Path")
+		else:
+			directories.prop(prefs, "default_directory", text="Path")
 
 
 class AF_PT_Preferences(bpy.types.Panel):

@@ -41,9 +41,6 @@ class AF_PR_Preferences(bpy.types.AddonPreferences):
 
 	# Directories
 
-	use_rules: bpy.props.BoolProperty()
-	directory_rules: bpy.props.CollectionProperty(type=AF_PR_LocalDirectoryRule)
-	directory_rules_index: bpy.props.IntProperty()
 
 	use_relative: bpy.props.BoolProperty()
 	relative_directory: bpy.props.StringProperty()
