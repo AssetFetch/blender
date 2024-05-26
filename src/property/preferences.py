@@ -40,12 +40,9 @@ class AF_PR_Preferences(bpy.types.AddonPreferences):
 	provider_bookmarks_headers_index: bpy.props.IntProperty(default=0)
 
 	# Directories
-
-
 	use_relative: bpy.props.BoolProperty()
-	relative_directory: bpy.props.StringProperty()
-
-	default_directory: bpy.props.StringProperty()
+	relative_directory: bpy.props.StringProperty(default="AssetFetch")
+	default_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'), "AssetFetch"))
 
 	def get_current_bookmark_in_preferences(self) -> AF_PR_ProviderBookmark | None:
 		return self.provider_bookmarks[self.provider_bookmarks_index]
@@ -53,7 +50,7 @@ class AF_PR_Preferences(bpy.types.AddonPreferences):
 	def draw(self, context):
 		from ..ui.preferences import draw_preferences
 
-		draw_preferences(self, self.layout, context)
+		draw_preferences(self, self.layout, context,inside_blender_preferences=True)
 
 	def populate_defaults(prefs):
 		"""Adds the initial bookmarks that are built into the addon."""

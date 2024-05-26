@@ -24,7 +24,7 @@ class AF_UL_ProviderBookmarksHeadersItems(bpy.types.UIList):
 
 
 #def draw_preferences(self, context):
-def draw_preferences(prefs, layout: bpy.types.UILayout, context):
+def draw_preferences(prefs, layout: bpy.types.UILayout, context,inside_blender_preferences:bool):
 	"""Method for drawing the preferences UI in Blender's Preferences menu.
 	This method gets called in the property/preferences module because preferences don't follow Blender's normal separation of
 	Data and UI (It's all in one class)."""
@@ -75,17 +75,23 @@ def draw_preferences(prefs, layout: bpy.types.UILayout, context):
 	if prefs.display_mode == "directory":
 
 		directories = layout.column()
-		is_unsaved = bpy.data.filepath == ''
 
-		if is_unsaved:
-			directories.label(icon="INFO", text="Save the current file to use a relative download directory.")
+		if inside_blender_preferences:
+			directories.prop(prefs, "use_relative", text="Use relative path if possible (i.e. if current file is saved)")
+			directories.prop(prefs, "default_directory", text="Download Directory")
+			directories.prop(prefs, "relative_directory", text="Relative Download Directory")
 		else:
-			directories.prop(prefs, "use_relative", text="Relative to currently opened file")
+			is_unsaved = bpy.data.filepath == ''
 
-		if not is_unsaved and prefs.use_relative:
-			directories.prop(prefs, "relative_directory", text="Relative Path")
-		else:
-			directories.prop(prefs, "default_directory", text="Path")
+			if is_unsaved:
+				directories.label(icon="INFO", text="Save the current file to use a relative download directory.")
+			else:
+				directories.prop(prefs, "use_relative", text="Use relative path")
+
+			if not is_unsaved and prefs.use_relative:
+				directories.prop(prefs, "relative_directory", text="Relative Download Directory")
+			else:
+				directories.prop(prefs, "default_directory", text="Download Directory")
 
 
 class AF_PT_Preferences(bpy.types.Panel):
@@ -99,4 +105,4 @@ class AF_PT_Preferences(bpy.types.Panel):
 	bl_options = {'DEFAULT_CLOSED'}
 
 	def draw(self, context):
-		draw_preferences(AF_PR_Preferences.get_prefs(), self.layout, context)
+		draw_preferences(AF_PR_Preferences.get_prefs(), self.layout, context,inside_blender_preferences=False)
