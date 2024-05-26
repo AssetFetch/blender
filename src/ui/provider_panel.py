@@ -4,7 +4,7 @@ from ..property.preferences import *
 class AF_PT_ProviderPanel(bpy.types.Panel):
 	"""Class for rendering the provider selection panel."""
 
-	bl_label = "Provider Selection"
+	bl_label = "Provider Connection"
 	bl_idname = "AF_PT_Provider_PANEL"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'UI'
@@ -15,11 +15,11 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 		af = bpy.context.window_manager.af
 
 		# Info Box
-		info_box = layout.box()
-		info_box.label(text="AssetFetch for Blender v0.2.0", icon="SETTINGS")
-		info_box.label(text=f"Download directory: {af.download_directory}")
-		info_box.label(text=f"Icon directory: {af.ui_image_directory}")
-		info_box.label(text="Unstable & lacking numerous features, use with caution & patience!")
+		#info_box = layout.box()
+		#info_box.label(text="AssetFetch for Blender v0.2.0", icon="SETTINGS")
+		#info_box.label(text=f"Download directory: {af.download_directory}")
+		#info_box.label(text=f"Icon directory: {af.ui_image_directory}")
+		#info_box.label(text="Unstable & lacking numerous features, use with caution & patience!")
 
 		# Bookmarks
 		layout.prop(af,"provider_bookmark_selection")

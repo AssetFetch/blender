@@ -11,23 +11,52 @@ class AF_PR_ProviderBookmark(bpy.types.PropertyGroup):
 	header_values: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
 
+class AF_PR_LocalDirectoryRule(bpy.types.PropertyGroup):
+	blend_directory: bpy.props.StringProperty()
+	download_directory: bpy.props.StringProperty()
+
+
 class AF_PR_Preferences(bpy.types.AddonPreferences):
 	"""The main class containing all preferences for the addon."""
 
 	# Here we use the ADDON_NAME from the init module to determine the idname to use for the addon.
 	bl_idname = ADDON_NAME
 
+	# Display mode
+	display_mode: bpy.props.EnumProperty(
+		items=[
+		("directory", "Download Directory", "Download Directory"),  # Download directory
+		("bookmarks", "Provider Bookmarks", "Provider Bookmarks")  # Bookmarks
+		],
+		default="directory")
+
+	# Special property for detecting if the defaults have been loaded already.
+	# This is required to make the built-in bookmarks possible
+	is_initialized: bpy.props.BoolProperty(default=False)
+
+	# Bookmarks
 	provider_bookmarks: bpy.props.CollectionProperty(type=AF_PR_ProviderBookmark)
 	provider_bookmarks_index: bpy.props.IntProperty(default=0)
 	provider_bookmarks_headers_index: bpy.props.IntProperty(default=0)
-	is_initialized: bpy.props.BoolProperty(default=False)
+
+	# Directories
+
+	use_rules: bpy.props.BoolProperty()
+	directory_rules: bpy.props.CollectionProperty(type=AF_PR_LocalDirectoryRule)
+	directory_rules_index: bpy.props.IntProperty()
+
+	use_relative: bpy.props.BoolProperty()
+	relative_directory: bpy.props.StringProperty()
+
+	default_directory: bpy.props.StringProperty()
 
 	def get_current_bookmark_in_preferences(self) -> AF_PR_ProviderBookmark | None:
 		return self.provider_bookmarks[self.provider_bookmarks_index]
 
 	def draw(self, context):
 		from ..ui.preferences import draw_preferences
-		draw_preferences(self, context)
+
+		draw_preferences(self, self.layout, context)
 
 	def populate_defaults(prefs):
 		"""Adds the initial bookmarks that are built into the addon."""
@@ -50,9 +79,8 @@ class AF_PR_Preferences(bpy.types.AddonPreferences):
 	def get_prefs():
 		"""Returns the preferences object."""
 		prefs = bpy.context.preferences.addons[ADDON_NAME].preferences
-		if prefs:
-			# TODO: This isn't the best place to put this!
-			if not prefs.is_initialized:
-				AF_PR_Preferences.populate_defaults(prefs)
+		# TODO: This isn't the best place to put this!
+		if prefs and not prefs.is_initialized:
+			AF_PR_Preferences.populate_defaults(prefs)
 
 		return prefs
