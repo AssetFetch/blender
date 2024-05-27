@@ -26,13 +26,13 @@ def update_download_directory_mode(property,context):
 		bpy.ops.af.update_implementations_list()
 
 def update_download_directory_relative(property,context):
-	property.relative_directory = os.path.normpath(property.relative_directory)
+	property['relative_directory'] = os.path.normpath(property.relative_directory)
 
 	if bpy.ops.af.update_implementations_list.poll():
 		bpy.ops.af.update_implementations_list()
 
 def update_download_directory_default(property,context):
-	property.default_directory = os.path.normpath(property.default_directory)
+	property['default_directory'] = os.path.normpath(property.default_directory)
 
 	if bpy.ops.af.update_implementations_list.poll():
 		bpy.ops.af.update_implementations_list()
