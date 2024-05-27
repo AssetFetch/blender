@@ -1,6 +1,7 @@
 # AssetFetch-specific
 src/json-schema
 src/lib
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
