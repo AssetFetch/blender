@@ -397,7 +397,7 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
 	current_implementation_list_index: bpy.props.IntProperty(update=update_implementation_list_index)
 
-	download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'), "AssetFetch"))
+	#download_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'), "AssetFetch"))
 	ui_image_directory: bpy.props.StringProperty(default=os.path.join(tempfile.gettempdir(), "af-ui-img"))
 
 	def get_current_asset(self) -> AF_PR_Asset | None:

@@ -56,7 +56,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				# Step 1: Find the implementation directory - Where should all the downloaded files for this implementation be stored?
 
 				# Start with the base directory and append the provider/asset/implementation structure to it
-				local_directory = af.download_directory
+				local_directory = AF_PR_Preferences.get_prefs().get_current_download_directory()
 				local_directory = os.path.join(local_directory, provider_id)
 				local_directory = os.path.join(local_directory, asset_id)
 				local_directory = os.path.join(local_directory, implementation_id)
