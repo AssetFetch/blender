@@ -8,7 +8,7 @@ import bpy_extras.image_utils
 
 from ..property.core import *
 from ..util.addon_constants import *
-from ..util import http, material, af_constants
+from ..util import http, material, af_constants, world
 
 # Prepare logging
 LOGGER = logging.getLogger("af.execute_import_plan")
@@ -50,6 +50,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			AF_ImportAction.import_obj_from_local_path.value: self.step_import_obj_from_local_path,
 			AF_ImportAction.import_usd_from_local_path.value: self.step_import_usd_from_local_path,
 			AF_ImportAction.import_loose_material_map_from_local_path.value: self.step_import_loose_material_map_from_local_path,
+			AF_ImportAction.import_loose_environment_from_local_path.value: self.step_import_loose_environment_from_local_path,
 			AF_ImportAction.unlock.value: self.step_unlock,
 			AF_ImportAction.unlock_get_download_data.value: self.step_unlock_get_download_data,
 			AF_ImportAction.create_directory.value: self.step_create_directory
@@ -205,6 +206,16 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		self.helper_assign_loose_materials(loose_material_apply_block=obj_component.loose_material_apply,
 			target_blender_objects=bpy.context.selected_objects,
 			af_namespace=self.af_namespace)
+
+		return AF_ImportActionState.completed
+
+	def step_import_loose_environment_from_local_path(self, component_id: str) -> AF_ImportActionState:
+		"""Imports an HDRI environment from a file based on a loose_environment datablock"""
+
+		hdri_component = self.implementation.get_component_by_id(component_id=component_id)
+		hdri_target_path = os.path.join(self.implementation.local_directory, hdri_component.file_handle.local_path)
+
+		world.create_world(world_name=hdri_component.name, hdr_image_path=hdri_target_path, af_namespace=self.af_namespace)
 
 		return AF_ImportActionState.completed
 

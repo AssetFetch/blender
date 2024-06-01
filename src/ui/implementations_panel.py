@@ -181,7 +181,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 					# Loose environment
 					if step.action == AF_ImportAction.import_loose_environment_from_local_path.value:
 						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-						#TODO ENVs are not implemented in general
+						target_path = target_component.file_handle.local_path
+						step_details = f"Import {target_path}"
 
 					# Unlocking
 					if step.action == AF_ImportAction.unlock.value:

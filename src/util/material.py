@@ -7,11 +7,13 @@ from . import af_constants
 def get_or_create_material(material_name: str, af_namespace: str):
 	"""Returns a Blender material (existing or newly created) with the given name and AF Namespace."""
 
+	# Check if a material with the specified name and namespace already exists
 	for existing_material in bpy.data.materials:
 		if ("af_name" in existing_material) and ("af_namespace" in existing_material):
 			if existing_material['af_name'] == material_name and existing_material['af_namespace'] == af_namespace:
 				return existing_material
 
+	# Create a new material if it doesn't exist
 	new_material = bpy.data.materials.new(name=material_name)
 	new_material.use_nodes = True
 

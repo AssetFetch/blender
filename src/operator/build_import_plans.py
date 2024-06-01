@@ -154,8 +154,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				# This is the list of extensions that should be treated as material maps (if they have the loose_material.define datablock)
 				for comp in current_impl.components:
 
-					# Material maps get a completely separate treatment
-
+					# Material maps and HDRIs get a completely separate treatment
 					if comp.loose_material_define.is_set:
 						if comp.file_handle.behavior == "single_active":
 							# The component has the material definition datablock AND is marked as active, so it certainly needs to be imported.
@@ -173,6 +172,16 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 
 							if import_map:
 								current_impl.import_steps.add().configure_import_loose_material_map_from_local_path(comp.name)
+
+					elif comp.loose_environment.is_set and comp.file_handle.behavior == "single_active" :
+						
+						if comp.file_info.extension not in ['.exr','.hdr']:
+							raise Exception(f"The addon does not know how to handle HDRI environments with the extension '{comp.file_info.extension}'.")
+
+						if comp.loose_environment.projection != "equirectangular":
+							raise Exception("The addon currently only supports HDRIs with equirectangular projection.")
+
+						current_impl.import_steps.add().configure_import_loose_environment_from_local_path(comp.name)
 
 					# Handle all other files
 					elif comp.file_handle.behavior == "single_active":
