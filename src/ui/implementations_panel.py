@@ -66,14 +66,15 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 			layout.separator()
 
 			# Selection of implementations
-			layout.template_list(listtype_name="AF_UL_ImplementationsItems",
-				list_id="name",
-				dataptr=af.current_implementation_list,
-				propname="implementations",
-				active_dataptr=af,
-				active_propname="current_implementation_list_index",
-				sort_lock=True,
-				rows=3)
+			if len(af.current_implementation_list.implementations) > 1:
+				layout.template_list(listtype_name="AF_UL_ImplementationsItems",
+					list_id="name",
+					dataptr=af.current_implementation_list,
+					propname="implementations",
+					active_dataptr=af,
+					active_propname="current_implementation_list_index",
+					sort_lock=True,
+					rows=3)
 
 			current_impl: AF_PR_Implementation = af.get_current_implementation()
 			current_step: AF_PR_ImplementationImportStep = current_impl.get_current_step()
