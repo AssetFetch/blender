@@ -91,21 +91,21 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 
 	# Whether these fields for the individual datablocks contain actual data is determined by the "is_set" property on each of them.
 
-	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
+	store: bpy.props.PointerProperty(type=AF_PR_StoreBlock)
 
-	file_info: bpy.props.PointerProperty(type=AF_PR_FileInfoBlock)
-	file_handle: bpy.props.PointerProperty(type=AF_PR_FileHandleBlock)
-	file_fetch_download: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
-	file_fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_FileFetchFromArchiveBlock)
-	file_fetch_download_post_unlock: bpy.props.PointerProperty(type=AF_PR_FileFetchDownloadPostUnlockBlock)
+	fetch_download: bpy.props.PointerProperty(type=AF_PR_FetchDownloadBlock)
+	fetch_from_archive: bpy.props.PointerProperty(type=AF_PR_FetchFromArchiveBlock)
 
-	loose_environment: bpy.props.PointerProperty(type=AF_PR_LooseEnvironmentBlock)
-	loose_material_define: bpy.props.PointerProperty(type=AF_PR_LooseMaterialDefineBlock)
-	loose_material_apply: bpy.props.PointerProperty(type=AF_PR_LooseMaterialApplyBlock)
-
+	format: bpy.props.PointerProperty(type=AF_PR_FormatBlock)
 	format_blend: bpy.props.PointerProperty(type=AF_PR_FormatBlendBlock)
 	format_obj: bpy.props.PointerProperty(type=AF_PR_FormatObjBlock)
-	format_usd: bpy.props.PointerProperty(type=AF_PR_FormatUsdBlock)
+
+	handle_native: bpy.props.PointerProperty(type=AF_PR_HandleNativeBlock)
+	handle_loose_environment_map: bpy.props.PointerProperty(type=AF_PR_HandleLooseEnvironmentBlock)
+	handle_loose_material_map: bpy.props.PointerProperty(type=AF_PR_HandleLooseMaterialMapBlock)
+	handle_archive: bpy.props.PointerProperty(type=AF_PR_HandleArchiveBlock)
+
+	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
 
 	def configure(self, component):
 		pass
@@ -185,12 +185,6 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		self.config.clear()
 		self.set_config_value("query_id", query_id)
 
-	def configure_unlock_get_download_data(self, component_id):
-		"""Configures this step as an unlock_get_download_data step."""
-		self.action = AF_ImportAction.unlock_get_download_data.value
-		self.config.clear()
-		self.set_config_value("component_id", component_id)
-
 	# Misc Actions
 
 	def configure_create_directory(self, directory):
@@ -226,9 +220,10 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		charges = 0
 		already_summed_query_ids = set()
 		for comp in self.components:
-			if comp.file_fetch_download_post_unlock.is_set:
+			comp: AF_PR_Component
+			if comp.fetch_download.is_set and comp.fetch_download.unlock_query_id != "":
 
-				unlock_query_id = comp.file_fetch_download_post_unlock.unlock_query_id
+				unlock_query_id = comp.fetch_download.unlock_query_id
 				referenced_query = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id(unlock_query_id)
 
 				if ((not referenced_query.unlocked) or include_already_paid) and (referenced_query.name not in already_summed_query_ids):
@@ -241,8 +236,8 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 		"""Returns the total download size across all components in the implementation in bytes."""
 		size = 0
 		for comp in self.components:
-			if (comp.file_fetch_download.is_set or comp.file_fetch_download_post_unlock.is_set) and comp.file_info.is_set and comp.file_info.length > 0:
-				size += comp.file_info.length
+			if (comp.fetch_download.is_set) and (comp.store.bytes > 0):
+				size += comp.store.bytes
 		return size
 
 	def get_completion_ratio(self) -> float:
@@ -323,15 +318,33 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 				raise Exception("A component is missing an id.")
 			blender_comp.name = provider_comp['id']
 
+			# This list only covers datablocks which are applicable to components!
 			recognized_datablock_names = [
-				"file_info", "file_handle", "file_fetch.download", "file_fetch.download_post_unlock", "file_fetch.from_archive", "loose_environment", "loose_material.define",
-				"loose_material.apply", "format.blend", "format.usd", "format.obj", "text"
+				# Storage
+				"store",
+				# Fetching
+				"fetch.download",
+				"fetch.from_archive",
+				# Handling
+				"handle.loose_environment_map",
+				"handle.loose_material_map",
+				"handle.archive",
+				"handle.native",
+				# Linking
+				"link.loose_material",
+				# Format
+				"format.blend",
+				"format.usd",
+				"format.obj",
+				"format",
+				# Misc
+				"text",
 			]
 
 			# Unsupported datablocks which lead to a warning
 			for key in pcd.keys():
 				if key not in recognized_datablock_names:
-					self.validation_messages.add().set("warn", f"Datablock {key} in {blender_comp.name} has not been recognized and will be ignored.")
+					self.validation_messages.add().set("warn", f"Datablock '{key}' in {blender_comp.name} has not been recognized and will be ignored.")
 
 			# Configure datablocks
 			for key in recognized_datablock_names:
@@ -341,7 +354,7 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 					block.configure(pcd[key])
 				else:
 					# Some datablocks are required and get tested for here.
-					if key in ['file_info', 'file_handle']:
+					if key in ['format', 'store']:
 						raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
 		return self
 

@@ -61,7 +61,6 @@ class AF_ImportAction(Enum):
 	import_loose_environment_from_local_path = "import_loose_environment_from_local_path"
 
 	unlock = "unlock"
-	unlock_get_download_data = "unlock_get_download_data"
 
 	create_directory = "create_directory"
 
@@ -75,7 +74,6 @@ class AF_ImportAction(Enum):
 			AF_ImportAction.import_loose_material_map_from_local_path: "MATERIAL",
 			AF_ImportAction.import_loose_environment_from_local_path: "WORLD",
 			AF_ImportAction.unlock: "UNLOCKED",
-			AF_ImportAction.unlock_get_download_data: "FILE_REFRESH",
 			AF_ImportAction.create_directory: "NEWFOLDER"
 		}
 
@@ -102,7 +100,6 @@ class AF_ImportAction(Enum):
 
 			# Unlock actions
 			("unlock", "Unlock Resource", "Unlocks a resource from the provider, so that it can be downloaded."),
-			("unlock_get_download_data", "Prepare Unlocked Download", "Prepares to download an unlocked resource."),
 
 			# Misc actions
 			("create_directory", "Create Directory", "Creates a directory."),

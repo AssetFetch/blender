@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-import bpy
+import bpy, re
 
 from .updates import *
 from .templates import *
@@ -33,41 +33,32 @@ class AF_PR_GenericBlock:
 
 
 class AF_PR_TextBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#841-text"""
 	title: bpy.props.StringProperty()
 	description: bpy.props.StringProperty()
 
 
 class AF_PR_UserBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#813-user"""
 	display_name: bpy.props.StringProperty()
 	display_tier: bpy.props.StringProperty()
 	display_icon_uri: bpy.props.StringProperty()
 
 
-class AF_PR_FileInfoBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#831-file_info"""
-	length: bpy.props.IntProperty()
-	extension: bpy.props.StringProperty()
+class AF_PR_StoreBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 
+	local_file_path: bpy.props.StringProperty()
+	bytes: bpy.props.IntProperty()
 
-class AF_PR_FileHandleBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#832-file_handle"""
-	local_path: bpy.props.StringProperty()
-	behavior: bpy.props.EnumProperty(items=[('single_active', 'single_active', 'single_active'), ('single_passive', 'single_passive',
-		'single_passive'), ('archive_unpack_fully', 'archive_unpack_fully',
-		'archive_unpack_fully'), ('archive_unpack_referenced', 'archive_unpack_referenced', 'archive_unpack_referenced')])
-
-	def configure(self, file_handle):
+	def configure(self, store):
 		"""Custom configuration method for this datablock which validates that the file path does not make illegal relative references."""
-		self.behavior = file_handle['behavior']
+		self.bytes = store['bytes']
 
-		local_path: str = file_handle['local_path']
+		local_path: str = store['local_file_path']
 		if local_path == "." or "./" in local_path or ".\\" in local_path:
 			raise Exception("Local path contains an illegal reference (.)")
 		if local_path == ".." or "../" in local_path or "..\\" in local_path:
 			raise Exception("Local path contains an illegal reference (..)")
-		self.local_path = local_path
+
+		self.local_file_path = local_path
 
 
 class AF_PR_Header(bpy.types.PropertyGroup):
@@ -92,7 +83,7 @@ class AF_PR_Header(bpy.types.PropertyGroup):
 
 
 class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#811-provider_configuration"""
+
 	headers: bpy.props.CollectionProperty(type=AF_PR_Header)
 	connection_status_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 	header_acquisition_uri: bpy.props.StringProperty()
@@ -109,60 +100,90 @@ class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup, AF_PR_GenericBlo
 
 
 class AF_PR_UnlockBalanceBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#871-unlock_balance"""
 	balance: bpy.props.FloatProperty()
 	balance_unit: bpy.props.StringProperty()
 	balance_refill_uri: bpy.props.StringProperty()
 
 
 class AF_PR_ProviderReconfigurationBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#812-provider_reconfiguration"""
 	headers: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
 
-class AF_PR_FileFetchFromArchiveBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#835-file_fetchfrom_archive"""
-	archive_component_id: bpy.props.StringProperty()
-	component_path: bpy.props.StringProperty()
+class AF_PR_HandleNativeBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
+	pass
 
 
-class AF_PR_FileFetchDownloadPostUnlockBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#834-file_fetchdownload_post_unlock"""
+class AF_PR_FormatBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
+	extension: bpy.props.StringProperty()
+	mediatype: bpy.props.StringProperty()
+
+	def configure(self, format):
+		self.extension = format['extension']
+		if(format['mediatype']):
+			self.mediatype = format['mediatype']
+
+
+class AF_PR_HandleArchiveBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
+	extract_fully: bpy.props.BoolProperty()
+	local_directory_path: bpy.props.StringProperty()
+
+	def configure(self, handle_archive):
+
+		self.extract_fully = handle_archive['extract_fully']
+
+		path = handle_archive['local_directory_path']
+
+		if path is not None:
+			# Rule 1: It MUST end with a slash ("trailing slash")
+			if not path.endswith('/'):
+				raise Exception("Path must end with a slash ('/').")
+
+			# Rule 2: It MUST NOT start with a slash (unless it's root '/')
+			if path != '/' and path.startswith('/'):
+				raise Exception("Path must not start with a slash unless it's the root ('/').")
+
+			# Rule 3: It MUST not contain backslashes (\) as directory separators
+			if '\\' in path:
+				raise Exception("Path must not contain backslashes ('\\') as directory separators.")
+
+			# Rule 4: It MUST NOT contain relative path references (./ or ../)
+			if re.search(r'(^|/)\./|(^|/)\.\./', path):
+				raise Exception("Path must not contain relative path references ('./' or '../').")
+
+			self.local_directory_path = path
+
+
+class AF_PR_FetchDownloadBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	unlock_query_id: bpy.props.StringProperty()
-	unlocked_data_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
+	download_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 
-	def configure(self, file_fetch_download_post_unlock):
-		self.unlock_query_id = file_fetch_download_post_unlock['unlock_query_id']
-		self.unlocked_data_query.configure(file_fetch_download_post_unlock['unlocked_data_query'])
+	def configure(self, fetch_download):
+		self.download_query.configure(fetch_download['download_query'])
+
+		# Maybe check if it exists?
+		if (fetch_download['unlock_query_id']):
+			self.unlock_query_id = fetch_download['unlock_query_id']
+		else:
+			self.unlock_query_id = ""
 
 
-class AF_PR_LooseEnvironmentBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#851-loose_environment"""
+class AF_PR_FetchFromArchiveBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
+	archive_component_id: bpy.props.StringProperty()
+	component_sub_path: bpy.props.StringProperty()
+
+
+class AF_PR_HandleLooseEnvironmentBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
+	environment_name: bpy.props.StringProperty()
 	projection: bpy.props.EnumProperty(items=[("equirectangular", "equirectangular", "equirectangular"), ("mirror_ball", "mirror_ball", "mirror_ball")])
 
 
-class AF_PR_LooseMaterialDefineBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#852-loose_materialdefine"""
+class AF_PR_HandleLooseMaterialMapBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	material_name: bpy.props.StringProperty()
 	map: bpy.props.EnumProperty(items=af_constants.AF_MaterialMap.property_items())
-	colorspace: bpy.props.EnumProperty(items=af_constants.AF_Colorspace.property_items())
 
 
-class AF_PR_LooseMaterialApplyElement(bpy.types.PropertyGroup):
+class AF_PR_LinkLooseMaterialBlock(bpy.types.PropertyGroup):
 	material_name: bpy.props.StringProperty()
-	apply_selectively_to: bpy.props.StringProperty()
-
-
-class AF_PR_LooseMaterialApplyBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#853-loose_materialapply"""
-	items: bpy.props.CollectionProperty(type=AF_PR_LooseMaterialApplyElement)
-
-	def configure(self, loose_material_apply):
-		for elem in loose_material_apply:
-			new_item = self.items.add()
-			new_item.material_name = elem['material_name']
-			if "apply_selectively_to" in elem and elem['apply_selectively_to'] != None:
-				new_item.apply_selectively_to = elem['apply_selectively_to']
 
 
 class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup):
@@ -171,7 +192,7 @@ class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup):
 
 
 class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
-	"""https://assetfetch.org/spec/0.3/#861-formatblend"""
+
 	version: bpy.props.StringProperty()
 	is_asset: bpy.props.BoolProperty()
 	targets: bpy.props.CollectionProperty(type=AF_PR_FormatBlendTarget)
@@ -188,21 +209,15 @@ class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
 				new_name.value = n
 
 
-class AF_PR_FormatUsdBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#862-formatusd"""
-	is_crate: bpy.props.BoolProperty()
-
-
 class AF_PR_FormatObjBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#863-formatobj"""
+
 	up_axis: bpy.props.StringProperty()
+	front_axis: bpy.props.StringProperty()
 
 	blender_objects: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
 
 class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
-	"""Single element of the unlock_queries list"""
-
 	unlocked: bpy.props.BoolProperty(default=False)
 	price: bpy.props.FloatProperty()
 	unlock_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
@@ -221,7 +236,7 @@ class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
 
 
 class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#872-unlock_queries"""
+
 	items: bpy.props.CollectionProperty(type=AF_PR_UnlockQuery)
 
 	def configure(self, unlock_queries):
@@ -230,7 +245,7 @@ class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 
 
 class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
-	"""https://assetfetch.org/spec/0.3/#849-preview_image_thumbnail"""
+
 	alt: bpy.props.StringProperty()
 	uris: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 

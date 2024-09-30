@@ -52,7 +52,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			AF_ImportAction.import_loose_material_map_from_local_path.value: self.step_import_loose_material_map_from_local_path,
 			AF_ImportAction.import_loose_environment_from_local_path.value: self.step_import_loose_environment_from_local_path,
 			AF_ImportAction.unlock.value: self.step_unlock,
-			AF_ImportAction.unlock_get_download_data.value: self.step_unlock_get_download_data,
 			AF_ImportAction.create_directory.value: self.step_create_directory
 		}
 
@@ -82,26 +81,9 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		os.makedirs(directory, exist_ok=True)
 		return AF_ImportActionState.completed
 
-	def step_unlock_get_download_data(self, component_id: str) -> AF_ImportActionState:
-		"""Fetch the file_fetch.download datablock that is missing on the locked asset."""
-
-		component = self.implementation.get_component_by_id(component_id)
-
-		# Perform the query to get the previously withheld datablocks
-		response = component.file_fetch_download_post_unlock.unlocked_data_query.to_http_query().execute(raise_for_status=True)
-
-		# Add the real download configuration to the component so that it can be called in the next step.
-		if "file_fetch.download" in response.parsed['data']:
-			component.file_fetch_download.configure(response.parsed['data']['file_fetch.download'])
-		else:
-			raise Exception(f"Could not get unlocked download link for component {component.name}")
-
-		return AF_ImportActionState.completed
-
 	def step_fetch_download(self, component_id: str, max_runtime: float = 2.0) -> AF_ImportActionState:
 		""" Download the asset file.
-		The data was either there already or has been fetched using the code above (action=unlock_get_download_data)
-		In both cases, this code below actually downloads the asset and places it in its desired location
+		This code below downloads the asset and places it in its desired location
 		The operator can't run continuously for a long period, it has to "check in" with Blender to prevent the
 		application from timing out. Therefore the download is performed in chunks which is reflected in the
 		two scenarios outlined in the code. """
@@ -122,17 +104,10 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		# Scenario 2: The download hasn't been started yet and must be started
 		else:
 			# Prepare query
-			query: AF_HttpQuery = component.file_fetch_download.to_http_query()
+			query: AF_HttpQuery = component.fetch_download.download_query.to_http_query()
 
 			# Determine target path
-			if component.file_handle.behavior in ['single_active', 'single_passive']:
-				# Download directly into local dir
-				destination = os.path.join(self.implementation.local_directory, component.file_handle.local_path)
-			elif component.file_handle.behavior in ['archive_unpack_referenced', 'archive_unpack_fully']:
-				# Download into temp
-				destination = os.path.join(self.temp_dir, component.name)
-			else:
-				raise Exception("Invalid behavior!")
+			destination = os.path.join(self.implementation.local_directory, component.store.local_file_path)
 
 			# Initialize the query
 			query.execute_as_file_piecewise_start(destination_path=destination)
@@ -146,17 +121,19 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 		# Find the participating components
 		file_component = self.implementation.get_component_by_id(component_id)
-		zip_component = self.implementation.get_component_by_id(file_component.file_fetch_from_archive.archive_component_id)
+		zip_component = self.implementation.get_component_by_id(file_component.fetch_from_archive.archive_component_id)
 
 		# Build the relevant paths
 		# Path to the source zip file. This is were the previous step has downloaded it to.
+
+		### TODO: This needs to now use the path inside the local implementation directory
 		source_zip_file_path = os.path.join(self.temp_dir, zip_component.name)
 
 		# This is the path of the target file inside its parent zip
-		source_zip_sub_path = file_component.file_fetch_from_archive.component_path
+		source_zip_sub_path = file_component.fetch_from_archive.component_sub_path
 
 		# This is the final path where the file needs to end up
-		destination_file_path = os.path.join(self.implementation.local_directory, file_component.file_handle.local_path)
+		destination_file_path = os.path.join(self.implementation.local_directory, file_component.store.local_file_path)
 
 		with zipfile.ZipFile(source_zip_file_path, 'r') as zip_ref:
 			# Check if the specified file exists in the zip archive
@@ -182,7 +159,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	def step_import_usd_from_local_path(self, component_id: str) -> AF_ImportActionState:
 		"""Imports a USD file."""
 		usd_component = self.implementation.get_component_by_id(component_id=component_id)
-		usd_target_path = os.path.join(self.implementation.local_directory, usd_component.file_handle.local_path)
+		usd_target_path = os.path.join(self.implementation.local_directory, usd_component.store.local_file_path)
 		bpy.ops.wm.usd_import(filepath=usd_target_path, import_all_materials=True)
 
 		return AF_ImportActionState.completed
@@ -191,7 +168,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		"""Imports an OBJ file."""
 		# The path where the obj file was downloaded in a previous step
 		obj_component = self.implementation.get_component_by_id(component_id=component_id)
-		obj_target_path = os.path.join(self.implementation.local_directory, obj_component.file_handle.local_path)
+		obj_target_path = os.path.join(self.implementation.local_directory, obj_component.store.local_file_path)
 
 		up_axis = 'Y'
 		if "format_obj" in obj_component:
@@ -213,7 +190,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		"""Imports an HDRI environment from a file based on a loose_environment datablock"""
 
 		hdri_component = self.implementation.get_component_by_id(component_id=component_id)
-		hdri_target_path = os.path.join(self.implementation.local_directory, hdri_component.file_handle.local_path)
+		hdri_target_path = os.path.join(self.implementation.local_directory, hdri_component.store.local_file_path)
 
 		world.create_world(world_name=hdri_component.name, hdr_image_path=hdri_target_path, af_namespace=self.af_namespace)
 
@@ -223,11 +200,11 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		"""Imports a material map and adds it to a material based on the loose_material.define datablock"""
 
 		image_component = self.implementation.get_component_by_id(component_id=component_id)
-		image_target_path = os.path.join(self.implementation.local_directory, image_component.file_handle.local_path)
-		target_material = material.get_or_create_material(material_name=image_component.loose_material_define.material_name, af_namespace=self.af_namespace)
+		image_target_path = os.path.join(self.implementation.local_directory, image_component.store.local_file_path)
+		target_material = material.get_or_create_material(material_name=image_component.handle_loose_material_map.material_name, af_namespace=self.af_namespace)
 
-		colorspace = af_constants.AF_Colorspace[image_component.loose_material_define.colorspace]
-		map = af_constants.AF_MaterialMap.from_string_by_value(image_component.loose_material_define.map)
+		colorspace = af_constants.AF_Colorspace[image_component.handle_loose_material_map.colorspace]
+		map = af_constants.AF_MaterialMap.from_string_by_value(image_component.handle_loose_material_map.map)
 
 		material.add_map_to_material(colorspace=colorspace, image_target_path=image_target_path, target_material=target_material, map=map)
 

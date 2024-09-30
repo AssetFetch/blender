@@ -159,8 +159,8 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 					# Download
 					if step.action == AF_ImportAction.fetch_download.value:
 						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-						step_details = target_component.file_handle.local_path
-						target_length = target_component.file_info.length
+						step_details = target_component.store.local_file_path
+						target_length = target_component.store.bytes
 						if target_length > 0:
 							step_details += f" - {self.format_bytes(target_length)}"
 
@@ -169,20 +169,20 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 						AF_ImportAction.fetch_from_zip_archive.value, AF_ImportAction.import_obj_from_local_path.value, AF_ImportAction.import_usd_from_local_path.value
 					]:
 						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-						step_details = target_component.file_handle.local_path
+						step_details = target_component.store.local_file_path
 
 					# Loose materials
 					if step.action == AF_ImportAction.import_loose_material_map_from_local_path.value:
 						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-						target_path = target_component.file_handle.local_path
-						target_material = target_component.loose_material_define.material_name
-						target_map = target_component.loose_material_define.map
+						target_path = target_component.store.local_file_path
+						target_material = target_component.handle_loose_material_map.material_name
+						target_map = target_component.handle_loose_material_map.map
 						step_details = f"{target_path} → {target_material}/{target_map}"
 
 					# Loose environment
 					if step.action == AF_ImportAction.import_loose_environment_from_local_path.value:
 						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-						target_path = target_component.file_handle.local_path
+						target_path = target_component.store.local_file_path
 						step_details = f"Import {target_path}"
 
 					# Unlocking
@@ -190,10 +190,6 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 						query_id = step.config['query_id']
 						unlock_query: AF_PR_UnlockQuery = bpy.context.window_manager.af.current_implementation_list.get_unlock_query_by_id(query_id)
 						step_details = f"Unlock content ({unlock_query.price} {af.current_connection_state.unlock_balance.balance_unit})"
-
-					if step.action == AF_ImportAction.unlock_get_download_data.value:
-						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
-						step_details = target_component.file_handle.local_path
 
 					# Directories
 					if step.action == AF_ImportAction.create_directory.value:
