@@ -71,7 +71,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	def step_unlock(self, query_id: str) -> AF_ImportActionState:
 		"""Perform an unlock query."""
 		unlock_query = self.implementation_list.get_unlock_query_by_id(query_id)
-		query: http.AF_HttpQuery = unlock_query.unlock_query.to_http_query()
+		query: http.AF_HttpQuery = unlock_query.query.to_http_query()
 		response = query.execute(raise_for_status=True)
 		unlock_query.unlocked = True
 		return AF_ImportActionState.completed

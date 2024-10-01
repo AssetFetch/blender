@@ -26,6 +26,8 @@ class AF_PR_GenericBlock:
 		"""Configures this datablock using a dict that is the result of parsing the JSON from the provider."""
 		for key in initial_data.keys():
 			try:
+				if initial_data[key] == None:
+					initial_data[key] = ""
 				setattr(self, key, initial_data[key])
 			except Exception as e:
 				LOGGER.warn(f"skipping {key} because {e}")
@@ -220,8 +222,8 @@ class AF_PR_FormatObjBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
 	unlocked: bpy.props.BoolProperty(default=False)
 	price: bpy.props.FloatProperty()
-	unlock_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
-	unlock_query_fallback_uri: bpy.props.StringProperty()
+	query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
+	query_fallback_uri: bpy.props.StringProperty()
 
 	def configure(self, unlock_query):
 		self.name = unlock_query['id']
@@ -229,10 +231,10 @@ class AF_PR_UnlockQuery(bpy.types.PropertyGroup):
 			self.unlocked = unlock_query['unlocked']
 		if "price" in unlock_query:
 			self.price = unlock_query['price']
-		if "unlock_query" in unlock_query:
-			self.unlock_query.configure(unlock_query['unlock_query'])
-		if "unlock_query_fallback_uri" in unlock_query and unlock_query['unlock_query_fallback_uri']:
-			self.unlock_query_fallback_uri = unlock_query['unlock_query_fallback_uri']
+		if "query" in unlock_query:
+			self.query.configure(unlock_query['query'])
+		if "query_fallback_uri" in unlock_query and unlock_query['query_fallback_uri']:
+			self.query_fallback_uri = unlock_query['query_fallback_uri']
 
 
 class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):

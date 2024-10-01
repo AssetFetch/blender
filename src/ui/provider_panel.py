@@ -35,7 +35,7 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 				col = layout.column()
 				col.prop(provider_header, "value", text=provider_header.title)
 				#layout.operator("af.connection_status",text="Connect")
-				if af['provider_bookmark_selection'] > 0:
+				if "provider_bookmark_selection" in af and af['provider_bookmark_selection'] > 0:
 					col.enabled = False
 
 		# Connection state

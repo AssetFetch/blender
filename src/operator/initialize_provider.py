@@ -72,7 +72,7 @@ class AF_OP_InitializeProvider(bpy.types.Operator):
 						current_header.configure(header_info)
 
 					# Populate header from preferences, if applicable
-					if af['provider_bookmark_selection'] > 0:
+					if "provider_bookmark_selection" in af and af['provider_bookmark_selection'] > 0:
 						prefs = AF_PR_Preferences.get_prefs()
 						bookmark = prefs.provider_bookmarks[af['provider_bookmark_selection'] - 1]
 						for pref_header in bookmark.header_values:
