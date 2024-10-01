@@ -125,9 +125,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 		# Build the relevant paths
 		# Path to the source zip file. This is were the previous step has downloaded it to.
-
-		### TODO: This needs to now use the path inside the local implementation directory
-		source_zip_file_path = os.path.join(self.temp_dir, zip_component.name)
+		source_zip_file_path = os.path.join(self.implementation.local_directory,zip_component.store.local_file_path)
 
 		# This is the path of the target file inside its parent zip
 		source_zip_sub_path = file_component.fetch_from_archive.component_sub_path
@@ -140,18 +138,12 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			if source_zip_sub_path not in zip_ref.namelist():
 				raise Exception(f"File '{source_zip_sub_path}' not found in the zip archive.")
 
-			# Prepare a temporary extraction dir
-			extraction_id = str(uuid.uuid4())
-			extraction_temp_dir = os.path.join(self.temp_dir, extraction_id)
-
-			# Path were the file will initially land after extraction
-			extraction_file_path = os.path.join(extraction_temp_dir, os.path.basename(source_zip_sub_path))
-
 			# Actually run the extraction
-			zip_ref.extract(source_zip_sub_path, extraction_temp_dir)
+			with zip_ref.open(source_zip_sub_path) as source_file:
+				# Write the content to the new location with a new name
+				with open(destination_file_path, 'wb') as destination_file:
+					shutil.copyfileobj(source_file,destination_file)
 
-			# Move the file into the real destination path
-			shutil.move(src=extraction_file_path, dst=destination_file_path)
 			LOGGER.info(f"File '{source_zip_sub_path}' extracted successfully to '{destination_file_path}'.")
 
 		return AF_ImportActionState.completed
@@ -276,11 +268,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			return {'FINISHED'}
 
 	def execute(self, context):
-
-		# Ensure that an empty temp directory is available
-		if os.path.exists(self.temp_dir):
-			shutil.rmtree(self.temp_dir)
-		os.makedirs(self.temp_dir, exist_ok=True)
 
 		# Clear the local implementation_directory
 		try:
