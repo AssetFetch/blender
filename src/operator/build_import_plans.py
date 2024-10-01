@@ -66,12 +66,13 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				current_impl.import_steps.add().configure_create_directory(current_impl.local_directory)
 
 				# Step 2: Find the relevant unlocking queries - Which unlockings/purchases need to be made with the provider in order to use this implementation?
-				for comp in current_impl.components:
+				for comp in current_impl.components: 
+					comp: AF_PR_Component
 
 					# Is this a component that requires unlocking?
-					if comp.file_fetch_download_post_unlock.is_set:
+					if comp.fetch_download.is_set and comp.fetch_download.unlock_query_id != "":
 
-						unlocking_query_id = comp.file_fetch_download_post_unlock.unlock_query_id
+						unlocking_query_id = comp.fetch_download.unlock_query_id
 
 						# Get the unlocking query that this component is linked to
 						referenced_query = af.current_implementation_list.get_unlock_query_by_id(unlocking_query_id)
@@ -87,24 +88,16 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 							# Add the query id to the set of already scheduled queries
 							already_scheduled_unlocking_query_ids.add(unlocking_query_id)
 
-				# Step 3: Get all the previously withheld datablocks
-				for comp in current_impl.components:
-					if comp.file_fetch_download_post_unlock.is_set:
-
-						# This schedules the query to obtain the real download link
-						# which the provider only hands out after the asset has already been unlocked and which may be ephemeral.
-						current_impl.import_steps.add().configure_unlock_get_download_data(comp.name)
-
-				# Step 4: Download all files
+				# Step 3: Download all files
 				# After the preparations in steps 2 and 3 (if those were even required) the actual file download can now be scheduled.
 				for comp in current_impl.components:
-					if comp.file_fetch_download.is_set or comp.file_fetch_download_post_unlock.is_set:
+					if comp.fetch_download.is_set:
 
 						# This schedules the actual file download using the HTTP query that was either there in the first place or
 						# which has been obtained during a previous step.
 						current_impl.import_steps.add().configure_fetch_download(comp.name)
 
-				# Step 5: Extract files from archives
+				# Step 4: Extract files from archives
 				# If the implementation makes use of archives for data transfer then the files must be unpacked.
 				# This must happen in proper order to ensure that unpacking works even if the provider is sending nested ZIP files
 				# (Yes, this is actually a thing sometimes!)
@@ -113,7 +106,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				pending_extraction_comps = []
 				for comp in current_impl.components:
 					# Does the component have the "file_fetch.from_archive" datablock? If yes: Add it to the list
-					if comp.file_fetch_from_archive.is_set:
+					if comp.fetch_from_archive.is_set:
 						pending_extraction_comps.append(comp)
 
 				# Work through the list and process the components.
@@ -124,7 +117,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 					for pcomp in pending_extraction_comps:
 
 						# Get the target archive component that the current component lists as its source.
-						source_archive_comp_id = pcomp.file_fetch_from_archive.archive_component_id
+						source_archive_comp_id = pcomp.fetch_from_archive.archive_component_id
 						source_archive_comp = current_impl.get_component_by_id(source_archive_comp_id)
 						if not source_archive_comp:
 							raise Exception(f"Referenced component {source_archive_comp_id} could not be found.")
@@ -147,7 +140,7 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 							unreachable_components_formatted += pcomp.name + " "
 						raise Exception(f"Components {unreachable_components_formatted} could not be resolved in the provided implementation definition.")
 
-				# Step 4: Plan how to import files
+				# Step 5: Plan how to import files
 				# "Importing" includes loading the file using Blender's native format handler
 				# and creating or applying loose materials referenced in loose_material.* datablocks
 
@@ -155,49 +148,35 @@ class AF_OP_BuildImportPlans(bpy.types.Operator):
 				for comp in current_impl.components:
 
 					# Material maps and HDRIs get a completely separate treatment
-					if comp.loose_material_define.is_set:
-						if comp.file_handle.behavior == "single_active":
-							# The component has the material definition datablock AND is marked as active, so it certainly needs to be imported.
-							current_impl.import_steps.add().configure_import_loose_material_map_from_local_path(comp.name)
-						else:
-
-							# The component does have the material definition datablock but is marked as passive.
-							# According to the rules of AssetFetch, it should only be imported, if it is referenced by another component
-							import_map = False
-							for c in current_impl.components:
-								if c.loose_material_apply.is_set:
-									for m in c.loose_material_apply.items:
-										if m.material_name == comp.loose_material_define.material_name:
-											import_map = True
-
-							if import_map:
-								current_impl.import_steps.add().configure_import_loose_material_map_from_local_path(comp.name)
-
-					elif comp.loose_environment.is_set and comp.file_handle.behavior == "single_active" :
+					if comp.handle_loose_material_map.is_set:
+						current_impl.import_steps.add().configure_import_loose_material_map_from_local_path(comp.name)
 						
-						if comp.file_info.extension not in ['.exr','.hdr']:
-							raise Exception(f"The addon does not know how to handle HDRI environments with the extension '{comp.file_info.extension}'.")
 
-						if comp.loose_environment.projection != "equirectangular":
+					elif comp.handle_loose_environment_map.is_set:
+						
+						if comp.format.extension not in ['.exr','.hdr']:
+							raise Exception(f"The addon does not know how to handle HDRI environments with the extension '{comp.format.extension}'.")
+
+						if comp.handle_loose_environment_map.projection != "equirectangular":
 							raise Exception("The addon currently only supports HDRIs with equirectangular projection.")
 
 						current_impl.import_steps.add().configure_import_loose_environment_from_local_path(comp.name)
 
 					# Handle all other files
-					elif comp.file_handle.behavior == "single_active":
+					elif comp.handle_native.is_set:
 
 						# OBJ Model
-						if comp.file_info.extension == ".obj":
+						if comp.format.extension == ".obj" or comp.format_obj.is_set:
 							current_impl.import_steps.add().configure_import_obj_from_local_path(comp.name)
 
 						# USD Files
-						elif comp.file_info.extension in [".usd", ".usda", ".usdc", ".usdz"]:
+						elif comp.format.extension in [".usd", ".usda", ".usdc", ".usdz"]:
 							current_impl.import_steps.add().configure_import_usd_from_local_path(comp.name)
 
 						# TODO: More extensions to be added here in the future
 
 						else:
-							raise Exception(f"The addon does not know how to actively handle this '{comp.file_info.extension}'-file using the given metadata.")
+							raise Exception(f"The addon does not know how to actively handle this '{comp.format.extension}'-file using the given metadata.")
 
 			except Exception as e:
 				current_impl.is_valid = False

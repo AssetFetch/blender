@@ -48,14 +48,14 @@ def count_image_nodes(shader_tree: bpy.types.NodeTree):
 	return image_node_count
 
 
-def add_map_to_material(target_material: bpy.types.Material, colorspace: af_constants.AF_Colorspace, map: af_constants.AF_MaterialMap, image_target_path: str):
+def add_map_to_material(target_material: bpy.types.Material, map: af_constants.AF_MaterialMap, image_target_path: str):
 	"""Adds a new PBR map to a given material."""
 
 	# Import the file from local_path into blender
 	image = bpy_extras.image_utils.load_image(imagepath=image_target_path)
 
 	# Set color space
-	image.colorspace_settings.name = colorspace.blender_value()
+	image.colorspace_settings.name = map.blender_color_space()
 
 	# Assign the map to the material
 	image_node = target_material.node_tree.nodes.new(type='ShaderNodeTexImage')
