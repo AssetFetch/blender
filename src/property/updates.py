@@ -68,6 +68,7 @@ def update_provider_header(property, context):
 def update_asset_list_index(property, context):
 	"""Function to run if a new asset has been selected aka the index in the asset list has changed."""
 	LOGGER.debug("update_asset_list_index")
+	bpy.context.window_manager.af.current_implementation_list_index = 0
 	if bpy.ops.af.update_implementations_list.poll():
 		bpy.ops.af.update_implementations_list()
 
