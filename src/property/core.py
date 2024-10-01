@@ -105,6 +105,8 @@ class AF_PR_Component(bpy.types.PropertyGroup):
 	handle_loose_material_map: bpy.props.PointerProperty(type=AF_PR_HandleLooseMaterialMapBlock)
 	handle_archive: bpy.props.PointerProperty(type=AF_PR_HandleArchiveBlock)
 
+	link_loose_material: bpy.props.PointerProperty(type=AF_PR_LinkLooseMaterialBlock)
+
 	text: bpy.props.PointerProperty(type=AF_PR_TextBlock)
 
 	def configure(self, component):
@@ -352,10 +354,6 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 					block = getattr(blender_comp, key.replace(".", "_"))
 					block.is_set = True
 					block.configure(pcd[key])
-				else:
-					# Some datablocks are required and get tested for here.
-					if key in ['format', 'store']:
-						raise Exception(f"{blender_comp.name} is missing a {key} datablock.")
 		return self
 
 

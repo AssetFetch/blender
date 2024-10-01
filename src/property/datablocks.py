@@ -161,7 +161,7 @@ class AF_PR_FetchDownloadBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 		self.download_query.configure(fetch_download['download_query'])
 
 		# Maybe check if it exists?
-		if (fetch_download['unlock_query_id']):
+		if ( "unlock_query_id" in fetch_download):
 			self.unlock_query_id = fetch_download['unlock_query_id']
 		else:
 			self.unlock_query_id = ""
@@ -182,7 +182,7 @@ class AF_PR_HandleLooseMaterialMapBlock(bpy.types.PropertyGroup, AF_PR_GenericBl
 	map: bpy.props.EnumProperty(items=af_constants.AF_MaterialMap.property_items())
 
 
-class AF_PR_LinkLooseMaterialBlock(bpy.types.PropertyGroup):
+class AF_PR_LinkLooseMaterialBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	material_name: bpy.props.StringProperty()
 
 

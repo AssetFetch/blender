@@ -46,6 +46,7 @@ registration_targets = [
 	AF_PR_FetchFromArchiveBlock,
 	AF_PR_HandleLooseEnvironmentBlock,
 	AF_PR_HandleLooseMaterialMapBlock,
+	AF_PR_LinkLooseMaterialBlock,
 	AF_PR_FormatBlendTarget,
 	AF_PR_FormatBlendBlock,
 	AF_PR_FormatObjBlock,

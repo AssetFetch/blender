@@ -57,14 +57,14 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 	# HELPER FUNCTIONS
 
-	def helper_assign_loose_materials(self, loose_material_apply_block, target_blender_objects: List[bpy.types.Object], af_namespace: str):
-		"""Takes in a loose_material.apply datablock and a list of Blender objects and applies the materials as defined."""
-		if loose_material_apply_block.is_set:
+	def helper_assign_loose_materials(self, link_loose_material_block, target_blender_objects: List[bpy.types.Object], af_namespace: str):
+		"""Takes in a link.loose_material datablock and a list of Blender objects and applies the materials as defined.
+		This function is used when importing geometry files like obj/fbx/..."""
+		if link_loose_material_block.is_set:
 			for obj in target_blender_objects:
 				obj.data.materials.clear()
-				for material_declaration in loose_material_apply_block.items:
-					target_material = material.get_or_create_material(material_name=material_declaration.material_name, af_namespace=af_namespace)
-					obj.data.materials.append(target_material)
+				target_material = material.get_or_create_material(material_name=link_loose_material_block.material_name, af_namespace=af_namespace)
+				obj.data.materials.append(target_material)
 
 	# STEP FUNCTIONS
 
@@ -125,7 +125,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 		# Build the relevant paths
 		# Path to the source zip file. This is were the previous step has downloaded it to.
-		source_zip_file_path = os.path.join(self.implementation.local_directory,zip_component.store.local_file_path)
+		source_zip_file_path = os.path.join(self.implementation.local_directory, zip_component.store.local_file_path)
 
 		# This is the path of the target file inside its parent zip
 		source_zip_sub_path = file_component.fetch_from_archive.component_sub_path
@@ -142,7 +142,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			with zip_ref.open(source_zip_sub_path) as source_file:
 				# Write the content to the new location with a new name
 				with open(destination_file_path, 'wb') as destination_file:
-					shutil.copyfileobj(source_file,destination_file)
+					shutil.copyfileobj(source_file, destination_file)
 
 			LOGGER.info(f"File '{source_zip_sub_path}' extracted successfully to '{destination_file_path}'.")
 
@@ -171,8 +171,8 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 		bpy.ops.wm.obj_import(up_axis=up_axis, filepath=obj_target_path)
 
-		# Apply materials, if referenced
-		self.helper_assign_loose_materials(loose_material_apply_block=obj_component.loose_material_apply,
+		# Apply loose materials, if referenced
+		self.helper_assign_loose_materials(link_loose_material_block=obj_component.link_loose_material,
 			target_blender_objects=bpy.context.selected_objects,
 			af_namespace=self.af_namespace)
 
