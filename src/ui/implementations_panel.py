@@ -43,13 +43,6 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 		af = bpy.context.window_manager.af
 		return af.current_connection_state.state == "connected" and len(af.current_asset_list.assets) > 0
 
-	def strike_through_text(self, text: str):
-		"""Create a strike-through effect on the given text using unicode."""
-		result = ''
-		for c in text:
-			result = result + c + '\u0336'
-		return result
-
 	def draw(self, context):
 
 		# Helpful variables
@@ -97,7 +90,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 
 			# Render the original and the reduced price if the actual price is below the full price
 			else:
-				charges_formatted = f"{self.strike_through_text(str(charges_full))} {charges_actual} {af.current_connection_state.unlock_balance.balance_unit}"
+				charges_formatted = f"{charges_actual} {af.current_connection_state.unlock_balance.balance_unit} (instead of {str(charges_full)})"
 				row = import_info_box.row()
 				row.label(text="Price")
 				row.label(text=charges_formatted)
