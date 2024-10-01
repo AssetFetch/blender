@@ -163,7 +163,7 @@ class AF_PR_FetchDownloadBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 		self.download_query.configure(fetch_download['download_query'])
 
 		# Maybe check if it exists?
-		if ( "unlock_query_id" in fetch_download):
+		if ( "unlock_query_id" in fetch_download and fetch_download['unlock_query_id'] is not None):
 			self.unlock_query_id = fetch_download['unlock_query_id']
 		else:
 			self.unlock_query_id = ""
