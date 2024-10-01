@@ -2,22 +2,6 @@
 
 from enum import Enum
 
-
-class AF_Colorspace(Enum):
-	srgb = "srgb"
-	linear = "linear"
-
-	@staticmethod
-	def property_items():
-		return [("srgb", "sRGB", "sRGB"), ("linear", "linear", "linear")]
-
-	def blender_value(self):
-		if self.value == "linear":
-			return "Non-Color"
-		else:
-			return "sRGB"
-
-
 class AF_MaterialMap(Enum):
 	albedo = "albedo"
 	roughness = "roughness"
@@ -31,6 +15,12 @@ class AF_MaterialMap(Enum):
 	opacity = "opacity"
 	ambient_occlusion = "ambient_occlusion"
 	emission = "emission"
+
+	def blender_color_space(self):
+		if self.value in ["albedo","diffuse"]:
+			return "sRGB"
+		else:
+			return "Non-Color"
 
 	@staticmethod
 	def from_string_by_value(value: str):

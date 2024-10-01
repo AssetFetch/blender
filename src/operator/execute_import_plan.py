@@ -195,10 +195,9 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		image_target_path = os.path.join(self.implementation.local_directory, image_component.store.local_file_path)
 		target_material = material.get_or_create_material(material_name=image_component.handle_loose_material_map.material_name, af_namespace=self.af_namespace)
 
-		colorspace = af_constants.AF_Colorspace[image_component.handle_loose_material_map.colorspace]
 		map = af_constants.AF_MaterialMap.from_string_by_value(image_component.handle_loose_material_map.map)
 
-		material.add_map_to_material(colorspace=colorspace, image_target_path=image_target_path, target_material=target_material, map=map)
+		material.add_map_to_material(image_target_path=image_target_path, target_material=target_material, map=map)
 
 		return AF_ImportActionState.completed
 
