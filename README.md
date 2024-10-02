@@ -8,9 +8,9 @@ This addon is a client for the [AssetFetch protocol](https://assetfetch.org), an
 
 1. Visit the [Releases page](https://github.com/struffel/assetfetch-blender/releases)
 2. Choose the latest version and click on "Assets" below the informative text
-3. Download `af_blender_X_Y_Z.zip` from this page (not "Source code")
-4. Go into Blender and select **Edit -> Preferences -> Addons**.
-5. Then click on the Install button in the top right corner and navigate to the ZIP file (no need to unpack it).
+3. Download the `.zip` archive for the addon (**not "Source code"**)
+4. Go into Blender and select **Edit -> Preferences -> Get Extensions**.
+5. Open the small drop-down menu in the top-right corner and click on **Install from disk...** and navigate to the ZIP file (no need to unpack it).
 6. The AssetFetch panel will be added in the right-side menu in the 3D-window.
 
 ## Development Setup
