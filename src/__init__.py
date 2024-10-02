@@ -1,17 +1,18 @@
 """This is the main module of the "AssetFetch For Blender" addon.
 It houses the main register() and unregister() functions for the addon along with required metadata.
-See also: https://docs.blender.org/manual/en/latest/advanced/scripting/addon_tutorial.html#bringing-it-all-together
 """
 
 import os, sys
 import bpy
 
-print("Loading AssetFetch for Blender v0.2.0")
+print("Loading AssetFetch for Blender v0.3.0")
 
 # Add the lib/ directory to sys.path to make it all the bundled libraries importable.
 # The addon is distributed with all its required python libraries in the /lib subdirectory.
 # This has turned out to be the most reliable since the final python environment of the user (inside Blender) does not need to have pip.
 # Check the readme.md for instructions on how to download the dependencies using pip.
+
+# TODO: With the introduction of Blender 4.2 this generates a small warning message, therefore it will likely need to be changed in the future.
 LIB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 if LIB_PATH not in sys.path:
 	sys.path.insert(0, LIB_PATH)
