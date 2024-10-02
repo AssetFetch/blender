@@ -1,17 +1,18 @@
 """This is the main module of the "AssetFetch For Blender" addon.
 It houses the main register() and unregister() functions for the addon along with required metadata.
-See also: https://docs.blender.org/manual/en/latest/advanced/scripting/addon_tutorial.html#bringing-it-all-together
 """
 
 import os, sys
 import bpy
 
-print("Loading AssetFetch for Blender v0.2.0")
+print("Loading AssetFetch for Blender v0.3.0")
 
 # Add the lib/ directory to sys.path to make it all the bundled libraries importable.
 # The addon is distributed with all its required python libraries in the /lib subdirectory.
 # This has turned out to be the most reliable since the final python environment of the user (inside Blender) does not need to have pip.
 # Check the readme.md for instructions on how to download the dependencies using pip.
+
+# TODO: With the introduction of Blender 4.2 this generates a small warning message, therefore it will likely need to be changed in the future.
 LIB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 if LIB_PATH not in sys.path:
 	sys.path.insert(0, LIB_PATH)
@@ -20,22 +21,8 @@ if LIB_PATH not in sys.path:
 # Like with the libraries, instructions for filling the json-schema directory for development can be found in readme.md
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "json-schema")
 
-# This variable is used for the "Preferences" (bookmarks/settings) definition.
-# Normally, it is common practice to use __name__ in the preferences class to tell Blender under which name the preferences should be stored.
-# But because we don't define the preferences here in this init file we instead pipe the name over to properties/preferences.py using this variable.
-# During development the name may therefore simply be "src" but in a proper installation it will be the name of the subdirectory in the Blender addons directory.
-ADDON_NAME = __name__
+ADDON_NAME = __package__
 
-# Standard variable with metadata required for all Blender addons.
-bl_info = {
-	"name": "assetfetch-blender",
-	"description": "AssetFetch for Blender",
-	"author": "ambientCG / Lennart Demes",
-	"version": (0, 2),
-	"blender": (4, 0, 0),
-	"location": "View3D",
-	"category": "3D View"
-}
 
 def register():
 	"""The main registration function for the entire addon.

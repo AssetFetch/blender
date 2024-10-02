@@ -57,7 +57,7 @@ class AF_HttpQuery:
 	"""Represents a query that the client sends to the provider"""
 
 	# The standard headers that get sent with every request (along with any auth headers)
-	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.2"}
+	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.3"}
 
 	def __init__(self, uri: str, method: str, parameters: Dict[str, str] = None, chunk_size: int = 128 * 1024 * 8):
 		self.uri = uri
