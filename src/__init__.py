@@ -21,22 +21,8 @@ if LIB_PATH not in sys.path:
 # Like with the libraries, instructions for filling the json-schema directory for development can be found in readme.md
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "json-schema")
 
-# This variable is used for the "Preferences" (bookmarks/settings) definition.
-# Normally, it is common practice to use __name__ in the preferences class to tell Blender under which name the preferences should be stored.
-# But because we don't define the preferences here in this init file we instead pipe the name over to properties/preferences.py using this variable.
-# During development the name may therefore simply be "src" but in a proper installation it will be the name of the subdirectory in the Blender addons directory.
-ADDON_NAME = __name__
+ADDON_NAME = __package__
 
-# Standard variable with metadata required for all Blender addons.
-bl_info = {
-	"name": "assetfetch-blender",
-	"description": "AssetFetch for Blender",
-	"author": "ambientCG / Lennart Demes",
-	"version": (0, 2),
-	"blender": (4, 0, 0),
-	"location": "View3D",
-	"category": "3D View"
-}
 
 def register():
 	"""The main registration function for the entire addon.

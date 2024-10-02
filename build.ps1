@@ -1,0 +1,2 @@
+& "$ENV:ProgramFiles\Blender Foundation\Blender 4.2\blender.exe" --command extension build --source-dir $PSScriptRoot/src --verbose
+& "$ENV:ProgramFiles\Blender Foundation\Blender 4.2\blender.exe" --command extension server-generate --repo-dir $PSScriptRoot
