@@ -1,11 +1,14 @@
 from . import http
 import logging, bpy, os, hashlib, shutil
+from threading import Lock
 
 LOGGER = logging.getLogger("af.util.ui_images")
 LOGGER.setLevel(logging.DEBUG)
 
 # Registry of images that are currently loaded into Blender as preview icons
 registry: bpy.utils.previews.ImagePreviewCollection = bpy.utils.previews.new()
+
+mutex = Lock()
 
 
 def reset_image_cache():
@@ -32,6 +35,27 @@ def get_sha1_hash(string: str):
 		raise "String to hash was not compatible"
 
 
+def register_thumbnail_image(uri: str) -> int:
+
+	# Helpful variables
+	af = bpy.context.window_manager.af
+	uri_hash = get_sha1_hash(uri)
+	target_file_location = os.path.join(af.ui_image_directory, uri_hash)
+
+	# Load image into blender, if needed
+	if uri_hash not in registry.keys():
+
+		# Download image, if needed
+		if (not os.path.exists(target_file_location)) or os.path.getsize(target_file_location) < 1:
+			# Image must be downloaded
+			image_query = http.AF_HttpQuery(uri, "get", None, 16 * 1024 * 1024 * 8)
+			image_query.execute_as_file(target_file_location)
+			LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
+
+		registry.load(name=uri_hash, path=target_file_location, path_type='IMAGE')
+		LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
+
+
 def get_ui_image_icon_id(uri: str) -> int:
 	"""Load an image from the given URL and imports it into Blender as an icon, so that it can be used in UI panels.
 	The image is stored in a temporary directory using the sha1 of the URI as its name.
@@ -42,19 +66,8 @@ def get_ui_image_icon_id(uri: str) -> int:
 	# Helpful variables
 	af = bpy.context.window_manager.af
 	uri_hash = get_sha1_hash(uri)
-	target_file_location = os.path.join(af.ui_image_directory, uri_hash)
 
-	# Download image, if needed
-	if not os.path.exists(target_file_location):
-		# Image must be downloaded
-		image_query = http.AF_HttpQuery(uri, "get", None)
-		image_query.execute_as_file(target_file_location)
-		LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
-
-	# Load image into blender, if needed
-	if uri_hash not in registry.keys():
-		registry.load(name=uri_hash, path=target_file_location, path_type='IMAGE')
-		LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
-
-	# Return the icon id
-	return registry[uri_hash].icon_id
+	if uri_hash in registry.keys():
+		# Return the icon id
+		return registry[uri_hash].icon_id
+	return None

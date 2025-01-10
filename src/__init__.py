@@ -38,14 +38,14 @@ def register():
 	ui.register()
 
 	from .util.ui_images import reset_image_cache
-	reset_image_cache()
+	#reset_image_cache()
 
 
 def unregister():
 	"""Main unregistration function for the entire addon (used during uninstallation)."""
 
 	from .util.ui_images import reset_image_cache
-	reset_image_cache()
+	#reset_image_cache()
 
 	from .ui import unregister
 	ui.unregister()

@@ -1,8 +1,10 @@
 import logging
 import bpy, os, shutil, tempfile, uuid
 
-from ..util import http
+from ..util import http, ui_images
 from ..ui import AF_PT_AssetPanel
+
+from threading import Thread
 
 LOGGER = logging.getLogger("af.ops.update_asset_list")
 LOGGER.setLevel(logging.DEBUG)
@@ -28,5 +30,10 @@ class AF_OP_UpdateAssetList(bpy.types.Operator):
 
 		# Save assets in blender properties
 		af.current_asset_list.configure(response.parsed)
+
+		# Begin loading thumbnails
+		for asset in af.current_asset_list.assets:
+			thread = Thread(target=ui_images.register_thumbnail_image, args=(asset.preview_image_thumbnail.get_optimal_resolution_uri(128), ))
+			thread.start()
 
 		return {'FINISHED'}

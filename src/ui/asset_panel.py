@@ -13,10 +13,17 @@ LOGGER.setLevel(logging.DEBUG)
 class AF_UL_AssetsItems(bpy.types.UIList):
 	"""Class for rendering the asset list."""
 
-	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_Asset, icon, active_data, active_propname, index):
+	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_Asset, icon, active_data, active_propname, index:int):
 
 		row = layout.row()
 		row.label(text=item.get_display_title())
+		row.label(text=str(index))
+
+		thumbnail_uri = item.preview_image_thumbnail.get_optimal_resolution_uri(128)
+		#row.label(text=thumbnail_uri.value)
+		thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
+		#row.label(text=str(thumbnail_icon_id))
+		row.template_icon(icon_value=thumbnail_icon_id, scale=1.0)
 
 
 class AF_PT_AssetPanel(bpy.types.Panel):
@@ -55,16 +62,16 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 				active_dataptr=af,
 				active_propname="current_asset_list_index",
 				maxrows=9)
-			
+
 			# Draw the asset name and thumbnail
-			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
-			asset_box = row.box()
-			asset_box.label(text=current_asset.get_display_title(), icon="ASSET_MANAGER")
+			#current_asset = af.current_asset_list.assets[af.current_asset_list_index]
+			#asset_box = row.box()
+			#asset_box.label(text=current_asset.get_display_title(), icon="ASSET_MANAGER")
 
-			thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(256)
-			thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
+			#thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(256)
+			#thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
 
-			asset_box.template_icon(icon_value=thumbnail_icon_id, scale=8.0)
+			#asset_box.template_icon(icon_value=thumbnail_icon_id, scale=8.0)
 
 		# Display a message if a query returned no results
 		elif af.current_asset_list.already_queried:
