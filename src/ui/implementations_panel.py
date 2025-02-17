@@ -7,12 +7,12 @@ class AF_UL_ImplementationsItems(bpy.types.UIList):
 	"""Class for drawing the list of implementations."""
 
 	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_Implementation, icon, active_data, active_propname, index):
-
+		prefix = "STRIP" if bpy.app.version >= (4, 4, 0) else "SEQUENCE"
 		# Add colored icon to quickly indicate if an implementation is readable
 		if item.is_valid:
-			icon = "SEQUENCE_COLOR_04"
+			icon = prefix + "_COLOR_04"
 		else:
-			icon = "SEQUENCE_COLOR_01"
+			icon = prefix + "_COLOR_01"
 
 		# Render the name of the implementation
 		row = layout.row()
