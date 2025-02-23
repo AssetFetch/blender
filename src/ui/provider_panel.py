@@ -13,6 +13,7 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 	def draw(self, context):
 		layout = self.layout
 		af = bpy.context.window_manager.af
+		prefix = "STRIP" if bpy.app.version >= (4, 4, 0) else "SEQUENCE"
 
 		# Info Box
 		#info_box = layout.box()
@@ -39,7 +40,7 @@ class AF_PT_ProviderPanel(bpy.types.Panel):
 					col.enabled = False
 
 		# Connection state
-		connection_state_icons = {"pending": "SEQUENCE_COLOR_09", "awaiting_input": "SEQUENCE_COLOR_03", "connection_error": "SEQUENCE_COLOR_01", "connected": "SEQUENCE_COLOR_04"}
+		connection_state_icons = {"pending": prefix + "_COLOR_09", "awaiting_input": prefix + "_COLOR_03", "connection_error": prefix + "_COLOR_01", "connected": prefix + "_COLOR_04"}
 
 		layout.label(text=af.current_connection_state.bl_rna.properties['state'].enum_items[af.current_connection_state.state].description,
 			icon=connection_state_icons[af.current_connection_state.state])
