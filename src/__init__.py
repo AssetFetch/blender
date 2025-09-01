@@ -5,7 +5,7 @@ It houses the main register() and unregister() functions for the addon along wit
 import os, sys
 import bpy
 
-print("Loading AssetFetch for Blender v0.3.0")
+print("Loading AssetFetch for Blender 0.4.0")
 
 ADDON_NAME = __package__
 
