@@ -1,12 +1,12 @@
 schema_version = "1.0.0"
 
 id = "assetfetch"
-version = "0.3.0"
+version = "0.4.0"
 name = "AssetFetch For Blender"
 tagline = "AssetFetch client for Blender"
 maintainer = "ambientCG <hello@ambientCG.com>"
 type = "add-on"
-website = "https://assetfetch.org/"
+website = "https://github.com/AssetFetch/blender"
 tags = ["Pipeline"]
 blender_version_min = "4.0.0"
 license = [
