@@ -6,6 +6,10 @@ This addon is a client for the [AssetFetch protocol](https://assetfetch.org), an
 
 # Installation
 
+Visit [the AssetFetch website](https://assetfetch.org/for-artists/blender) for an expedited installation option using the extension repository system in Blender.
+
+Otherwise, follow these steps to manually install the addon:
+
 1. Visit the [Releases page](https://github.com/struffel/assetfetch-blender/releases)
 2. Choose the latest version and click on "Assets" below the informative text
 3. Download the `.zip` archive for the addon (**not "Source code"**)
