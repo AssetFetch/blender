@@ -1,3 +1,0 @@
-# Using this slightly outdated version because the newer version 4.18 has a dependency that
-# does not work neatly in the blender environment.
-jsonschema==4.17.3
