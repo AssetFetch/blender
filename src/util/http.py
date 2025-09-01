@@ -7,11 +7,8 @@ import pathlib
 from enum import Enum
 from typing import List, Dict
 import bpy
-import jsonschema
 
 from functools import partial
-
-from .. import SCHEMA_PATH
 
 LOGGER = logging.getLogger("af.util.http")
 LOGGER.setLevel(logging.INFO)
@@ -37,20 +34,8 @@ class AF_HttpResponse:
 		else:
 			raise Exception("Could not resolve meta.kind for this request.")
 
-		# Validate the data structure based on the "kind" of the request
-		target_schema_path = (SCHEMA_PATH + f"/endpoint/{kind}.json").replace("\\", "/")
-		target_base_path = SCHEMA_PATH.replace("\\", "/")
-
-		if not os.path.exists(target_schema_path):
-			raise Exception(f"Kind {kind} is not recognized as an endpoint kind because file {target_schema_path} could not be found.")
-
-		LOGGER.info(f"Validating against {target_schema_path} with base path {target_base_path}")
-
-		with open(target_schema_path, 'r') as schema_file:
-			schema = json.load(schema_file)
-			jsonschema.validate(instance=self.parsed,
-				schema=schema,
-				resolver=jsonschema.RefResolver(referrer=f"file:///{target_schema_path}", base_uri=f"file:///{target_schema_path}"))
+		# Log request kind
+		LOGGER.info(f"Got AF request of type {kind}")
 
 
 class AF_HttpQuery:
