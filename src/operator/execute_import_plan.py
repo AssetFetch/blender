@@ -24,37 +24,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 	bl_label = "Execute Import Plan"
 	bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-	def __init__(self):
-
-		# Initialize variables
-		self.af: AF_PR_AssetFetch = bpy.context.window_manager.af
-		self.implementation_list: AF_PR_ImplementationList = self.af.current_implementation_list
-		self.implementation: AF_PR_Implementation = self.implementation_list.implementations[self.af.current_implementation_list_index]
-		self.asset_id: str = self.af.current_asset_list.assets[self.af.current_asset_list_index].name
-
-		# Namespace for this import execution (used for loose material linking)
-		# This will later be used to tell materials apart in the case of naming conflicts.
-		self.af_namespace: str = str(uuid.uuid4())
-
-		# Calculate the path for the temp directory
-		self.temp_dir: str = os.path.join(tempfile.gettempdir(), "assetfetch-blender-temp-dl")
-
-		# Variable to keep track of ongoing downloads
-		self.ongoing_queries = {}
-
-		# Lookup for functions to use
-		# This object associates every import action type to its dedicated function
-		self.step_functions = {
-			AF_ImportAction.fetch_download.value: self.step_fetch_download,
-			AF_ImportAction.fetch_from_zip_archive.value: self.step_fetch_from_zip_archive,
-			AF_ImportAction.import_obj_from_local_path.value: self.step_import_obj_from_local_path,
-			AF_ImportAction.import_usd_from_local_path.value: self.step_import_usd_from_local_path,
-			AF_ImportAction.import_loose_material_map_from_local_path.value: self.step_import_loose_material_map_from_local_path,
-			AF_ImportAction.import_loose_environment_from_local_path.value: self.step_import_loose_environment_from_local_path,
-			AF_ImportAction.unlock.value: self.step_unlock,
-			AF_ImportAction.create_directory.value: self.step_create_directory
-		}
-
 	# HELPER FUNCTIONS
 
 	def helper_assign_loose_materials(self, link_loose_material_block, target_blender_objects: List[bpy.types.Object], af_namespace: str):
@@ -268,6 +237,33 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 	def execute(self, context):
 
+		# Initialize helpful variables
+		self.af: AF_PR_AssetFetch = bpy.context.window_manager.af
+		self.implementation_list: AF_PR_ImplementationList = self.af.current_implementation_list
+		self.implementation: AF_PR_Implementation = self.implementation_list.implementations[self.af.current_implementation_list_index]
+		self.asset_id: str = self.af.current_asset_list.assets[self.af.current_asset_list_index].name
+
+		# Namespace for this import execution (used for loose material linking)
+		self.af_namespace: str = str(uuid.uuid4())
+
+		# Calculate the path for the temp directory
+		self.temp_dir: str = os.path.join(tempfile.gettempdir(), "assetfetch-blender-temp-dl")
+
+		# Variable to keep track of ongoing downloads
+		self.ongoing_queries = {}
+
+		# Lookup for functions to use
+		self.step_functions = {
+			AF_ImportAction.fetch_download.value: self.step_fetch_download,
+			AF_ImportAction.fetch_from_zip_archive.value: self.step_fetch_from_zip_archive,
+			AF_ImportAction.import_obj_from_local_path.value: self.step_import_obj_from_local_path,
+			AF_ImportAction.import_usd_from_local_path.value: self.step_import_usd_from_local_path,
+			AF_ImportAction.import_loose_material_map_from_local_path.value: self.step_import_loose_material_map_from_local_path,
+			AF_ImportAction.import_loose_environment_from_local_path.value: self.step_import_loose_environment_from_local_path,
+			AF_ImportAction.unlock.value: self.step_unlock,
+			AF_ImportAction.create_directory.value: self.step_create_directory
+		}
+
 		# Clear the local implementation_directory
 		try:
 			if os.path.exists(self.implementation.local_directory):
@@ -280,6 +276,11 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		self.implementation.reset_state()
 
 		# Set up modal operation
+		self._timer = context.window_manager.event_timer_add(0.125, window=context.window)
+		context.window_manager.modal_handler_add(self)
+
+		# Return and hand of the real work to the modal function
+		return {'RUNNING_MODAL'}
 		self._timer = context.window_manager.event_timer_add(0.125, window=context.window)
 		context.window_manager.modal_handler_add(self)
 
