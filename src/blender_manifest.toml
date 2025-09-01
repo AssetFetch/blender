@@ -13,8 +13,6 @@ license = [
   "SPDX:GPL-3.0-or-later",
 ]
 
-paths_exclude_pattern = [
-   "__pycache__/",
-   "/.git/",
-   "/*.zip",
-]
+[permissions]
+network = "Needed to access remote AF repositories"
+files = "Needed to perform downloads"
