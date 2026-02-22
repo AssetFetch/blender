@@ -282,6 +282,8 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 
 	def all_steps_completed(self) -> bool:
 		"""Returns whether all steps have been completed."""
+		if self.get_step_count() == 0:
+			return False
 		return self.get_completed_step_count() >= len(self.import_steps)
 
 	def get_component_by_id(self, component_id: str) -> AF_PR_Component:

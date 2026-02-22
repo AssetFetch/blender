@@ -107,26 +107,56 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				validation_message_row.label(text=m.text)
 
 			# Import button
-			if current_impl.get_completed_step_count() > 0 and not current_impl.all_steps_completed():
+			# is_importing = current_impl.get_completed_step_count() > 0 and not current_impl.all_steps_completed() and current_impl.get_current_state(
+			# ) == AF_ImportActionState.running
+
+			current_state = current_impl.get_current_state()
+
+			if current_state == AF_ImportActionState.running.value:
 				import_button_label = "Importing..."
+			elif current_impl.all_steps_completed():
+				import_button_label = "Re-import"
 			else:
 				if charges_actual > 0.0:
-					import_button_label = "Pay & Perform Import"
+					import_button_label = "Pay & import"
 				else:
-					import_button_label = "Perform Import"
+					import_button_label = "Start import"
 
 			# Render the import button
 			import_button_row = layout.row()
-			if current_impl.get_current_state() == AF_ImportActionState.running:
+			if current_state == AF_ImportActionState.running.value:
 				import_button_row.enabled = False
 			import_button_row.operator("af.execute_import_plan", text=import_button_label)
 
-			layout.separator()
+			# Show a progress indicator for the currently active step
+			if current_impl.is_valid and len(current_impl.import_steps) > 0:
+				total_steps = current_impl.get_step_count()
+				completed_steps = current_impl.get_completed_step_count()
+
+				progress_row = layout.row()
+				if current_state == AF_ImportActionState.running.value and current_step is not None:
+
+					if current_step.action == AF_ImportAction.fetch_download.value and 0.0 < current_step.completion < 1.0:
+						# Granular download progress
+						progress_row.progress(text=f"Downloading... {int(current_step.completion * 100)}% (ESC to cancel)", factor=current_step.completion, type="BAR")
+					else:
+						# Overall step progress when no granular data is available
+						overall_factor = completed_steps / total_steps if total_steps > 0 else 0.0
+						progress_row.progress(text=f"Step {completed_steps + 1} of {total_steps}", factor=overall_factor, type="BAR")
+				elif current_impl.all_steps_completed():
+					# The process has completed all steps
+					progress_row.progress(text="Import completed", factor=1.0, type="BAR")
+				elif current_state == AF_ImportActionState.canceled.value:
+					progress_row.progress(text="Import canceled", factor=0.0, type="BAR")
+				#else:
+				# No active step
+				# progress_row.progress(text=f"Import ready to start", factor=0.0, type="BAR")
 
 			if current_impl.is_valid and len(current_impl.import_steps) > 0:
-				layout.label(text=f"Import Steps ({current_impl.get_completed_step_count()} / {current_impl.get_step_count()} completed):")
+				#layout.label(text=f"Import Steps ({current_impl.get_completed_step_count()} / {current_impl.get_step_count()} completed):")
 
 				previous_step_action = None
+				box = None
 				for step in current_impl.import_steps:
 
 					# Prepare variables for rendering the UI
@@ -136,7 +166,7 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 					step_state_icon = AF_ImportActionState[step.state].icon_string()
 
 					# Check whether a new box must be drawn
-					if step.action != previous_step_action:
+					if step.action != previous_step_action or box is None:
 						box = layout.box()
 						box.label(text=step_title, icon=step_action_icon)
 
