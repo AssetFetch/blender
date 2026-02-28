@@ -3,55 +3,10 @@ import bpy
 
 from ..property.core import *
 from ..util import http, ui_images
+from ..operator.asset_pagination import PAGE_SIZE
 
 LOGGER = logging.getLogger("af.ui.asset_panel")
 LOGGER.setLevel(logging.DEBUG)
-
-PAGE_SIZE = 12
-
-
-class AF_OT_SelectAsset(bpy.types.Operator):
-	"""Select an asset by index."""
-
-	bl_idname = "af.select_asset"
-	bl_label = "Select Asset"
-	bl_options = {'INTERNAL'}
-
-	index: bpy.props.IntProperty()
-
-	def execute(self, context):
-		bpy.context.window_manager.af.current_asset_list_index = self.index
-		return {'FINISHED'}
-
-
-class AF_OT_AssetPageNext(bpy.types.Operator):
-	"""Advance to the next page of assets."""
-
-	bl_idname = "af.asset_page_next"
-	bl_label = "Next Page"
-	bl_options = {'INTERNAL'}
-
-	def execute(self, context):
-		af = bpy.context.window_manager.af
-		total = len(af.current_asset_list.assets)
-		total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
-		if af.current_asset_page_index < total_pages - 1:
-			af.current_asset_page_index += 1
-		return {'FINISHED'}
-
-
-class AF_OT_AssetPagePrev(bpy.types.Operator):
-	"""Go back to the previous page of assets."""
-
-	bl_idname = "af.asset_page_prev"
-	bl_label = "Previous Page"
-	bl_options = {'INTERNAL'}
-
-	def execute(self, context):
-		af = bpy.context.window_manager.af
-		if af.current_asset_page_index > 0:
-			af.current_asset_page_index -= 1
-		return {'FINISHED'}
 
 
 class AF_PT_AssetPanel(bpy.types.Panel):
@@ -103,11 +58,31 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 				op = cell_box.operator("af.select_asset", text=asset.get_display_title(), emboss=True, icon=icon)
 				op.index = global_index
 
-			# Pagination row
+			# Pad remaining cells so the grid dimensions stay fixed on partial pages
+			for _ in range(len(page_assets), PAGE_SIZE):
+				cell = grid.column()
+				cell.enabled = False
+				cell_box = cell.box()
+				cell_box.template_icon(icon_value=0, scale=4.0)
+				cell_box.label(text="")
+
+			# Pagination row: first, prev, centered label, next, last
 			pag = layout.row(align=True)
-			pag.operator("af.asset_page_prev", text="", icon="TRIA_LEFT")
-			pag.label(text=f"Page {current_page_number + 1} / {total_page_count}")
-			pag.operator("af.asset_page_next", text="", icon="TRIA_RIGHT")
+			btn_first = pag.row(align=True)
+			btn_first.enabled = (current_page_number > 0)
+			btn_first.operator("af.asset_page_first", text="", icon="REW")
+			btn_prev = pag.row(align=True)
+			btn_prev.enabled = (current_page_number > 0)
+			btn_prev.operator("af.asset_page_prev", text="", icon="TRIA_LEFT")
+			lbl = pag.row(align=True)
+			lbl.alignment = 'CENTER'
+			lbl.label(text=f"Page {current_page_number + 1} / {total_page_count}")
+			btn_next = pag.row(align=True)
+			btn_next.enabled = (current_page_number < total_page_count - 1)
+			btn_next.operator("af.asset_page_next", text="", icon="TRIA_RIGHT")
+			btn_last = pag.row(align=True)
+			btn_last.enabled = (current_page_number < total_page_count - 1)
+			btn_last.operator("af.asset_page_last", text="", icon="FF")
 
 		elif af.current_asset_list.already_queried:
 			no_results_box = layout.box()

@@ -19,8 +19,7 @@ def unregister():
 
 
 registration_targets = [
-	AF_PT_Preferences, AF_PT_ProviderPanel,
-	AF_OT_SelectAsset, AF_OT_AssetPageNext, AF_OT_AssetPagePrev, AF_PT_AssetPanel,
+	AF_PT_Preferences, AF_PT_ProviderPanel, AF_PT_AssetPanel,
 	AF_UL_ImplementationsItems, AF_PT_ImplementationsPanel,
 	AF_UL_ProviderBookmarksItems, AF_UL_ProviderBookmarksHeadersItems
 ]

@@ -15,6 +15,7 @@ from .new_provider_bookmark import *
 from .delete_provider_bookmark import *
 from .new_provider_bookmark_header import *
 from .delete_provider_bookmark_header import *
+from .asset_pagination import *
 
 
 def register():
@@ -33,5 +34,6 @@ def unregister():
 # List of classes to be registered for the addon
 registration_targets = [
 	AF_OP_InitializeProvider, AF_OP_UpdateAssetList, AF_OP_UpdateImplementationsList, AF_OP_BuildImportPlans, AF_OP_ExecuteImportPlan, AF_OP_ConnectionStatus,
-	AF_OP_NewProviderBookmark, AF_OP_DeleteProviderBookmark, AF_OP_DeleteProviderBookmarkHeader, AF_OP_NewProviderBookmarkHeader
+	AF_OP_NewProviderBookmark, AF_OP_DeleteProviderBookmark, AF_OP_DeleteProviderBookmarkHeader, AF_OP_NewProviderBookmarkHeader,
+	AF_OT_SelectAsset, AF_OT_AssetPageFirst, AF_OT_AssetPagePrev, AF_OT_AssetPageNext, AF_OT_AssetPageLast,
 ]
