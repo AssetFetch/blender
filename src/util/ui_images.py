@@ -44,6 +44,10 @@ def get_ui_image_icon_id(uri: str) -> int:
 	uri_hash = get_sha1_hash(uri)
 	target_file_location = os.path.join(af.ui_image_directory, uri_hash)
 
+	# Fast path: Image is already registered, no IO checks needed
+	if uri_hash in registry.keys():
+		return registry[uri_hash].icon_id
+
 	# Download image, if needed
 	if not os.path.exists(target_file_location):
 		# Image must be downloaded
@@ -53,7 +57,7 @@ def get_ui_image_icon_id(uri: str) -> int:
 
 	# Load image into blender, if needed
 	if uri_hash not in registry.keys():
-		registry.load(name=uri_hash, path=target_file_location, path_type='IMAGE')
+		registry.load(uri_hash, target_file_location, 'IMAGE')
 		LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
 
 	# Return the icon id
