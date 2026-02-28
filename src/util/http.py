@@ -169,3 +169,5 @@ class AF_HttpQuery:
 		data_remaining = True
 		while data_remaining:
 			data_remaining = self.execute_as_file_piecewise_next_chunk()
+
+		self.execute_as_file_piecewise_finish()
