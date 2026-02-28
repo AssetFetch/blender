@@ -11,12 +11,13 @@ LOGGER.setLevel(logging.DEBUG)
 
 
 class AF_UL_AssetsItems(bpy.types.UIList):
-	"""Class for rendering the asset list."""
+	"""Renders each asset as a single-height row with a thumbnail icon and name."""
 
 	def draw_item(self, context, layout: bpy.types.UILayout, data, item: AF_PR_Asset, icon, active_data, active_propname, index):
-
-		row = layout.row()
-		row.label(text=item.get_display_title())
+		thumbnail_uri = item.preview_image_thumbnail.get_optimal_resolution_uri(256)
+		thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
+		layout.label(text=item.get_display_title(), icon_value=thumbnail_icon_id)
+		print(f"Drawing asset {item.get_display_title()} with thumbnail {thumbnail_uri} and icon ID {thumbnail_icon_id}")
 
 
 class AF_PT_AssetPanel(bpy.types.Panel):
@@ -46,25 +47,26 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 		if len(af.current_asset_list.assets) > 0:
 			layout.separator()
 
-			# Draw the scrollable asset list.
+			# Side-by-side: scrollable list on the left, large preview on the right.
 			row = layout.row()
+
 			row.template_list(listtype_name="AF_UL_AssetsItems",
 				list_id="asset_list",
 				dataptr=af.current_asset_list,
 				propname="assets",
 				active_dataptr=af,
 				active_propname="current_asset_list_index",
-				maxrows=9)
-			
-			# Draw the asset name and thumbnail
-			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
-			asset_box = row.box()
-			asset_box.label(text=current_asset.get_display_title(), icon="ASSET_MANAGER")
+				rows=7,
+				maxrows=7)
 
+			# Large preview column
+			current_asset = af.current_asset_list.assets[af.current_asset_list_index]
+			preview_col = row.column()
+			preview_box = preview_col.box()
+			preview_box.label(text=current_asset.get_display_title(), icon="ASSET_MANAGER")
 			thumbnail_uri = current_asset.preview_image_thumbnail.get_optimal_resolution_uri(256)
 			thumbnail_icon_id = ui_images.get_ui_image_icon_id(thumbnail_uri)
-
-			asset_box.template_icon(icon_value=thumbnail_icon_id, scale=8.0)
+			preview_box.template_icon(icon_value=thumbnail_icon_id, scale=6.0)
 
 		# Display a message if a query returned no results
 		elif af.current_asset_list.already_queried:
