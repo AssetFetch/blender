@@ -29,7 +29,7 @@ def get_sha1_hash(string: str):
 		messageDigest.update(byteM)
 		return messageDigest.hexdigest()
 	except TypeError:
-		raise "String to hash was not compatible"
+		raise Exception("String to hash was not compatible")
 
 
 def get_ui_image_icon_id(uri: str) -> int:
@@ -47,7 +47,7 @@ def get_ui_image_icon_id(uri: str) -> int:
 	# Download image, if needed
 	if not os.path.exists(target_file_location):
 		# Image must be downloaded
-		image_query = http.AF_HttpQuery(uri, "get", None)
+		image_query = http.AF_HttpQuery(uri, "get")
 		image_query.execute_as_file(target_file_location)
 		LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
 

@@ -44,13 +44,14 @@ class AF_HttpQuery:
 	# The standard headers that get sent with every request (along with any auth headers)
 	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.3"}
 
-	def __init__(self, uri: str, method: str, parameters: Dict[str, str], chunk_size: int = 128 * 1024 * 8):
+	def __init__(self, uri: str, method: str, parameters: Dict[str, str]| None = None, chunk_size: int = 128 * 1024 * 8):
 		self.uri = uri
 		if (method in ['get', 'post']):
 			self.method = method
 		else:
 			LOGGER.exception("unsupported HTTP method detected.")
-		self.parameters = parameters
+		
+		self.parameters = parameters if parameters is not None else {}
 
 		# Variables for modal operation
 		self.stream_handle = None
