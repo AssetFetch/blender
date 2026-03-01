@@ -11,14 +11,14 @@ registry: bpy.utils.previews.ImagePreviewCollection = bpy.utils.previews.new()
 def reset_image_cache():
 	"""Empties the temporary thumbnail directory and flushes all thumbnails from memory"""
 
+	# Clear icons from memory
+	if registry:
+		registry.clear()
+
 	# Empty temp directory
 	if os.path.exists(bpy.context.window_manager.af.ui_image_directory):
 		shutil.rmtree(bpy.context.window_manager.af.ui_image_directory)
 	os.makedirs(bpy.context.window_manager.af.ui_image_directory, exist_ok=True)
-
-	# Clear icons from memory
-	if registry:
-		registry.clear()
 
 
 def get_sha1_hash(string: str):
