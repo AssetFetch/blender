@@ -67,22 +67,27 @@ class AF_PT_AssetPanel(bpy.types.Panel):
 				cell_box.label(text="")
 
 			# Pagination row: first, prev, centered label, next, last
-			pag = layout.row(align=True)
-			btn_first = pag.row(align=True)
-			btn_first.enabled = (current_page_number > 0)
-			btn_first.operator("af.asset_page_first", text="", icon="REW")
-			btn_prev = pag.row(align=True)
-			btn_prev.enabled = (current_page_number > 0)
-			btn_prev.operator("af.asset_page_prev", text="", icon="TRIA_LEFT")
-			lbl = pag.row(align=True)
-			lbl.alignment = 'CENTER'
-			lbl.label(text=f"Page {current_page_number + 1} / {total_page_count}")
-			btn_next = pag.row(align=True)
-			btn_next.enabled = (current_page_number < total_page_count - 1)
-			btn_next.operator("af.asset_page_next", text="", icon="TRIA_RIGHT")
-			btn_last = pag.row(align=True)
-			btn_last.enabled = (current_page_number < total_page_count - 1)
-			btn_last.operator("af.asset_page_last", text="", icon="FF")
+			pagination_area = layout.row(align=True)
+
+			button_first_page = pagination_area.row(align=True)
+			button_first_page.enabled = (current_page_number > 0)
+			button_first_page.operator("af.asset_page_first", text="", icon="REW")
+			
+			button_prev_page = pagination_area.row(align=True)
+			button_prev_page.enabled = (current_page_number > 0)
+			button_prev_page.operator("af.asset_page_prev", text="", icon="TRIA_LEFT")
+			
+			page_count_label = pagination_area.row(align=True)
+			page_count_label.alignment = 'CENTER'
+			page_count_label.label(text=f"Page {current_page_number + 1} / {total_page_count}")
+			
+			button_next_page = pagination_area.row(align=True)
+			button_next_page.enabled = (current_page_number < total_page_count - 1)
+			button_next_page.operator("af.asset_page_next", text="", icon="TRIA_RIGHT")
+			
+			button_last_page = pagination_area.row(align=True)
+			button_last_page.enabled = (current_page_number < total_page_count - 1)
+			button_last_page.operator("af.asset_page_last", text="", icon="FF")
 
 		elif af.current_asset_list.already_queried:
 			no_results_box = layout.box()
