@@ -193,22 +193,26 @@ class AF_PR_FormatBlendTarget(bpy.types.PropertyGroup):
 	kind: bpy.props.EnumProperty(items=addon_constants.AF_BlenderDataTypes.property_items())
 
 
-class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup):
+class AF_PR_FormatBlendBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 
 	version: bpy.props.StringProperty()
-	is_asset: bpy.props.BoolProperty()
+	is_asset: bpy.props.BoolProperty(default=False)
 	targets: bpy.props.CollectionProperty(type=AF_PR_FormatBlendTarget)
 
 	# The complex target object means that we need a custom config method
-	def configure(self, format_blend):
-		self.version = format_blend['version']
-		self.is_asset = format_blend['is_asset']
-		for t in format_blend['targets']:
-			new_target = self.targets.add()
-			new_target.kind = t['kind']
-			for n in t['names']:
-				new_name = new_target.names.add()
-				new_name.value = n
+	def configure(self, initial_data):
+		if 'version' in initial_data and initial_data['version'] is not None:
+			self.version = initial_data['version']
+		if 'is_asset' in initial_data and initial_data['is_asset'] is not None:
+			self.is_asset = initial_data['is_asset']
+		if 'targets' in initial_data and initial_data['targets'] is not None:
+			for t in initial_data['targets']:
+				new_target = self.targets.add()
+				new_target.kind = t['kind']
+				for n in t['names']:
+					new_name = new_target.names.add()
+					new_name.value = n
+		self.is_set = True
 
 
 class AF_PR_FormatObjBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):

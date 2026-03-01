@@ -35,6 +35,17 @@ class AF_OT_ExecuteImportPlan(bpy.types.Operator):
 				target_material = material.get_or_create_material(material_name=link_loose_material_block.material_name, af_namespace=af_namespace)
 				obj.data.materials.append(target_material)
 
+	def clear_implementation_directory(self, implementation: AF_PR_Implementation):
+		"""Empties the local implementation directory on disk to prepare for a fresh import.
+		This is used at the start of the import process to ensure that there are no leftover files from previous imports."""
+
+		try:
+			if os.path.exists(implementation.local_directory):
+				shutil.rmtree(implementation.local_directory)
+			os.makedirs(implementation.local_directory, exist_ok=True)
+		except Exception as e:
+			LOGGER.error(f"Error while clearing local implementation directory: {e}")
+
 	# STEP FUNCTIONS
 
 	def step_unlock(self, query_id: str) -> AF_ImportActionState:
@@ -122,11 +133,126 @@ class AF_OT_ExecuteImportPlan(bpy.types.Operator):
 
 		return AF_ImportActionState.completed
 
+	def step_extract_zip_archive_fully(self, component_id: str) -> AF_ImportActionState:
+		"""Extracts the entire contents of a ZIP archive into the target directory
+		specified by the handle_archive datablock's local_directory_path."""
+
+		archive_component = self.implementation.get_component_by_id(component_id)
+		source_zip_file_path = os.path.join(self.implementation.local_directory, archive_component.store.local_file_path)
+
+		# Determine the extraction target directory
+		local_dir_path = archive_component.handle_archive.local_directory_path
+		if local_dir_path and local_dir_path != '/':
+			# Strip leading slashes to prevent os.path.join from treating it as an absolute path
+			extract_dir = os.path.join(self.implementation.local_directory, local_dir_path.lstrip('/'))
+		else:
+			extract_dir = self.implementation.local_directory
+
+		os.makedirs(extract_dir, exist_ok=True)
+
+		with zipfile.ZipFile(source_zip_file_path, 'r') as zip_ref:
+			zip_ref.extractall(extract_dir)
+
+		LOGGER.info(f"Archive '{source_zip_file_path}' fully extracted to '{extract_dir}'.")
+
+		return AF_ImportActionState.completed
+
+	def step_delete_archive(self, component_id: str) -> AF_ImportActionState:
+		"""Deletes the ZIP archive file specified by the component_id from the local implementation directory.
+		This is used to clean up ZIP files after their contents have been extracted."""
+
+		archive_component = self.implementation.get_component_by_id(component_id)
+		archive_file_path = os.path.join(self.implementation.local_directory, archive_component.store.local_file_path)
+
+		if os.path.exists(archive_file_path):
+			os.remove(archive_file_path)
+			LOGGER.info(f"Deleted archive file at '{archive_file_path}'.")
+		else:
+			LOGGER.warning(f"Attempted to delete archive file at '{archive_file_path}', but it does not exist.")
+
+		return AF_ImportActionState.completed
+
 	def step_import_usd_from_local_path(self, component_id: str) -> AF_ImportActionState:
 		"""Imports a USD file."""
 		usd_component = self.implementation.get_component_by_id(component_id=component_id)
 		usd_target_path = os.path.join(self.implementation.local_directory, usd_component.store.local_file_path)
 		bpy.ops.wm.usd_import(filepath=usd_target_path, import_all_materials=True)
+
+		return AF_ImportActionState.completed
+
+	def step_import_local_implementation_dir_to_blender_asset_library(self, component_id: str) -> AF_ImportActionState:
+		"""Imports the entire contents of the implementation directory into a subfolder in Blender's Asset Library.
+		The subfolder is named after the asset and provider to ensure that there are no naming conflicts between different assets."""
+
+		prefs = AF_PR_Preferences.get_prefs()
+		target_library_name = prefs.blend_target_asset_library
+
+		# Shorthands for building the destination path
+		af = bpy.context.window_manager.af
+		provider_id = af.current_provider_initialization.name
+		asset_id = af.current_asset_list.assets[af.current_asset_list_index].name
+		implementation_id = af.current_implementation_list.implementations[af.current_implementation_list_index].name
+
+		if target_library_name and target_library_name != "NONE":
+			for lib in bpy.context.preferences.filepaths.asset_libraries:
+				if lib.name == target_library_name:
+
+					# Build the path inside the asset library
+					dest_path = os.path.join(lib.path, provider_id, asset_id, implementation_id)
+					os.makedirs(dest_path, exist_ok=True)
+
+					# Copy over the files
+					shutil.copytree(self.implementation.local_directory, dest_path, dirs_exist_ok=True)
+					LOGGER.info(f"Copied asset .blend file to library '{lib.name}' at '{dest_path}'")
+
+					# Clear the implementation directory.
+					# The files have been moved to their new place in the asset library.
+					# We skip this, if the implementation dir is already in the asset lib.
+					if not self.implementation.local_directory.startswith(lib.path):
+						self.clear_implementation_directory(self.implementation)
+					break
+
+		return AF_ImportActionState.completed
+
+	def step_import_blend_from_local_path(self, component_id: str) -> AF_ImportActionState:
+		"""Imports data from a .blend file. If the format.blend datablock specifies targets,
+		only those specific data-blocks are imported. Otherwise all objects are appended.
+		If the file is marked as an asset and a target asset library is configured,
+		the .blend file is also copied into that library's directory."""
+
+		blend_component = self.implementation.get_component_by_id(component_id=component_id)
+		blend_target_path = os.path.join(self.implementation.local_directory, blend_component.store.local_file_path)
+
+		has_targets = blend_component.format_blend.is_set and len(blend_component.format_blend.targets) > 0
+
+		if has_targets:
+			# Selectively import only the specified targets
+			with bpy.data.libraries.load(blend_target_path, link=False) as (data_from, data_to):  # pyright: ignore[reportGeneralIssues]
+				for target in blend_component.format_blend.targets:
+					kind = target.kind
+					names_to_import = [n.value for n in target.names]
+					available = getattr(data_from, kind, [])
+					filtered = [n for n in names_to_import if n in available]
+					if filtered:
+						setattr(data_to, kind, filtered)
+
+			# Link imported objects and collections into the scene
+			if hasattr(data_to, 'objects'):
+				for obj in data_to.objects:
+					if obj is not None:
+						bpy.context.collection.objects.link(obj)
+			if hasattr(data_to, 'collections'):
+				for coll in data_to.collections:
+					if coll is not None:
+						bpy.context.scene.collection.children.link(coll)
+		else:
+			# No targets: append all objects
+			with bpy.data.libraries.load(blend_target_path, link=False) as (data_from, data_to):  # pyright: ignore[reportGeneralIssues]
+				data_to.objects = data_from.objects
+
+			for obj in data_to.objects:
+				if obj is not None:
+					bpy.context.collection.objects.link(obj)
 
 		return AF_ImportActionState.completed
 
@@ -261,21 +387,20 @@ class AF_OT_ExecuteImportPlan(bpy.types.Operator):
 		self.step_functions = {
 			AF_ImportAction.fetch_download.value: self.step_fetch_download,
 			AF_ImportAction.fetch_from_zip_archive.value: self.step_fetch_from_zip_archive,
+			AF_ImportAction.extract_zip_archive_fully.value: self.step_extract_zip_archive_fully,
 			AF_ImportAction.import_obj_from_local_path.value: self.step_import_obj_from_local_path,
 			AF_ImportAction.import_usd_from_local_path.value: self.step_import_usd_from_local_path,
+			AF_ImportAction.import_blend_from_local_path.value: self.step_import_blend_from_local_path,
+			AF_ImportAction.import_local_implementation_dir_to_blender_asset_library.value: self.step_import_local_implementation_dir_to_blender_asset_library,
 			AF_ImportAction.import_loose_material_map_from_local_path.value: self.step_import_loose_material_map_from_local_path,
 			AF_ImportAction.import_loose_environment_from_local_path.value: self.step_import_loose_environment_from_local_path,
 			AF_ImportAction.unlock.value: self.step_unlock,
-			AF_ImportAction.create_directory.value: self.step_create_directory
+			AF_ImportAction.create_directory.value: self.step_create_directory,
+			AF_ImportAction.delete_archive.value: self.step_delete_archive
 		}
 
 		# Clear the local implementation_directory
-		try:
-			if os.path.exists(self.implementation.local_directory):
-				shutil.rmtree(self.implementation.local_directory)
-			os.makedirs(self.implementation.local_directory, exist_ok=True)
-		except Exception as e:
-			LOGGER.error(f"Error while clearing local implementation directory: {e}")
+		self.clear_implementation_directory(self.implementation)
 
 		# Reset the state of the implementation
 		self.implementation.reset_state()

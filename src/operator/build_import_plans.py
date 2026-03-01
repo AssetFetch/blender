@@ -57,9 +57,7 @@ class AF_OT_BuildImportPlans(bpy.types.Operator):
 
 				# Start with the base directory and append the provider/asset/implementation structure to it
 				local_directory = AF_PR_Preferences.get_prefs().get_current_download_directory()
-				local_directory = os.path.join(local_directory, provider_id)
-				local_directory = os.path.join(local_directory, asset_id)
-				local_directory = os.path.join(local_directory, implementation_id)
+				local_directory = os.path.join(local_directory, provider_id, asset_id, implementation_id)
 				current_impl.local_directory = local_directory
 
 				# Register the step to create the directory
@@ -102,7 +100,16 @@ class AF_OT_BuildImportPlans(bpy.types.Operator):
 				# This must happen in proper order to ensure that unpacking works even if the provider is sending nested ZIP files
 				# (Yes, this is actually a thing sometimes!)
 
+				# First, handle archives that should be fully extracted (extract_fully=true)
+				for comp in current_impl.components:
+					if comp.handle_archive.is_set and comp.handle_archive.extract_fully:
+						current_impl.import_steps.add().configure_extract_zip_archive_fully(comp.name)
+
+				# Then, handle individual file extractions from archives (fetch_from_archive) 
 				# This list contains all the components that need to be extracted from an archive
+				#
+				# We can not skip the files that were already extracted in the previous step, because the extraction might be to
+				# a different location.
 				pending_extraction_comps = []
 				for comp in current_impl.components:
 					# Does the component have the "file_fetch.from_archive" datablock? If yes: Add it to the list
@@ -139,6 +146,11 @@ class AF_OT_BuildImportPlans(bpy.types.Operator):
 						for pcomp in pending_extraction_comps:
 							unreachable_components_formatted += pcomp.name + " "
 						raise Exception(f"Components {unreachable_components_formatted} could not be resolved in the provided implementation definition.")
+						
+				# Finally, remove all the ZIP archives which were used as sources for the extractions from the implementation directory.
+				for comp in current_impl.components:
+					if comp.handle_archive.is_set:
+						current_impl.import_steps.add().configure_delete_archive(comp.name)
 
 				# Step 5: Plan how to import files
 				# "Importing" includes loading the file using Blender's native format handler
@@ -172,6 +184,13 @@ class AF_OT_BuildImportPlans(bpy.types.Operator):
 						# USD Files
 						elif comp.format.extension in [".usd", ".usda", ".usdc", ".usdz"]:
 							current_impl.import_steps.add().configure_import_usd_from_local_path(comp.name)
+
+						# Blend Files
+						elif comp.format.extension == ".blend" or comp.format_blend.is_set:
+							if comp.format_blend.is_asset:
+								current_impl.import_steps.add().configure_import_local_implementation_dir_to_blender_asset_library(comp.name)
+							else:
+								current_impl.import_steps.add().configure_import_blend_from_local_path(comp.name)
 
 						# TODO: More extensions to be added here in the future
 

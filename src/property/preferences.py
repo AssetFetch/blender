@@ -6,6 +6,14 @@ from .templates import *
 from .updates import *
 
 
+def blend_asset_library_items(self, context):
+	"""Dynamic enum callback that lists available Blender asset libraries."""
+	items = [("NONE", "None", "Don't copy the .blend file to any asset library")]
+	for lib in context.preferences.filepaths.asset_libraries:
+		items.append((lib.name, lib.name, lib.path))
+	return items
+
+
 class AF_PR_ProviderBookmark(bpy.types.PropertyGroup):
 	"""Represents a bookmark for a provider."""
 	init_url: bpy.props.StringProperty(default="(URI)", description="The initialization URL for this provider.", name="URI")
@@ -39,6 +47,13 @@ class AF_PR_Preferences(bpy.types.AddonPreferences):
 	use_relative: bpy.props.BoolProperty(update=update_download_directory_mode)
 	relative_directory: bpy.props.StringProperty(default="AssetFetch",update=update_download_directory_relative)
 	default_directory: bpy.props.StringProperty(default=os.path.join(os.path.expanduser('~'), "AssetFetch"),update=update_download_directory_default)
+
+	# Blend asset library
+	blend_target_asset_library: bpy.props.EnumProperty(
+		name="Target Asset Library",
+		description="When importing .blend files marked as assets, copy them to this asset library so they appear in Blender's Asset Browser",
+		items=blend_asset_library_items
+	)
 
 	def get_current_download_directory(self):
 		if bpy.data.filepath != '' and self.use_relative:

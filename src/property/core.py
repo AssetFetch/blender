@@ -154,6 +154,18 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 		self.config.clear()
 		self.set_config_value("component_id", component_id)
 
+	def configure_extract_zip_archive_fully(self, component_id):
+		"""Configures this step as an extract_zip_archive_fully step."""
+		self.action = AF_ImportAction.extract_zip_archive_fully.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_delete_archive(self, component_id):
+		"""Configures this step as a delete_archive step."""
+		self.action = AF_ImportAction.delete_archive.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
 	# Import Actions
 
 	def configure_import_obj_from_local_path(self, component_id):
@@ -165,6 +177,18 @@ class AF_PR_ImplementationImportStep(bpy.types.PropertyGroup):
 	def configure_import_usd_from_local_path(self, component_id):
 		"""Configures this step as an import_usd_from_local_path step."""
 		self.action = AF_ImportAction.import_usd_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_import_blend_from_local_path(self, component_id):
+		"""Configures this step as an import_blend_from_local_path step."""
+		self.action = AF_ImportAction.import_blend_from_local_path.value
+		self.config.clear()
+		self.set_config_value("component_id", component_id)
+
+	def configure_import_local_implementation_dir_to_blender_asset_library(self, component_id):
+		"""Configures this step as an import_local_implementation_dir_to_blender_asset_library step."""
+		self.action = AF_ImportAction.import_local_implementation_dir_to_blender_asset_library.value
 		self.config.clear()
 		self.set_config_value("component_id", component_id)
 
@@ -316,12 +340,16 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 			# provider_comp -> the component data sent by the provider
 			# blender_comp -> the blender bpy property this component gets turned into
 			# pcd -> shorthand for "provider component data"
-			pcd = provider_comp['data']
 
 			# Component id
 			if "id" not in provider_comp:
 				raise Exception("A component is missing an id.")
 			blender_comp.name = provider_comp['id']
+
+			# Skip components that have no data block
+			if "data" not in provider_comp:
+				continue
+			pcd = provider_comp['data']
 
 			# This list only covers datablocks which are applicable to components!
 			recognized_datablock_names = [

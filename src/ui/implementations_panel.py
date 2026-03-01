@@ -128,6 +128,14 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 				import_button_row.enabled = False
 			import_button_row.operator("af.execute_import_plan", text=import_button_label)
 
+			# Show asset library selector if the implementation contains a .blend file marked as an asset
+			for comp in current_impl.components:
+				if comp.format_blend.is_set and comp.format_blend.is_asset:
+					asset_lib_box = layout.box()
+					asset_lib_box.label(text="Blend Asset Library", icon="ASSET_MANAGER")
+					asset_lib_box.prop(AF_PR_Preferences.get_prefs(), "blend_target_asset_library", text="Copy to Library")
+					break
+
 			# Show a progress indicator for the currently active step
 			if current_impl.is_valid and len(current_impl.import_steps) > 0:
 				total_steps = current_impl.get_step_count()
@@ -186,10 +194,18 @@ class AF_PT_ImplementationsPanel(bpy.types.Panel):
 						target_length = target_component.store.bytes
 						if target_length > 0:
 							step_details += f" - {self.format_bytes(target_length)}"
+					
+					# Deletion of archives
+					if step.action == AF_ImportAction.delete_archive.value:
+						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
+						target_path = target_component.store.local_file_path
+						step_details = f"Delete {target_path}"
 
 					# Standard imports
 					if step.action in [
-						AF_ImportAction.fetch_from_zip_archive.value, AF_ImportAction.import_obj_from_local_path.value, AF_ImportAction.import_usd_from_local_path.value
+						AF_ImportAction.fetch_from_zip_archive.value, AF_ImportAction.extract_zip_archive_fully.value,
+						AF_ImportAction.import_obj_from_local_path.value, AF_ImportAction.import_usd_from_local_path.value,
+						AF_ImportAction.import_blend_from_local_path.value
 					]:
 						target_component = current_impl.get_component_by_id(step.config['component_id'].value)
 						step_details = target_component.store.local_file_path

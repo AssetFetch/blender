@@ -53,10 +53,17 @@ class AF_ImportActionState(Enum):
 class AF_ImportAction(Enum):
 
 	fetch_download = "fetch_download"
+
 	fetch_from_zip_archive = "fetch_from_zip_archive"
+	extract_zip_archive_fully = "extract_zip_archive_fully"
+	delete_archive = "delete_archive"
 
 	import_obj_from_local_path = "import_obj_from_local_path"
 	import_usd_from_local_path = "import_usd_from_local_path"
+
+	import_blend_from_local_path = "import_blend_from_local_path"
+	import_local_implementation_dir_to_blender_asset_library = "import_local_implementation_dir_to_blender_asset_library"
+
 	import_loose_material_map_from_local_path = "import_loose_material_map_from_local_path"
 	import_loose_environment_from_local_path = "import_loose_environment_from_local_path"
 
@@ -69,12 +76,16 @@ class AF_ImportAction(Enum):
 		icons = {
 			AF_ImportAction.fetch_download: "IMPORT",
 			AF_ImportAction.fetch_from_zip_archive: "FILE_ARCHIVE",
+			AF_ImportAction.extract_zip_archive_fully: "FILE_ARCHIVE",
 			AF_ImportAction.import_obj_from_local_path: "MESH_CUBE",
 			AF_ImportAction.import_usd_from_local_path: "MESH_CUBE",
+			AF_ImportAction.import_blend_from_local_path: "FILE_BLEND",
 			AF_ImportAction.import_loose_material_map_from_local_path: "MATERIAL",
 			AF_ImportAction.import_loose_environment_from_local_path: "WORLD",
+			AF_ImportAction.import_local_implementation_dir_to_blender_asset_library: "FILE_FOLDER",
 			AF_ImportAction.unlock: "UNLOCKED",
-			AF_ImportAction.create_directory: "NEWFOLDER"
+			AF_ImportAction.create_directory: "NEWFOLDER",
+			AF_ImportAction.delete_archive: "TRASH"
 		}
 
 		if self in icons.keys():
@@ -91,12 +102,16 @@ class AF_ImportAction(Enum):
 			# File actions
 			("fetch_download", "Download File", "Downloads a file from the internet."),
 			("fetch_from_zip_archive", "Extract File From ZIP Archive", "Extracts a file from a ZIP archive."),
+			("extract_zip_archive_fully", "Extract ZIP Archive Fully", "Extracts all contents of a ZIP archive into a directory."),
+			("delete_archive", "Delete Archive", "Deletes an archive."),
 
 			# Import actions
 			("import_obj_from_local_path", "Import OBJ", "Imports content from an OBJ file."),
 			("import_usd_from_local_path", "Import USD", "Imports content from a USD file."),
+			("import_blend_from_local_path", "Import Blend", "Imports content from a .blend file."),
 			("import_loose_material_map_from_local_path", "Import Material Map", "Adds a material map to a new or existing material."),
 			("import_loose_environment_from_local_path", "Import Environment Map", "Imports an HDRI environment."),
+			("import_local_implementation_dir_to_blender_asset_library", "Add to Asset Library", "Imports the entire contents of the implementation directory into a subfolder in Blender's Asset Library."),
 
 			# Unlock actions
 			("unlock", "Unlock Resource", "Unlocks a resource from the provider, so that it can be downloaded."),
