@@ -48,17 +48,13 @@ def get_ui_image_icon_id(uri: str) -> int:
 	if uri_hash in registry.keys():
 		return registry[uri_hash].icon_id
 
-	# Download image, if needed
-	if not os.path.exists(target_file_location):
-		# Image must be downloaded
-		image_query = http.AF_HttpQuery(uri, "get")
-		image_query.execute_as_file(target_file_location)
-		LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
+	# Otherwise: Download and register the image
+	image_query = http.AF_HttpQuery(uri, "get")
+	image_query.execute_as_file(target_file_location)
+	LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
 
-	# Load image into blender, if needed
-	if uri_hash not in registry.keys():
-		registry.load(uri_hash, target_file_location, 'IMAGE')
-		LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
+	registry.load(uri_hash, target_file_location, 'IMAGE')
+	LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
 
 	# Return the icon id
 	return registry[uri_hash].icon_id
