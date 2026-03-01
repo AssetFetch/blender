@@ -4,7 +4,7 @@ from ..util.af_constants import *
 from ..property.core import *
 
 
-class AF_OP_BuildImportPlans(bpy.types.Operator):
+class AF_OT_BuildImportPlans(bpy.types.Operator):
 	"""Populates every currently loaded implementation with a plan for how to import it, if possible."""
 
 	# Standard metadata

@@ -1,0 +1,5 @@
+{
+	"reportInvalidTypeForm": "none",
+	"reportAttributeAccessIssue": "information",
+	"reportOptionalMemberAccess": "information"
+}

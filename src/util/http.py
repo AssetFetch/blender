@@ -44,13 +44,14 @@ class AF_HttpQuery:
 	# The standard headers that get sent with every request (along with any auth headers)
 	default_headers = {"User-Agent": f"blender/{bpy.app.version_string} assetfetch-blender/0.3"}
 
-	def __init__(self, uri: str, method: str, parameters: Dict[str, str] = None, chunk_size: int = 128 * 1024 * 8):
+	def __init__(self, uri: str, method: str, parameters: Dict[str, str]| None = None, chunk_size: int = 128 * 1024 * 8):
 		self.uri = uri
 		if (method in ['get', 'post']):
 			self.method = method
 		else:
 			LOGGER.exception("unsupported HTTP method detected.")
-		self.parameters = parameters
+		
+		self.parameters = parameters if parameters is not None else {}
 
 		# Variables for modal operation
 		self.stream_handle = None
@@ -135,12 +136,12 @@ class AF_HttpQuery:
 
 	def execute_as_file_piecewise_next_chunk(self) -> bool:
 		"""Continues an already started chunked download."""
-		if self.stream_handle is None or self.file_handle is None:
+		if self.stream_handle is None or self.file_handle is None or self.stream_handle_iter is None:
 			raise Exception("Download has not been initialized")
 
 		try:
-			chunk = next(self.stream_handle_iter, False)
-			if chunk:
+			chunk = next(self.stream_handle_iter, None)
+			if chunk is not None:
 				self.file_handle.write(chunk)
 				self.downloaded_bytes += len(chunk)
 				return True
@@ -168,3 +169,5 @@ class AF_HttpQuery:
 		data_remaining = True
 		while data_remaining:
 			data_remaining = self.execute_as_file_piecewise_next_chunk()
+
+		self.execute_as_file_piecewise_finish()

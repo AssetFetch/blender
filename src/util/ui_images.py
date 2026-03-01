@@ -29,7 +29,7 @@ def get_sha1_hash(string: str):
 		messageDigest.update(byteM)
 		return messageDigest.hexdigest()
 	except TypeError:
-		raise "String to hash was not compatible"
+		raise Exception("String to hash was not compatible")
 
 
 def get_ui_image_icon_id(uri: str) -> int:
@@ -44,17 +44,17 @@ def get_ui_image_icon_id(uri: str) -> int:
 	uri_hash = get_sha1_hash(uri)
 	target_file_location = os.path.join(af.ui_image_directory, uri_hash)
 
-	# Download image, if needed
-	if not os.path.exists(target_file_location):
-		# Image must be downloaded
-		image_query = http.AF_HttpQuery(uri, "get", None)
-		image_query.execute_as_file(target_file_location)
-		LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
+	# Fast path: Image is already registered, no IO checks needed
+	if uri_hash in registry.keys():
+		return registry[uri_hash].icon_id
 
-	# Load image into blender, if needed
-	if uri_hash not in registry.keys():
-		registry.load(name=uri_hash, path=target_file_location, path_type='IMAGE')
-		LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
+	# Otherwise: Download and register the image
+	image_query = http.AF_HttpQuery(uri, "get")
+	image_query.execute_as_file(target_file_location)
+	LOGGER.debug(f"Downloaded ui image from {uri} into {target_file_location}")
+
+	registry.load(uri_hash, target_file_location, 'IMAGE')
+	LOGGER.debug(f"Registered ui image from {target_file_location} with ID {registry[uri_hash].icon_id}")
 
 	# Return the icon id
 	return registry[uri_hash].icon_id

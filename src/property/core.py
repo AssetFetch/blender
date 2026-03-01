@@ -69,6 +69,7 @@ class AF_PR_AssetList(bpy.types.PropertyGroup):
 				asset_entry.preview_image_thumbnail.configure(asset['data']['preview_image_thumbnail'])
 
 		af.current_asset_list_index = 0
+		af.current_asset_page_index = 0
 
 		# Indicate that the asset list has already been fetched
 		# (This becomes important if it happens to contain 0 elements)
@@ -282,6 +283,8 @@ class AF_PR_Implementation(bpy.types.PropertyGroup):
 
 	def all_steps_completed(self) -> bool:
 		"""Returns whether all steps have been completed."""
+		if self.get_step_count() == 0:
+			return False
 		return self.get_completed_step_count() >= len(self.import_steps)
 
 	def get_component_by_id(self, component_id: str) -> AF_PR_Component:
@@ -404,6 +407,7 @@ class AF_PR_AssetFetch(bpy.types.PropertyGroup):
 	current_provider_initialization: bpy.props.PointerProperty(type=AF_PR_ProviderInitialization)
 	current_asset_list: bpy.props.PointerProperty(type=AF_PR_AssetList)
 	current_asset_list_index: bpy.props.IntProperty(update=update_asset_list_index)
+	current_asset_page_index: bpy.props.IntProperty(default=0)
 
 	current_implementation_list: bpy.props.PointerProperty(type=AF_PR_ImplementationList)
 	current_implementation_list_index: bpy.props.IntProperty(update=update_implementation_list_index)

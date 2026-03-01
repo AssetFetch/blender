@@ -1,7 +1,7 @@
 import bpy
 from ..property.preferences import *
 
-class AF_OP_NewProviderBookmark(bpy.types.Operator):
+class AF_OT_NewProviderBookmark(bpy.types.Operator):
 	"""Creates a new provider bookmark."""
 
 	bl_idname = "af.new_provider_bookmark"

@@ -30,7 +30,7 @@ class AF_PR_GenericBlock:
 					initial_data[key] = ""
 				setattr(self, key, initial_data[key])
 			except Exception as e:
-				LOGGER.warn(f"skipping {key} because {e}")
+				LOGGER.warning(f"skipping {key} because {e}")
 		self.is_set = True
 
 
@@ -50,11 +50,11 @@ class AF_PR_StoreBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	local_file_path: bpy.props.StringProperty()
 	bytes: bpy.props.IntProperty()
 
-	def configure(self, store):
+	def configure(self, initial_data):
 		"""Custom configuration method for this datablock which validates that the file path does not make illegal relative references."""
-		self.bytes = store['bytes']
+		self.bytes = initial_data['bytes']
 
-		local_path: str = store['local_file_path']
+		local_path: str = initial_data['local_file_path']
 		if local_path == "." or "./" in local_path or ".\\" in local_path:
 			raise Exception("Local path contains an illegal reference (.)")
 		if local_path == ".." or "../" in local_path or "..\\" in local_path:
@@ -91,12 +91,12 @@ class AF_PR_ProviderConfigurationBlock(bpy.types.PropertyGroup, AF_PR_GenericBlo
 	header_acquisition_uri: bpy.props.StringProperty()
 	header_acquisition_uri_title: bpy.props.StringProperty()
 
-	def configure(self, provider_configuration):
-		for h in provider_configuration['headers']:
+	def configure(self, initial_data):
+		for h in initial_data['headers']:
 			self.headers.add().configure(h)
-		self.connection_status_query.configure(provider_configuration['connection_status_query'])
-		self.header_acquisition_uri = provider_configuration['header_acquisition_uri']
-		self.header_acquisition_uri_title = provider_configuration['header_acquisition_uri_title']
+		self.connection_status_query.configure(initial_data['connection_status_query'])
+		self.header_acquisition_uri = initial_data['header_acquisition_uri']
+		self.header_acquisition_uri_title = initial_data['header_acquisition_uri_title']
 
 		self.is_set = True
 
@@ -119,21 +119,21 @@ class AF_PR_FormatBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	extension: bpy.props.StringProperty()
 	mediatype: bpy.props.StringProperty()
 
-	def configure(self, format):
-		self.extension = format['extension']
-		if(format['mediatype']):
-			self.mediatype = format['mediatype']
+	def configure(self, initial_data):
+		self.extension = initial_data['extension']
+		if(initial_data['mediatype']):
+			self.mediatype = initial_data['mediatype']
 
 
 class AF_PR_HandleArchiveBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	extract_fully: bpy.props.BoolProperty()
 	local_directory_path: bpy.props.StringProperty()
 
-	def configure(self, handle_archive):
+	def configure(self, initial_data):
 
-		self.extract_fully = handle_archive['extract_fully']
+		self.extract_fully = initial_data['extract_fully']
 
-		path = handle_archive['local_directory_path']
+		path = initial_data['local_directory_path']
 
 		if path is not None:
 			# Rule 1: It MUST end with a slash ("trailing slash")
@@ -159,12 +159,12 @@ class AF_PR_FetchDownloadBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 	unlock_query_id: bpy.props.StringProperty()
 	download_query: bpy.props.PointerProperty(type=AF_PR_FixedQuery)
 
-	def configure(self, fetch_download):
-		self.download_query.configure(fetch_download['download_query'])
+	def configure(self, initial_data):
+		self.download_query.configure(initial_data['download_query'])
 
 		# Maybe check if it exists?
-		if ( "unlock_query_id" in fetch_download and fetch_download['unlock_query_id'] is not None):
-			self.unlock_query_id = fetch_download['unlock_query_id']
+		if ( "unlock_query_id" in initial_data and initial_data['unlock_query_id'] is not None):
+			self.unlock_query_id = initial_data['unlock_query_id']
 		else:
 			self.unlock_query_id = ""
 
@@ -241,8 +241,8 @@ class AF_PR_UnlockQueriesBlock(bpy.types.PropertyGroup, AF_PR_GenericBlock):
 
 	items: bpy.props.CollectionProperty(type=AF_PR_UnlockQuery)
 
-	def configure(self, unlock_queries):
-		for q in unlock_queries:
+	def configure(self, initial_data):
+		for q in initial_data:
 			self.items.add().configure(q)
 
 
@@ -251,14 +251,14 @@ class AF_PR_PreviewImageThumbnailBlock(bpy.types.PropertyGroup, AF_PR_GenericBlo
 	alt: bpy.props.StringProperty()
 	uris: bpy.props.CollectionProperty(type=AF_PR_GenericString)
 
-	def configure(self, preview_image_thumbnail):
+	def configure(self, initial_data):
 		self.is_set = True
-		if "alt" in preview_image_thumbnail:
-			self.alt = preview_image_thumbnail['alt']
-		for resolution in preview_image_thumbnail['uris'].keys():
+		if "alt" in initial_data:
+			self.alt = initial_data['alt']
+		for resolution in initial_data['uris'].keys():
 			new_res = self.uris.add()
 			new_res.name = resolution
-			new_res.value = preview_image_thumbnail['uris'][resolution]
+			new_res.value = initial_data['uris'][resolution]
 
 	def get_optimal_resolution_uri(self, target_resolution: int) -> str:
 		"""Finds the best available thumbnail image for a given target resolution."""

@@ -101,7 +101,7 @@ def update_variable_query_parameter(property, context):
 		if property.update_target == AF_VariableQueryUpdateTarget.update_asset_list_parameter.value:
 			update_asset_list_parameter(property, context)
 	else:
-		LOGGER.warn(f"No update_target on {property}")
+		LOGGER.warning(f"No update_target on {property}")
 
 
 def update_bookmarks(property, context):

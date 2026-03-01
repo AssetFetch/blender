@@ -10,7 +10,7 @@ LOGGER = logging.getLogger("af.ops.initialize_provider")
 LOGGER.setLevel(logging.DEBUG)
 
 
-class AF_OP_InitializeProvider(bpy.types.Operator):
+class AF_OT_InitializeProvider(bpy.types.Operator):
 	"""Performs the initialization request to the provider."""
 
 	bl_idname = "af.initialize_provider"

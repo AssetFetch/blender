@@ -15,7 +15,7 @@ LOGGER = logging.getLogger("af.execute_import_plan")
 LOGGER.setLevel(logging.DEBUG)
 
 
-class AF_OP_ExecuteImportPlan(bpy.types.Operator):
+class AF_OT_ExecuteImportPlan(bpy.types.Operator):
 	"""Executes the currently selected import plan which was constructured by the build_import_plans operator.
 	Every type of step in the import plan has a dedicated function in this method
 	which runs the action associated with it using the configuration data stored for the step."""
@@ -50,7 +50,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		os.makedirs(directory, exist_ok=True)
 		return AF_ImportActionState.completed
 
-	def step_fetch_download(self, component_id: str, max_runtime: float = 2.0) -> AF_ImportActionState:
+	def step_fetch_download(self, component_id: str) -> AF_ImportActionState:
 		""" Download the asset file.
 		This code below downloads the asset and places it in its desired location
 		The operator can't run continuously for a long period, it has to "check in" with Blender to prevent the
@@ -68,6 +68,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				return AF_ImportActionState.running
 			else:
 				current_query.execute_as_file_piecewise_finish()
+				del self.ongoing_queries[component_id]
 				return AF_ImportActionState.completed
 
 		# Scenario 2: The download hasn't been started yet and must be started
@@ -83,6 +84,10 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 			# Register the query as an ongoing query
 			self.ongoing_queries[component_id] = query
+
+			# Set initial progress
+			self.implementation.get_current_step().completion = 0.0
+
 			return AF_ImportActionState.running
 
 	def step_fetch_from_zip_archive(self, component_id: str) -> AF_ImportActionState:
@@ -185,28 +190,28 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 			return False
 		return True
 
-	def modal(self, context: Context, event: Event):
+	def modal(self, context: Context, event: Event):  # pyright: ignore[reportIncompatibleMethodOverride]
 
 		# Schedule a GUI redrawing to run after this modal function
 		for a in context.screen.areas:
 			a.tag_redraw()
 
 		# Find the next step that needs work
-		current_step: AF_PR_ImplementationImportStep = self.implementation.get_current_step()
+		current_step: AF_PR_ImplementationImportStep | None = self.implementation.get_current_step()
 
 		if current_step is not None:
 
 			# Cancel the ongoing import process if ESC is pressed
 			if event.type in {'ESC'}:
 				current_step.state = AF_ImportActionState.canceled.value
-				print("USER_CANCEL")
+				LOGGER.warning("USER_CANCEL")
 				return {'CANCELLED'}
 
 			# Cancel the ongoing import if the current step is already marked as canceled or failed
 			# This mostly exists as a fallback because ideally the error would already be detected during execution and
 			# then canceled immediately.
 			if current_step.state in [AF_ImportActionState.failed.value, AF_ImportActionState.canceled.value]:
-				print(f"AUTO_CANCEL because {current_step.state}")
+				LOGGER.warning(f"AUTO_CANCEL because {current_step.state}")
 				return {'CANCELLED'}
 
 			# Actually run the function for the current step
@@ -235,7 +240,7 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 				bpy.ops.af.connection_status()
 			return {'FINISHED'}
 
-	def execute(self, context):
+	def execute(self, context):  # pyright: ignore[reportIncompatibleMethodOverride]
 
 		# Initialize helpful variables
 		self.af: AF_PR_AssetFetch = bpy.context.window_manager.af
@@ -276,11 +281,6 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 		self.implementation.reset_state()
 
 		# Set up modal operation
-		self._timer = context.window_manager.event_timer_add(0.125, window=context.window)
-		context.window_manager.modal_handler_add(self)
-
-		# Return and hand of the real work to the modal function
-		return {'RUNNING_MODAL'}
 		self._timer = context.window_manager.event_timer_add(0.125, window=context.window)
 		context.window_manager.modal_handler_add(self)
 

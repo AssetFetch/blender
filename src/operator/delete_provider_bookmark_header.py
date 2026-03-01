@@ -2,7 +2,7 @@ import bpy
 from ..property.preferences import *
 
 
-class AF_OP_DeleteProviderBookmarkHeader(bpy.types.Operator):
+class AF_OT_DeleteProviderBookmarkHeader(bpy.types.Operator):
 	"""Deletes the currently selected header from the provider bookmark. Used in addon preferences."""
 
 	bl_idname = "af.delete_provider_bookmark_header"
