@@ -33,7 +33,7 @@ def unregister():
 
 # List of classes to be registered for the addon
 registration_targets = [
-	AF_OP_InitializeProvider, AF_OP_UpdateAssetList, AF_OP_UpdateImplementationsList, AF_OP_BuildImportPlans, AF_OP_ExecuteImportPlan, AF_OP_ConnectionStatus,
-	AF_OP_NewProviderBookmark, AF_OP_DeleteProviderBookmark, AF_OP_DeleteProviderBookmarkHeader, AF_OP_NewProviderBookmarkHeader,
+	AF_OT_InitializeProvider, AF_OT_UpdateAssetList, AF_OT_UpdateImplementationsList, AF_OT_BuildImportPlans, AF_OT_ExecuteImportPlan, AF_OT_ConnectionStatus,
+	AF_OT_NewProviderBookmark, AF_OT_DeleteProviderBookmark, AF_OT_DeleteProviderBookmarkHeader, AF_OT_NewProviderBookmarkHeader,
 	AF_OT_SelectAsset, AF_OT_AssetPageFirst, AF_OT_AssetPagePrev, AF_OT_AssetPageNext, AF_OT_AssetPageLast,
 ]

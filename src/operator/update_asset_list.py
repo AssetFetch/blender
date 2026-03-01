@@ -8,7 +8,7 @@ LOGGER = logging.getLogger("af.ops.update_asset_list")
 LOGGER.setLevel(logging.DEBUG)
 
 
-class AF_OP_UpdateAssetList(bpy.types.Operator):
+class AF_OT_UpdateAssetList(bpy.types.Operator):
 	"""Loads the list of available assets from the provider using the query provided during initialization."""
 
 	bl_idname = "af.update_asset_list"

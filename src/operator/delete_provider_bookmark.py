@@ -2,7 +2,7 @@ import bpy
 from ..property.preferences import *
 
 
-class AF_OP_DeleteProviderBookmark(bpy.types.Operator):
+class AF_OT_DeleteProviderBookmark(bpy.types.Operator):
 	"""Deletes the currently selected provider bookmark."""
 
 	bl_idname = "af.delete_provider_bookmark"

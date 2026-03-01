@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Context
 
 
-class AF_OP_UpdateImplementationsList(bpy.types.Operator):
+class AF_OT_UpdateImplementationsList(bpy.types.Operator):
 	"""Updates the list of implementations for the currently selected asset. Also invokes import plan building."""
 
 	bl_idname = "af.update_implementations_list"

@@ -15,7 +15,7 @@ LOGGER = logging.getLogger("af.execute_import_plan")
 LOGGER.setLevel(logging.DEBUG)
 
 
-class AF_OP_ExecuteImportPlan(bpy.types.Operator):
+class AF_OT_ExecuteImportPlan(bpy.types.Operator):
 	"""Executes the currently selected import plan which was constructured by the build_import_plans operator.
 	Every type of step in the import plan has a dedicated function in this method
 	which runs the action associated with it using the configuration data stored for the step."""

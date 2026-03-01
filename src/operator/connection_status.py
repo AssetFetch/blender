@@ -6,7 +6,7 @@ LOGGER = logging.getLogger("af.ops.connection_status")
 LOGGER.setLevel(logging.DEBUG)
 
 
-class AF_OP_ConnectionStatus(bpy.types.Operator):
+class AF_OT_ConnectionStatus(bpy.types.Operator):
 	"""Performs a status query to the provider, if applicable."""
 
 	bl_idname = "af.connection_status"
