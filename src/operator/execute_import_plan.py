@@ -286,8 +286,3 @@ class AF_OP_ExecuteImportPlan(bpy.types.Operator):
 
 		# Return and hand of the real work to the modal function
 		return {'RUNNING_MODAL'}
-		self._timer = context.window_manager.event_timer_add(0.125, window=context.window)
-		context.window_manager.modal_handler_add(self)
-
-		# Return and hand of the real work to the modal function
-		return {'RUNNING_MODAL'}
